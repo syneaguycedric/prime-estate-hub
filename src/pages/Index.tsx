@@ -7,14 +7,19 @@ import SearchFilters from "@/components/sections/SearchFilters";
 
 const Index = () => {
   const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onOpenFilters={() => setShowFilters(true)} />
+      <Header onOpenFilters={() => setShowFilters(true)} onSearch={handleSearch} />
       <div className="relative">
         <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} />
         <div className={`transition-all duration-300 ${showFilters ? 'ml-80' : 'ml-0'}`}>
-          <FeaturedProperties />
+          <FeaturedProperties searchQuery={searchQuery} />
           <Services />
           <Footer />
         </div>

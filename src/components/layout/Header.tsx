@@ -1,12 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
 
 interface HeaderProps {
   onOpenFilters: () => void;
+  onSearch: (query: string) => void;
 }
 
-const Header = ({ onOpenFilters }: HeaderProps) => {
+const Header = ({ onOpenFilters, onSearch }: HeaderProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      onSearch(searchQuery);
+      onOpenFilters();
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm">
       <div className="container flex h-16 items-center justify-between">
@@ -24,6 +35,9 @@ const Header = ({ onOpenFilters }: HeaderProps) => {
               <Input
                 placeholder="Rechercher un bien, une ville..."
                 className="pl-10 bg-secondary/50 border-border focus:bg-card transition-colors"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
               />
             </div>
             <Button 
