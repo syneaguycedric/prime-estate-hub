@@ -1,9 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Menu, Home, PlusCircle, User, Heart } from "lucide-react";
+import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
+import { useState } from "react";
+import SearchFilters from "@/components/sections/SearchFilters";
 
 const Header = () => {
+  const [showFilters, setShowFilters] = useState(false);
+
   return (
+    <>
+      <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} />
     <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
@@ -14,12 +20,21 @@ const Header = () => {
 
         {/* Search Bar - Hidden on mobile */}
         <div className="hidden md:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher un bien, une ville..."
-              className="pl-10 bg-secondary/50 border-border focus:bg-card transition-colors"
-            />
+          <div className="relative w-full flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un bien, une ville..."
+                className="pl-10 bg-secondary/50 border-border focus:bg-card transition-colors"
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowFilters(true)}
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -46,6 +61,7 @@ const Header = () => {
         </nav>
       </div>
     </header>
+    </>
   );
 };
 
