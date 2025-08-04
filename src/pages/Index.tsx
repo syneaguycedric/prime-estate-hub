@@ -11,9 +11,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header onOpenFilters={() => setShowFilters(true)} />
-      <div className="flex">
+      <div className="relative">
         <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} />
-        <div className={`flex-1 transition-all duration-300 ${showFilters ? 'ml-0' : ''}`}>
+        <div className={`transition-all duration-300 ${showFilters ? 'ml-80' : 'ml-0'}`}>
           <FeaturedProperties />
           <Services />
           <Footer />
