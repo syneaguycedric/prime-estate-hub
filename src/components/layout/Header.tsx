@@ -1,15 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
-import { useState } from "react";
-import SearchFilters from "@/components/sections/SearchFilters";
 
-const Header = () => {
-  const [showFilters, setShowFilters] = useState(false);
+interface HeaderProps {
+  onOpenFilters: () => void;
+}
 
+const Header = ({ onOpenFilters }: HeaderProps) => {
   return (
-    <>
-      <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} />
     <header className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
@@ -31,7 +29,7 @@ const Header = () => {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setShowFilters(true)}
+              onClick={onOpenFilters}
             >
               <Filter className="h-4 w-4" />
             </Button>
@@ -61,7 +59,6 @@ const Header = () => {
         </nav>
       </div>
     </header>
-    </>
   );
 };
 

@@ -3,8 +3,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
-import { Card } from "@/components/ui/card";
 import { X, MapPin, Home, Euro, Bed, Bath, Car, Ruler } from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+} from "@/components/ui/sidebar";
 
 interface SearchFiltersProps {
   isOpen: boolean;
@@ -15,17 +19,18 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-      <div className="fixed left-0 top-0 h-full w-80 bg-card border-r border-border shadow-lg">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+    <Sidebar className="w-80 border-r border-border bg-card">
+      <SidebarHeader className="p-4 border-b border-border">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Filtres de recherche</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
+      </SidebarHeader>
 
-        <div className="p-4 space-y-6 overflow-y-auto h-full">
-          {/* Localisation */}
+      <SidebarContent className="p-4 space-y-6 overflow-y-auto">
+        {/* ... keep existing code (all filter sections) */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-foreground flex items-center">
               <MapPin className="h-4 w-4 mr-2" />
@@ -194,9 +199,8 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
               Réinitialiser
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </SidebarContent>
+    </Sidebar>
   );
 };
 
