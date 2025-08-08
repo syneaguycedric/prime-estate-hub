@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, MapPin, Bed, Bath, Square, Eye } from "lucide-react";
-
+import { Link } from "react-router-dom";
 interface PropertyCardProps {
   id: string;
   title: string;
@@ -18,6 +18,7 @@ interface PropertyCardProps {
 }
 
 const PropertyCard = ({ 
+  id,
   title, 
   price, 
   location, 
@@ -99,9 +100,11 @@ const PropertyCard = ({
         </div>
         
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1">
-            <Eye className="h-4 w-4 mr-1" />
-            Voir
+          <Button asChild variant="outline" size="sm" className="flex-1">
+            <Link to={`/biens/${id}`} aria-label={`Voir le bien: ${title}`}>
+              <Eye className="h-4 w-4 mr-1" />
+              Voir
+            </Link>
           </Button>
           <Button variant="default" size="sm" className="flex-1">
             Contacter
