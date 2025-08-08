@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import PropertyCard from "@/components/ui/property-card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import appartement1 from "@/assets/appartement-1.jpg";
 import maison1 from "@/assets/maison-1.jpg";
 import villa1 from "@/assets/villa-1.jpg";
@@ -124,9 +125,11 @@ const FeaturedProperties = ({ searchQuery = "" }: FeaturedPropertiesProps) => {
         </div>
 
         <div className="text-center">
-          <Button variant="outline" size="lg">
-            Voir tous les biens
-            <ArrowRight className="h-4 w-4 ml-2" />
+          <Button asChild variant="outline" size="lg" aria-label="Voir tous les biens immobiliers">
+            <Link to="/biens">
+              Voir tous les biens
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
           </Button>
         </div>
       </div>
