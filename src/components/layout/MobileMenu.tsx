@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Search, Filter, Heart, User, PlusCircle } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
@@ -16,16 +16,31 @@ interface MobileMenuProps {
 
 const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChange }: MobileMenuProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [preventFocus, setPreventFocus] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setPreventFocus(true);
-      // Permettre le focus après un délai
-      const timer = setTimeout(() => {
-        setPreventFocus(false);
-      }, 300);
-      return () => clearTimeout(timer);
+      // Empêcher le focus automatique en utilisant plusieurs méthodes
+      const preventFocus = () => {
+        if (inputRef.current) {
+          inputRef.current.blur();
+        }
+        // Focus sur le conteneur du sheet pour éviter le focus sur l'input
+        if (sheetRef.current) {
+          sheetRef.current.focus();
+        }
+      };
+
+      // Exécuter immédiatement et après un court délai
+      preventFocus();
+      const timer1 = setTimeout(preventFocus, 50);
+      const timer2 = setTimeout(preventFocus, 150);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [isOpen]);
 
@@ -45,7 +60,12 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="right" className="w-full sm:w-80">
+      <SheetContent 
+        side="right" 
+        className="w-full sm:w-80" 
+        ref={sheetRef}
+        tabIndex={0}
+      >
         <SheetHeader>
           <SheetTitle>Menu</SheetTitle>
         </SheetHeader>
@@ -58,13 +78,23 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  ref={inputRef}
                   placeholder="Rechercher un bien, une ville..."
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyPress}
                   autoFocus={false}
-                  tabIndex={preventFocus ? -1 : 0}
+                  tabIndex={-1}
+                  onFocus={(e) => {
+                    // Empêcher le focus automatique en forçant le blur
+                    e.target.blur();
+                  }}
+                  onClick={(e) => {
+                    // Permettre le focus uniquement sur click intentionnel
+                    e.currentTarget.tabIndex = 0;
+                    e.currentTarget.focus();
+                  }}
                 />
               </div>
               <Button 
