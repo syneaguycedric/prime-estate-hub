@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPropertyById } from "../data/properties";
 import PageNavbar from "@/components/layout/PageNavbar";
+import PropertyMap from "@/components/ui/property-map";
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -129,9 +130,9 @@ const PropertyDetail = () => {
                   <div className="text-foreground">Type: {property.type}</div>
                 </div>
 
-                {/* Équipements - Mobile uniquement dans la card Détails */}
+                {/* Caractéristiques - Mobile uniquement dans la card Détails */}
                 <div className="lg:hidden">
-                  <h3 className="text-lg font-semibold mb-3 pt-4 border-t border-border">Équipements</h3>
+                  <h3 className="text-lg font-semibold mb-3 pt-4 border-t border-border">Caractéristiques</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
@@ -234,10 +235,10 @@ const PropertyDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Équipements - Desktop/Tablette uniquement */}
+          {/* Caractéristiques - Desktop/Tablette uniquement */}
           <Card className="hidden lg:block">
             <CardHeader>
-              <CardTitle className="text-xl">Équipements</CardTitle>
+              <CardTitle className="text-xl">Caractéristiques</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -270,28 +271,51 @@ const PropertyDetail = () => {
           </Card>
 
           {/* Emplacement - Desktop/Tablette uniquement */}
-          <Card className="hidden lg:block lg:col-span-2">
+          <div className="hidden lg:block lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Emplacement</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
+                </p>
+                <div className="grid grid-cols-1 gap-4 text-sm">
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    Centre-ville : 5 min
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    Métro : 3 min à pied
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    Écoles : 2 min à pied
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Localisation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PropertyMap location={property.location} title={property.title} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Carte mobile - Tout en bas */}
+        <div className="lg:hidden mt-6">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Emplacement</CardTitle>
+              <CardTitle className="text-xl">Localisation</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-2 text-primary" />
-                  Centre-ville : 5 min
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-2 text-primary" />
-                  Métro : 3 min à pied
-                </div>
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-2 text-primary" />
-                  Écoles : 2 min à pied
-                </div>
-              </div>
+              <PropertyMap location={property.location} title={property.title} />
             </CardContent>
           </Card>
         </div>
