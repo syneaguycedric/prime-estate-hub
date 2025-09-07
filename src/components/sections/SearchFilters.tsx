@@ -1,16 +1,62 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { X, MapPin, Home, Euro, Bed, Bath, Car, Ruler } from "lucide-react";
 
 interface SearchFiltersProps {
   isOpen: boolean;
   onClose: () => void;
+  onFiltersChange?: (count: number) => void;
 }
 
-const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
+const SearchFilters = ({ isOpen, onClose, onFiltersChange }: SearchFiltersProps) => {
+  const [filters, setFilters] = useState({
+    location: "",
+    transaction: "",
+    propertyType: "",
+    minPrice: "",
+    maxPrice: "",
+    minSurface: "",
+    maxSurface: "",
+    rooms: "",
+    bedrooms: "",
+    bathrooms: "",
+    parking: ""
+  });
+
+  const countActiveFilters = () => {
+    return Object.values(filters).filter(value => value && value.trim() !== "").length;
+  };
+
+  useEffect(() => {
+    const count = countActiveFilters();
+    onFiltersChange?.(count);
+  }, [filters, onFiltersChange]);
+
+  const updateFilter = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      location: "",
+      transaction: "",
+      propertyType: "",
+      minPrice: "",
+      maxPrice: "",
+      minSurface: "",
+      maxSurface: "",
+      rooms: "",
+      bedrooms: "",
+      bathrooms: "",
+      parking: ""
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -29,7 +75,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             <MapPin className="h-4 w-4 mr-2" />
             Localisation
           </label>
-          <Input placeholder="Ville, département, code postal..." />
+          <Input placeholder="Ville, département, code postal..." value={filters.location} onChange={(e) => updateFilter("location", e.target.value)} />
         </div>
 
         <Separator />
@@ -37,7 +83,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
         {/* Type de transaction */}
         <div className="space-y-3">
           <label className="text-sm font-medium text-foreground">Type de transaction</label>
-          <Select>
+          <Select value={filters.transaction} onValueChange={(value) => updateFilter("transaction", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Achat ou Location" />
             </SelectTrigger>
@@ -54,7 +100,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             <Home className="h-4 w-4 mr-2" />
             Type de bien
           </label>
-          <Select>
+          <Select value={filters.propertyType} onValueChange={(value) => updateFilter("propertyType", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tous les types" />
             </SelectTrigger>
@@ -77,8 +123,8 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             Budget
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="Prix min" />
-            <Input placeholder="Prix max" />
+            <Input placeholder="Prix min" value={filters.minPrice} onChange={(e) => updateFilter("minPrice", e.target.value)} />
+            <Input placeholder="Prix max" value={filters.maxPrice} onChange={(e) => updateFilter("maxPrice", e.target.value)} />
           </div>
           <div className="px-2">
             <Slider
@@ -104,8 +150,8 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             Surface (m²)
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="Min" />
-            <Input placeholder="Max" />
+            <Input placeholder="Min" value={filters.minSurface} onChange={(e) => updateFilter("minSurface", e.target.value)} />
+            <Input placeholder="Max" value={filters.maxSurface} onChange={(e) => updateFilter("maxSurface", e.target.value)} />
           </div>
         </div>
 
@@ -115,7 +161,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             <Bed className="h-4 w-4 mr-2" />
             Nombre de pièces
           </label>
-          <Select>
+          <Select value={filters.rooms} onValueChange={(value) => updateFilter("rooms", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Indifférent" />
             </SelectTrigger>
@@ -132,7 +178,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
         {/* Nombre de chambres */}
         <div className="space-y-3">
           <label className="text-sm font-medium text-foreground">Chambres</label>
-          <Select>
+          <Select value={filters.bedrooms} onValueChange={(value) => updateFilter("bedrooms", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Indifférent" />
             </SelectTrigger>
@@ -151,7 +197,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             <Bath className="h-4 w-4 mr-2" />
             Salles de bain
           </label>
-          <Select>
+          <Select value={filters.bathrooms} onValueChange={(value) => updateFilter("bathrooms", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Indifférent" />
             </SelectTrigger>
@@ -169,7 +215,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
             <Car className="h-4 w-4 mr-2" />
             Parking
           </label>
-          <Select>
+          <Select value={filters.parking} onValueChange={(value) => updateFilter("parking", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Indifférent" />
             </SelectTrigger>
@@ -188,7 +234,7 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
           <Button variant="default" className="w-full">
             Appliquer les filtres
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" onClick={resetFilters}>
             Réinitialiser
           </Button>
         </div>

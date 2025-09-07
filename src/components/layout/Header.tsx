@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
@@ -10,9 +11,10 @@ interface HeaderProps {
   onSearch: (query: string) => void;
   view: 'grid' | 'list';
   onViewChange: (view: 'grid' | 'list') => void;
+  activeFiltersCount?: number;
 }
 
-const Header = ({ onOpenFilters, onSearch, view, onViewChange }: HeaderProps) => {
+const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCount = 0 }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -49,8 +51,17 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange }: HeaderProps) =>
               variant="outline" 
               size="sm"
               onClick={onOpenFilters}
+              className="relative"
             >
               <Filter className="h-4 w-4" />
+              {activeFiltersCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -left-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {activeFiltersCount}
+                </Badge>
+              )}
             </Button>
           </div>
         </div>

@@ -51,6 +51,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyPress}
+                  autoFocus={false}
                 />
               </div>
               <Button 
