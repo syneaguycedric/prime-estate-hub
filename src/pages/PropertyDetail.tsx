@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Bed, Bath, Square, MapPin, ArrowLeft, Phone, Mail, User } from "lucide-react";
+import { Bed, Bath, Square, MapPin, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { getPropertyById } from "../data/properties";
+import PageNavbar from "@/components/layout/PageNavbar";
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,26 +29,24 @@ const PropertyDetail = () => {
 
   if (!property) {
     return (
-      <main className="container py-16">
-        <div className="mb-6">
-          <Button asChild variant="ghost">
-            <Link to="/">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux annonces
-            </Link>
-          </Button>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Bien introuvable</h1>
-        <p className="text-muted-foreground mt-2">Le bien demandé n'existe pas ou a été déplacé.</p>
-      </main>
+      <div className="bg-background">
+        <PageNavbar breadcrumbs={[{ label: "Bien introuvable" }]} />
+        <main className="container py-16">
+          <h1 className="text-2xl font-bold text-foreground">Bien introuvable</h1>
+          <p className="text-muted-foreground mt-2">Le bien demandé n'existe pas ou a été déplacé.</p>
+        </main>
+      </div>
     );
   }
 
   return (
-    <main className="bg-background">
-      <section className="container py-6">
-        <nav className="text-sm text-muted-foreground mb-4">
-          <Link to="/" className="story-link">Accueil</Link> <span className="mx-1">/</span> <span>Détail du bien</span>
-        </nav>
+    <div className="bg-background">
+      <PageNavbar breadcrumbs={[
+        { label: "Biens immobiliers", href: "/" },
+        { label: property.title }
+      ]} />
+      <main>
+        <section className="container py-6">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{property.title}</h1>
         <p className="text-lg text-muted-foreground mb-6 flex items-center"><MapPin className="h-4 w-4 mr-2" />{property.location}</p>
 
@@ -161,7 +159,8 @@ const PropertyDetail = () => {
           }),
         }}
       />
-    </main>
+      </main>
+    </div>
   );
 };
 

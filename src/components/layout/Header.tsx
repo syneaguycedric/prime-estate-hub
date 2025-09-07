@@ -24,7 +24,7 @@ const Header = ({ onOpenFilters, onSearch }: HeaderProps) => {
         {/* Logo */}
         <div className="flex items-center space-x-2">
           <Home className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-foreground">ImmobilierPro</span>
+          <span className="text-xl font-bold text-foreground">Kylimmo</span>
         </div>
 
         {/* Search Bar - Hidden on mobile */}
