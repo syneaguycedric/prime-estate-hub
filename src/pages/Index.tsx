@@ -43,7 +43,7 @@ const Index = () => {
         onViewChange={setView}
         activeFiltersCount={activeFiltersCount}
       />
-      <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} />
+      <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} activeFiltersCount={activeFiltersCount} />
       <div className="relative">
         <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} onFiltersChange={setActiveFiltersCount} />
         <div className={`transition-all duration-300 ${showFilters ? 'ml-80' : 'ml-0'}`}>

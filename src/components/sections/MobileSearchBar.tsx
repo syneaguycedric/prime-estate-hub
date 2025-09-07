@@ -2,13 +2,15 @@ import { useState } from "react";
 import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface MobileSearchBarProps {
   onSearch: (query: string) => void;
   onOpenFilters: () => void;
+  activeFiltersCount?: number;
 }
 
-const MobileSearchBar = ({ onSearch, onOpenFilters }: MobileSearchBarProps) => {
+const MobileSearchBar = ({ onSearch, onOpenFilters, activeFiltersCount = 0 }: MobileSearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = () => {
@@ -41,9 +43,17 @@ const MobileSearchBar = ({ onSearch, onOpenFilters }: MobileSearchBarProps) => {
           variant="outline" 
           size="sm"
           onClick={onOpenFilters}
-          className="h-11 px-3"
+          className="h-11 px-3 relative"
         >
           <Filter className="h-4 w-4" />
+          {activeFiltersCount > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            >
+              {activeFiltersCount}
+            </Badge>
+          )}
         </Button>
       </div>
     </div>
