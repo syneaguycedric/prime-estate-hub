@@ -28,7 +28,7 @@ export const properties: Property[] = [
     bedrooms: 3,
     bathrooms: 2,
     image: appartement1,
-    images: [appartement1, maison1, villa1],
+    images: [appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1],
     isNew: true,
     isFavorite: false
   },
@@ -42,7 +42,7 @@ export const properties: Property[] = [
     bedrooms: 4,
     bathrooms: 3,
     image: maison1,
-    images: [maison1, villa1, appartement1],
+    images: [maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1],
     isNew: false,
     isFavorite: true
   },
@@ -56,7 +56,7 @@ export const properties: Property[] = [
     bedrooms: 5,
     bathrooms: 4,
     image: villa1,
-    images: [villa1, appartement1, maison1],
+    images: [villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1],
     isNew: true,
     isFavorite: false
   },

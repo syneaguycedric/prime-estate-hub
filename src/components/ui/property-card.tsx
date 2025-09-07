@@ -31,87 +31,109 @@ const PropertyCard = ({
   isFavorite = false
 }: PropertyCardProps) => {
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-gradient-card border-border/50">
-      <div className="relative overflow-hidden rounded-t-lg">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        
-        {/* Overlay badges */}
-        <div className="absolute top-4 left-4 flex gap-2">
-          {isNew && (
-            <Badge className="bg-success text-success-foreground">
-              Nouveau
+    <Link to={`/biens/${id}`} className="block">
+      <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-gradient-card border-border/50 cursor-pointer">
+        <div className="relative overflow-hidden rounded-t-lg">
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+          
+          {/* Overlay badges */}
+          <div className="absolute top-4 left-4 flex gap-2">
+            {isNew && (
+              <Badge className="bg-success text-success-foreground">
+                Nouveau
+              </Badge>
+            )}
+            <Badge variant="secondary" className="bg-card/90 text-foreground">
+              {type}
             </Badge>
-          )}
-          <Badge variant="secondary" className="bg-card/90 text-foreground">
-            {type}
-          </Badge>
-        </div>
-        
-        {/* Favorite button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`absolute top-4 right-4 bg-card/90 hover:bg-card ${
-            isFavorite ? 'text-red-500' : 'text-muted-foreground'
-          }`}
-        >
-          <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
-        </Button>
-        
-        {/* Price overlay */}
-        <div className="absolute bottom-4 left-4">
-          <div className="bg-primary text-primary-foreground px-3 py-1 rounded-lg font-semibold">
-            {price}
+          </div>
+          
+          {/* Favorite button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`absolute top-4 right-4 bg-card/90 hover:bg-card ${
+              isFavorite ? 'text-red-500' : 'text-muted-foreground'
+            }`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Logique pour gérer les favoris
+            }}
+          >
+            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+          </Button>
+          
+          {/* Price overlay */}
+          <div className="absolute bottom-4 left-4">
+            <div className="bg-primary text-primary-foreground px-3 py-1 rounded-lg font-semibold">
+              {price}
+            </div>
           </div>
         </div>
-      </div>
 
-      <CardContent className="p-4 space-y-3">
-        <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-          {title}
-        </h3>
-        
-        <div className="flex items-center text-muted-foreground text-sm">
-          <MapPin className="h-4 w-4 mr-1" />
-          {location}
-        </div>
-        
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center">
-            <Square className="h-4 w-4 mr-1" />
-            {surface}
+        <CardContent className="p-4 space-y-3">
+          <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+            {title}
+          </h3>
+          
+          <div className="flex items-center text-muted-foreground text-sm">
+            <MapPin className="h-4 w-4 mr-1" />
+            {location}
           </div>
-          {bedrooms && (
+          
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center">
-              <Bed className="h-4 w-4 mr-1" />
-              {bedrooms}
+              <Square className="h-4 w-4 mr-1" />
+              {surface}
             </div>
-          )}
-          {bathrooms && (
-            <div className="flex items-center">
-              <Bath className="h-4 w-4 mr-1" />
-              {bathrooms}
-            </div>
-          )}
-        </div>
-        
-        <div className="flex gap-2 pt-2">
-          <Button asChild variant="outline" size="sm" className="flex-1">
-            <Link to={`/biens/${id}`} aria-label={`Voir le bien: ${title}`}>
+            {bedrooms && (
+              <div className="flex items-center">
+                <Bed className="h-4 w-4 mr-1" />
+                {bedrooms}
+              </div>
+            )}
+            {bathrooms && (
+              <div className="flex items-center">
+                <Bath className="h-4 w-4 mr-1" />
+                {bathrooms}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <Eye className="h-4 w-4 mr-1" />
               Voir
-            </Link>
-          </Button>
-          <Button variant="default" size="sm" className="flex-1">
-            Contacter
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Logique pour contacter
+              }}
+            >
+              Contacter
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 };
 

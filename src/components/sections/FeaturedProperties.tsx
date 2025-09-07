@@ -40,6 +40,12 @@ const FeaturedProperties = ({ searchQuery = "" }: FeaturedPropertiesProps) => {
   const goToPage = (p: number) => {
     const clamped = Math.min(Math.max(1, p), totalPages);
     setPage(clamped);
+    
+    // Scroll fluide vers le haut
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   return (
