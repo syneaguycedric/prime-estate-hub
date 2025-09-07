@@ -60,9 +60,7 @@ const PropertyMap = ({ location, title, className = "" }: PropertyMapProps) => {
 
       // Ajouter un marqueur
       L.marker([lat, lng])
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`<b>${title}</b><br>${location}`)
-        .openPopup();
+        .addTo(mapInstanceRef.current);
     }
 
     // Cleanup function

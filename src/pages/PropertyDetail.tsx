@@ -232,7 +232,7 @@ const PropertyDetail = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <h4 className="text-base font-medium mb-3">Localisation</h4>
+                  <h4 className="text-base font-medium mb-3 lg:hidden">Localisation</h4>
                   <PropertyMap location={property.location} title={property.title} />
                 </div>
               </div>
@@ -277,13 +277,12 @@ const PropertyDetail = () => {
           {/* Emplacement - Desktop/Tablette uniquement */}
           <Card className="hidden lg:block lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-xl">Emplacement & Localisation</CardTitle>
+              <CardTitle className="text-xl">Emplacement</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Emplacement */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Emplacement</h3>
                   <p className="text-muted-foreground mb-4">
                     Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
                   </p>
@@ -305,7 +304,6 @@ const PropertyDetail = () => {
                 
                 {/* Localisation */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Localisation</h3>
                   <PropertyMap location={property.location} title={property.title} />
                 </div>
               </div>
