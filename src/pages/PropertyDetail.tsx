@@ -42,8 +42,7 @@ const PropertyDetail = () => {
   return (
     <div className="bg-background">
       <PageNavbar breadcrumbs={[
-        { label: "Biens immobiliers", href: "/" },
-        { label: property.title }
+        { label: "Biens immobiliers", href: "/" }
       ]} />
       <main>
         <section className="container py-6 pt-20">

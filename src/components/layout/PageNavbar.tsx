@@ -35,8 +35,8 @@ const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
   return (
     <nav className={`fixed top-0 z-50 w-full transition-all duration-300 ${
       isScrolled 
-        ? 'bg-card/80 backdrop-blur-md shadow-sm border-b border-border/50' 
-        : 'bg-card border-b border-border'
+        ? 'bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm' 
+        : 'bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm'
     }`}>
       <div className="container flex h-14 items-center justify-between">
         {/* Breadcrumbs à gauche */}

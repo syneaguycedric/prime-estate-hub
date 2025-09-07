@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
+import MobileMenu from "./MobileMenu";
 
 interface HeaderProps {
   onOpenFilters: () => void;
@@ -10,6 +11,7 @@ interface HeaderProps {
 
 const Header = ({ onOpenFilters, onSearch }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -67,11 +69,23 @@ const Header = ({ onOpenFilters, onSearch }: HeaderProps) => {
             Publier
           </Button>
           
-          <Button variant="ghost" size="sm" className="md:hidden">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
             <Menu className="h-4 w-4" />
           </Button>
         </nav>
       </div>
+
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        onOpenFilters={onOpenFilters}
+        onSearch={onSearch}
+      />
     </header>
   );
 };

@@ -1,0 +1,53 @@
+import { useState } from "react";
+import { Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+interface MobileSearchBarProps {
+  onSearch: (query: string) => void;
+  onOpenFilters: () => void;
+}
+
+const MobileSearchBar = ({ onSearch, onOpenFilters }: MobileSearchBarProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      onSearch(searchQuery);
+      onOpenFilters();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  return (
+    <div className="md:hidden sticky top-16 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border p-4">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un bien, une ville..."
+            className="pl-10 h-11 bg-secondary/50 border-border focus:bg-card transition-colors"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyPress}
+          />
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={onOpenFilters}
+          className="h-11 px-3"
+        >
+          <Filter className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default MobileSearchBar;
