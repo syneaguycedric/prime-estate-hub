@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Search, Filter, Heart, User, PlusCircle } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,18 @@ interface MobileMenuProps {
 
 const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChange }: MobileMenuProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [preventFocus, setPreventFocus] = useState(true);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPreventFocus(true);
+      // Permettre le focus après un délai
+      const timer = setTimeout(() => {
+        setPreventFocus(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -52,6 +64,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyPress}
                   autoFocus={false}
+                  tabIndex={preventFocus ? -1 : 0}
                 />
               </div>
               <Button 
