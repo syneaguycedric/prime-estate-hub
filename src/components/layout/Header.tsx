@@ -92,6 +92,8 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange }: HeaderProps) =>
         onClose={() => setIsMobileMenuOpen(false)}
         onOpenFilters={onOpenFilters}
         onSearch={onSearch}
+        view={view}
+        onViewChange={onViewChange}
       />
     </header>
   );

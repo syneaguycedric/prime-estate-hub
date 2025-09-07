@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Search, Filter, Heart, User, PlusCircle } from "lucide-react";
+import ViewToggle from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -9,9 +10,11 @@ interface MobileMenuProps {
   onClose: () => void;
   onOpenFilters: () => void;
   onSearch: (query: string) => void;
+  view: 'grid' | 'list';
+  onViewChange: (view: 'grid' | 'list') => void;
 }
 
-const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch }: MobileMenuProps) => {
+const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChange }: MobileMenuProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = () => {
@@ -70,6 +73,12 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch }: MobileMenuProp
                 Filtres avancés
               </Button>
             </div>
+          </div>
+
+          {/* View Toggle */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Affichage</h3>
+            <ViewToggle view={view} onViewChange={onViewChange} />
           </div>
 
           {/* Navigation */}
