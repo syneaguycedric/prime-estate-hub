@@ -31,7 +31,7 @@ const PropertyDetail = () => {
     return (
       <div className="bg-background">
         <PageNavbar breadcrumbs={[{ label: "Bien introuvable" }]} />
-        <main className="container py-16">
+        <main className="container py-16 pt-20">
           <h1 className="text-2xl font-bold text-foreground">Bien introuvable</h1>
           <p className="text-muted-foreground mt-2">Le bien demandé n'existe pas ou a été déplacé.</p>
         </main>
@@ -46,7 +46,7 @@ const PropertyDetail = () => {
         { label: property.title }
       ]} />
       <main>
-        <section className="container py-6">
+        <section className="container py-6 pt-20">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{property.title}</h1>
         <p className="text-lg text-muted-foreground mb-6 flex items-center"><MapPin className="h-4 w-4 mr-2" />{property.location}</p>
 

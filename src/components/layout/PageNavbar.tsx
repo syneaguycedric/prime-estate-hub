@@ -33,7 +33,7 @@ const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
   }
 
   return (
-    <nav className={`sticky top-16 z-40 w-full transition-all duration-300 ${
+    <nav className={`fixed top-0 z-50 w-full transition-all duration-300 ${
       isScrolled 
         ? 'bg-card/80 backdrop-blur-md shadow-sm border-b border-border/50' 
         : 'bg-card border-b border-border'
