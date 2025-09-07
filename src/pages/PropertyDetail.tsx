@@ -82,12 +82,43 @@ const PropertyDetail = () => {
               ))}
             </div>
 
+            {/* Card Prix - Mobile uniquement */}
+            <Card className="mt-4 lg:hidden">
+              <CardHeader>
+                <CardTitle className="text-2xl text-primary">{property.price}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full" size="lg">Appeler</Button>
+                <Button variant="outline" className="w-full" size="lg">Demander une visite</Button>
+                
+                {/* Informations de contact - Mobile uniquement */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <h3 className="text-lg font-semibold">Informations de contact</h3>
+                  <div className="flex items-center text-sm">
+                    <User className="h-4 w-4 mr-3 text-primary" />
+                    <div>
+                      <p className="font-medium">Marie Dubois</p>
+                      <p className="text-muted-foreground">Agent immobilier</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <Phone className="h-4 w-4 mr-3 text-primary" />
+                    <span>01 23 45 67 89</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <Mail className="h-4 w-4 mr-3 text-primary" />
+                    <span>marie.dubois@immobilier.fr</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle className="text-2xl">Détails</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
                   <div className="flex items-center text-foreground"><Square className="h-4 w-4 mr-2" />{property.surface}</div>
                   {property.bedrooms !== undefined && (
                     <div className="flex items-center text-foreground"><Bed className="h-4 w-4 mr-2" />{property.bedrooms} chambre(s)</div>
@@ -97,11 +128,43 @@ const PropertyDetail = () => {
                   )}
                   <div className="text-foreground">Type: {property.type}</div>
                 </div>
+
+                {/* Équipements - Mobile uniquement dans la card Détails */}
+                <div className="lg:hidden">
+                  <h3 className="text-lg font-semibold mb-3 pt-4 border-t border-border">Équipements</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                      Balcon/Terrasse
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                      Parking
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                      Cave/Cellier
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                      Ascenseur
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                      Chauffage individuel
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                      Proche transports
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          <aside className="lg:col-span-1">
+          {/* Sidebar Desktop uniquement */}
+          <aside className="hidden lg:block lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl text-primary">{property.price}</CardTitle>
@@ -149,7 +212,8 @@ const PropertyDetail = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Équipements - Desktop/Tablette uniquement */}
+          <Card className="hidden lg:block">
             <CardHeader>
               <CardTitle className="text-xl">Équipements</CardTitle>
             </CardHeader>
