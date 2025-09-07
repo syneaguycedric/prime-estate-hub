@@ -55,7 +55,6 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange }: SearchFiltersProps)
       bathrooms: "",
       parking: ""
     });
-    onFiltersChange?.(0);
   };
 
   if (!isOpen) return null;

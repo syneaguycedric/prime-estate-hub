@@ -34,28 +34,16 @@ const Index = () => {
     setSearchQuery(query);
   };
 
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setActiveFiltersCount(0);
-    // Force le rerendu des propriétés avec les filtres reset
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header 
         onOpenFilters={() => setShowFilters(true)} 
         onSearch={handleSearch}
-        onClearFilters={handleClearFilters}
         view={view}
         onViewChange={setView}
         activeFiltersCount={activeFiltersCount}
       />
-      <MobileSearchBar 
-        onSearch={handleSearch} 
-        onOpenFilters={() => setShowFilters(true)} 
-        onClearFilters={handleClearFilters}
-        activeFiltersCount={activeFiltersCount} 
-      />
+      <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} activeFiltersCount={activeFiltersCount} />
       <div className="relative">
         <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} onFiltersChange={setActiveFiltersCount} />
         <div className={`transition-all duration-300 ${showFilters ? 'ml-80' : 'ml-0'}`}>
