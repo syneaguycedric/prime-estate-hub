@@ -137,12 +137,77 @@ const PropertyDetail = () => {
           </aside>
         </div>
 
-        <section className="mt-10">
-          <h2 className="text-2xl font-semibold mb-3">Description</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Découvrez ce bien idéalement situé, offrant un excellent compromis entre confort et praticité. Lumineux, bien agencé et proche des commodités, il conviendra parfaitement à votre projet.
-          </p>
-        </section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Description</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground leading-relaxed">
+                Découvrez ce bien idéalement situé, offrant un excellent compromis entre confort et praticité. Lumineux, bien agencé et proche des commodités, il conviendra parfaitement à votre projet. Ce bien bénéficie d'une exposition optimale et d'aménagements de qualité qui sauront vous séduire.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Équipements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  Balcon/Terrasse
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  Parking
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  Cave/Cellier
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  Ascenseur
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  Chauffage individuel
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  Proche transports
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-xl">Emplacement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Centre-ville : 5 min
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Métro : 3 min à pied
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Écoles : 2 min à pied
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       {/* Minimal structured data for SEO */}
