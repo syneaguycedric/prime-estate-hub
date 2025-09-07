@@ -2,14 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
+import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 
 interface HeaderProps {
   onOpenFilters: () => void;
   onSearch: (query: string) => void;
+  view: 'grid' | 'list';
+  onViewChange: (view: 'grid' | 'list') => void;
 }
 
-const Header = ({ onOpenFilters, onSearch }: HeaderProps) => {
+const Header = ({ onOpenFilters, onSearch, view, onViewChange }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -54,6 +57,10 @@ const Header = ({ onOpenFilters, onSearch }: HeaderProps) => {
 
         {/* Navigation */}
         <nav className="flex items-center space-x-2">
+          <div className="hidden md:block">
+            <ViewToggle view={view} onViewChange={onViewChange} />
+          </div>
+          
           <Button variant="ghost" size="sm" className="hidden md:flex">
             <Heart className="h-4 w-4 mr-2" />
             Favoris

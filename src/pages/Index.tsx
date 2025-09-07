@@ -8,6 +8,7 @@ import MobileSearchBar from "@/components/sections/MobileSearchBar";
 const Index = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [view, setView] = useState<'grid' | 'list'>('grid');
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -15,12 +16,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onOpenFilters={() => setShowFilters(true)} onSearch={handleSearch} />
+      <Header 
+        onOpenFilters={() => setShowFilters(true)} 
+        onSearch={handleSearch}
+        view={view}
+        onViewChange={setView}
+      />
       <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} />
       <div className="relative">
         <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} />
         <div className={`transition-all duration-300 ${showFilters ? 'ml-80' : 'ml-0'}`}>
-          <FeaturedProperties searchQuery={searchQuery} />
+          <FeaturedProperties searchQuery={searchQuery} view={view} />
           <Footer />
         </div>
       </div>

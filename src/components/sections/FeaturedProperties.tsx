@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import PropertyCard from "@/components/ui/property-card";
+import PropertyListCard from "@/components/ui/property-list-card";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -14,11 +15,12 @@ import { properties } from "@/data/properties";
 
 interface FeaturedPropertiesProps {
   searchQuery?: string;
+  view: 'grid' | 'list';
 }
 
 const PAGE_SIZE = 12;
 
-const FeaturedProperties = ({ searchQuery = "" }: FeaturedPropertiesProps) => {
+const FeaturedProperties = ({ searchQuery = "", view }: FeaturedPropertiesProps) => {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
 
@@ -57,9 +59,16 @@ const FeaturedProperties = ({ searchQuery = "" }: FeaturedPropertiesProps) => {
             Aucun bien ne correspond à votre recherche.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
+          <div className={view === 'grid' 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12"
+            : "space-y-3 mb-12"
+          }>
             {paginatedProperties.map((property) => (
-              <PropertyCard key={property.id} {...property} />
+              view === 'grid' ? (
+                <PropertyCard key={property.id} {...property} />
+              ) : (
+                <PropertyListCard key={property.id} {...property} />
+              )
             ))}
           </div>
         )}
