@@ -82,15 +82,15 @@ const SearchFilters = ({ isOpen, onClose }: SearchFiltersProps) => {
           </div>
           <div className="px-2">
             <Slider
-              defaultValue={[200000]}
-              max={1000000}
-              min={50000}
-              step={10000}
+              defaultValue={[82500000]}
+              max={412500000}
+              min={20625000}
+              step={4125000}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>50k€</span>
-              <span>1M€</span>
+              <span>20M FCFA</span>
+              <span>412M FCFA</span>
             </div>
           </div>
         </div>
