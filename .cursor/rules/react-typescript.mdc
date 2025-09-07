@@ -1,0 +1,87 @@
+---
+description: Règles pour le développement React avec TypeScript, optimisées pour les projets utilisant shadcn/ui et Tailwind CSS
+globs: ["**/*.tsx", "**/*.ts", "src/**/*"]
+alwaysApply: true
+---
+
+# Règles React TypeScript - Kylimmo
+
+## Architecture et Structure
+
+- **Composants fonctionnels uniquement** : Utiliser exclusivement des composants fonctionnels avec des hooks
+- **TypeScript strict** : Toujours typer les props, états et fonctions avec des interfaces explicites
+- **Structure de dossiers** : Respecter l'organisation `src/components/{layout|sections|ui}`, `src/pages`, `src/hooks`, `src/lib`
+- **Import paths** : Utiliser les alias `@/` pour tous les imports internes
+
+## Composants et Props
+
+- **Interfaces de props** : Définir des interfaces TypeScript pour toutes les props de composants
+- **Props optionnelles** : Marquer clairement les props optionnelles avec `?` et fournir des valeurs par défaut
+- **Props children** : Utiliser `React.ReactNode` pour les props children
+- **Forward refs** : Utiliser `React.forwardRef` pour les composants qui doivent exposer des refs
+
+## Hooks et État
+
+- **Hooks personnalisés** : Créer des hooks personnalisés pour la logique réutilisable (ex: `use-mobile.tsx`)
+- **État local** : Utiliser `useState` pour l'état local simple
+- **Effets** : Utiliser `useEffect` avec des dépendances appropriées et cleanup functions
+- **Mémoisation** : Utiliser `useMemo` et `useCallback` pour optimiser les performances
+
+## shadcn/ui et Tailwind CSS
+
+- **Composants UI** : Utiliser exclusivement les composants shadcn/ui du dossier `src/components/ui/`
+- **Variants** : Utiliser les variants définis dans les composants (ex: `variant="hero"`, `variant="accent"`)
+- **Classes Tailwind** : Utiliser les classes Tailwind avec les variables CSS personnalisées (ex: `bg-primary`, `text-foreground`)
+- **Responsive design** : Toujours implémenter le responsive avec les breakpoints Tailwind
+- **Animations** : Utiliser les classes d'animation Tailwind et les transitions CSS personnalisées
+
+## Gestion des Données
+
+- **Types de données** : Définir des interfaces TypeScript pour toutes les structures de données
+- **Données mockées** : Utiliser le fichier `src/data/properties.ts` comme modèle pour les données
+- **Filtrage et recherche** : Implémenter la logique de filtrage avec `useMemo` pour les performances
+- **Pagination** : Utiliser la pagination avec des composants shadcn/ui
+
+## Navigation et Routing
+
+- **React Router** : Utiliser `react-router-dom` pour la navigation
+- **Routes dynamiques** : Utiliser les paramètres de route avec `useParams`
+- **Navigation programmatique** : Utiliser `useNavigate` pour la navigation programmatique
+- **Breadcrumbs** : Utiliser le composant `PageNavbar` pour la navigation contextuelle
+
+## Performance et Optimisation
+
+- **Lazy loading** : Utiliser `loading="lazy"` pour les images
+- **Memoization** : Utiliser `React.memo` pour les composants qui re-rendent souvent
+- **Code splitting** : Implémenter le code splitting avec `React.lazy` si nécessaire
+- **Bundle optimization** : Optimiser les imports pour réduire la taille du bundle
+
+## Accessibilité et SEO
+
+- **Alt text** : Toujours fournir des textes alternatifs descriptifs pour les images
+- **ARIA labels** : Utiliser les attributs ARIA appropriés
+- **Semantic HTML** : Utiliser les éléments HTML sémantiques appropriés
+- **Meta tags** : Gérer les meta tags dynamiquement pour le SEO
+- **Structured data** : Implémenter les données structurées JSON-LD
+
+## Gestion des Erreurs
+
+- **Error boundaries** : Implémenter des error boundaries pour capturer les erreurs
+- **404 pages** : Utiliser le composant `NotFound` pour les pages inexistantes
+- **Loading states** : Implémenter des états de chargement appropriés
+- **Error handling** : Gérer les erreurs avec des try-catch et des états d'erreur
+
+## Mobile et Responsive
+
+- **Mobile-first** : Développer avec une approche mobile-first
+- **Breakpoints** : Utiliser les breakpoints Tailwind : `sm:`, `md:`, `lg:`, `xl:`, `2xl:`
+- **Touch interactions** : Optimiser les interactions tactiles
+- **Viewport** : Gérer correctement le viewport et les meta tags
+
+## Code Quality
+
+- **ESLint** : Respecter les règles ESLint configurées
+- **Prettier** : Utiliser Prettier pour le formatage du code
+- **Naming conventions** : Utiliser camelCase pour les variables et PascalCase pour les composants
+- **Comments** : Commenter le code complexe et les logiques métier
+- **Type safety** : Éviter `any` et utiliser des types stricts

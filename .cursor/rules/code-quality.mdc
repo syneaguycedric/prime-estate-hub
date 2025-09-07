@@ -1,0 +1,110 @@
+---
+description: Règles de qualité de code et conventions pour le projet Kylimmo
+globs: ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.json"]
+alwaysApply: true
+---
+
+# Règles de Qualité de Code - Kylimmo
+
+## Conventions de Nommage
+
+- **Composants** : PascalCase pour les composants React (`PropertyCard`, `SearchFilters`)
+- **Fichiers** : kebab-case pour les fichiers (`property-card.tsx`, `search-filters.tsx`)
+- **Variables** : camelCase pour les variables et fonctions (`searchQuery`, `handleSearch`)
+- **Constantes** : UPPER_SNAKE_CASE pour les constantes (`PAGE_SIZE`, `MOBILE_BREAKPOINT`)
+- **Interfaces** : PascalCase avec préfixe I optionnel (`Property`, `SearchFiltersProps`)
+
+## Structure des Fichiers
+
+- **Imports** : Organiser les imports par ordre (React, librairies, composants, types)
+- **Exports** : Utiliser les exports nommés par défaut, exports par défaut pour les composants
+- **Organisation** : Grouper les imports, types, composants, et exports
+- **Commentaires** : Commenter les sections complexes et la logique métier
+
+## TypeScript
+
+- **Types stricts** : Éviter `any`, utiliser des types explicites
+- **Interfaces** : Définir des interfaces pour toutes les structures de données
+- **Props** : Typer toutes les props de composants avec des interfaces
+- **Hooks** : Typer les valeurs de retour des hooks personnalisés
+- **Events** : Typer correctement les événements React
+
+## React Best Practices
+
+- **Composants purs** : Éviter les effets de bord dans les composants
+- **Props drilling** : Éviter le props drilling, utiliser Context si nécessaire
+- **Key props** : Utiliser des clés stables et uniques pour les listes
+- **Conditional rendering** : Utiliser des patterns clairs pour le rendu conditionnel
+- **Error boundaries** : Implémenter des error boundaries appropriés
+
+## Gestion d'État
+
+- **État local** : Utiliser `useState` pour l'état local simple
+- **État complexe** : Utiliser `useReducer` pour l'état complexe
+- **État global** : Utiliser Context API pour l'état global
+- **État serveur** : Utiliser React Query pour l'état serveur
+- **État persistant** : Utiliser localStorage/sessionStorage pour la persistance
+
+## Gestion des Erreurs
+
+- **Try-catch** : Utiliser try-catch pour les opérations asynchrones
+- **Error boundaries** : Implémenter des error boundaries pour capturer les erreurs
+- **Error states** : Gérer les états d'erreur dans les composants
+- **Error logging** : Logger les erreurs pour le debugging
+- **Fallback UI** : Fournir des interfaces de fallback pour les erreurs
+
+## Tests
+
+- **Unit tests** : Écrire des tests unitaires pour les fonctions utilitaires
+- **Component tests** : Tester les composants avec React Testing Library
+- **Integration tests** : Tester l'intégration entre les composants
+- **E2E tests** : Implémenter des tests end-to-end pour les flux critiques
+- **Test coverage** : Maintenir une couverture de tests appropriée
+
+## Documentation
+
+- **README** : Maintenir un README à jour avec les instructions d'installation
+- **Code comments** : Commenter le code complexe et la logique métier
+- **JSDoc** : Utiliser JSDoc pour documenter les fonctions et composants
+- **Type comments** : Commenter les types complexes
+- **API documentation** : Documenter les APIs et interfaces
+
+## Sécurité
+
+- **XSS prevention** : Éviter l'injection XSS avec `dangerouslySetInnerHTML`
+- **Input validation** : Valider toutes les entrées utilisateur
+- **Sanitization** : Nettoyer les données avant l'affichage
+- **HTTPS** : Utiliser HTTPS en production
+- **CSP** : Implémenter Content Security Policy
+
+## Performance
+
+- **Bundle size** : Surveiller la taille du bundle
+- **Lazy loading** : Utiliser le lazy loading pour les composants
+- **Memoization** : Utiliser la mémorisation appropriée
+- **Debouncing** : Utiliser le debouncing pour les événements fréquents
+- **Virtual scrolling** : Implémenter le virtual scrolling pour les longues listes
+
+## Accessibilité
+
+- **ARIA** : Utiliser les attributs ARIA appropriés
+- **Keyboard navigation** : Permettre la navigation au clavier
+- **Screen readers** : Optimiser pour les lecteurs d'écran
+- **Color contrast** : Assurer un contraste suffisant
+- **Focus management** : Gérer le focus correctement
+
+## Maintenance
+
+- **Code review** : Effectuer des code reviews systématiques
+- **Refactoring** : Refactoriser le code régulièrement
+- **Dependencies** : Maintenir les dépendances à jour
+- **Deprecation** : Gérer la dépréciation des APIs
+- **Migration** : Planifier les migrations de versions
+
+## Outils de Qualité
+
+- **ESLint** : Utiliser ESLint pour la détection d'erreurs
+- **Prettier** : Utiliser Prettier pour le formatage
+- **TypeScript** : Utiliser TypeScript pour la sécurité des types
+- **Husky** : Utiliser Husky pour les hooks Git
+- **Lint-staged** : Utiliser lint-staged pour le linting pré-commit

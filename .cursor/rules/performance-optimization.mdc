@@ -1,0 +1,95 @@
+---
+description: Règles d'optimisation des performances pour React et Vite
+globs: ["**/*.tsx", "**/*.ts", "vite.config.ts", "package.json"]
+alwaysApply: true
+---
+
+# Règles d'Optimisation des Performances - Kylimmo
+
+## Optimisation React
+
+- **React.memo** : Utiliser pour les composants qui re-rendent souvent sans changement de props
+- **useMemo** : Mémoriser les calculs coûteux et les objets complexes
+- **useCallback** : Mémoriser les fonctions passées en props pour éviter les re-renders
+- **Lazy loading** : Utiliser `React.lazy` et `Suspense` pour le code splitting
+- **Virtual scrolling** : Implémenter pour les longues listes de biens
+
+## Optimisation des Images
+
+- **Lazy loading** : Utiliser `loading="lazy"` sur toutes les images
+- **Formats optimaux** : Utiliser WebP avec fallback JPEG/PNG
+- **Tailles appropriées** : Fournir des images aux bonnes dimensions
+- **Compression** : Optimiser la compression sans perte de qualité
+- **Placeholders** : Utiliser des placeholders pendant le chargement
+
+## Optimisation Vite
+
+- **Tree shaking** : Importer uniquement les modules nécessaires
+- **Code splitting** : Diviser le code en chunks appropriés
+- **Pre-bundling** : Optimiser les dépendances avec Vite
+- **HMR** : Utiliser le Hot Module Replacement pour le développement
+- **Build optimization** : Optimiser la configuration de build
+
+## Optimisation Bundle
+
+- **Import analysis** : Analyser et optimiser les imports
+- **Dead code elimination** : Éliminer le code mort
+- **Minification** : Minifier le code JavaScript et CSS
+- **Compression** : Utiliser la compression gzip/brotli
+- **Chunk splitting** : Diviser le bundle en chunks logiques
+
+## Optimisation des Données
+
+- **Pagination** : Limiter le nombre d'éléments affichés
+- **Filtrage côté client** : Optimiser les opérations de filtrage avec useMemo
+- **Cache local** : Implémenter un cache pour les données fréquemment utilisées
+- **Debouncing** : Utiliser le debouncing pour les recherches
+- **Throttling** : Utiliser le throttling pour les événements fréquents
+
+## Optimisation CSS
+
+- **Tailwind purging** : Configurer le purging CSS pour éliminer les classes inutilisées
+- **Critical CSS** : Inline le CSS critique
+- **CSS splitting** : Diviser le CSS en chunks
+- **Unused CSS** : Éliminer le CSS non utilisé
+- **CSS variables** : Utiliser les variables CSS pour la cohérence
+
+## Optimisation du Réseau
+
+- **HTTP/2** : Utiliser HTTP/2 pour le multiplexing
+- **CDN** : Utiliser un CDN pour les assets statiques
+- **Caching** : Configurer des headers de cache appropriés
+- **Compression** : Activer la compression gzip/brotli
+- **Preloading** : Précharger les ressources critiques
+
+## Optimisation Mobile
+
+- **Touch optimization** : Optimiser les interactions tactiles
+- **Viewport** : Configurer correctement le viewport
+- **Responsive images** : Utiliser des images responsives
+- **Mobile-first** : Développer avec une approche mobile-first
+- **Performance budget** : Définir un budget de performance
+
+## Monitoring des Performances
+
+- **Core Web Vitals** : Surveiller LCP, FID, CLS
+- **Bundle analyzer** : Analyser la taille du bundle
+- **Performance profiling** : Profiler les performances avec React DevTools
+- **Lighthouse** : Utiliser Lighthouse pour l'audit des performances
+- **Real User Monitoring** : Implémenter le RUM pour le monitoring
+
+## Optimisation des Composants
+
+- **Component splitting** : Diviser les gros composants en plus petits
+- **Props optimization** : Optimiser les props pour éviter les re-renders
+- **State optimization** : Optimiser la gestion de l'état
+- **Effect optimization** : Optimiser les useEffect avec des dépendances appropriées
+- **Ref optimization** : Utiliser les refs pour éviter les re-renders
+
+## Optimisation des Hooks
+
+- **Custom hooks** : Créer des hooks personnalisés pour la réutilisabilité
+- **Hook dependencies** : Optimiser les dépendances des hooks
+- **Hook cleanup** : Implémenter le cleanup dans les hooks
+- **Hook memoization** : Utiliser la mémorisation dans les hooks
+- **Hook composition** : Composer les hooks pour la réutilisabilité

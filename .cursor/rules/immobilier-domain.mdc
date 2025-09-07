@@ -1,0 +1,81 @@
+---
+description: Règles spécifiques au domaine immobilier pour le projet Kylimmo
+globs: ["**/*.tsx", "**/*.ts", "src/data/**/*", "src/components/sections/**/*"]
+alwaysApply: true
+---
+
+# Règles Domaine Immobilier - Kylimmo
+
+## Modèle de Données Immobilier
+
+- **Interface Property** : Utiliser l'interface `Property` définie dans `src/data/properties.ts`
+- **Types de biens** : Utiliser les types : "Appartement", "Maison", "Villa", "Terrain", "Commercial"
+- **Prix** : Formater les prix en FCFA avec des espaces pour la lisibilité
+- **Surface** : Toujours inclure l'unité "m²" avec la surface
+- **Localisation** : Utiliser le format "Ville, Région" (ex: "Plateau, Abidjan")
+
+## Composants Immobilier
+
+- **PropertyCard** : Utiliser pour l'affichage en grille avec toutes les informations essentielles
+- **PropertyListCard** : Utiliser pour l'affichage en liste, optimisé pour mobile
+- **PropertyMap** : Intégrer Leaflet pour l'affichage des cartes avec géocodage
+- **SearchFilters** : Implémenter des filtres complets (prix, surface, type, localisation)
+
+## Fonctionnalités Métier
+
+- **Recherche** : Implémenter la recherche par titre, localisation et type de bien
+- **Filtres** : Permettre le filtrage par prix, surface, nombre de pièces, type de transaction
+- **Favoris** : Gérer l'état des favoris avec persistance locale
+- **Pagination** : Implémenter une pagination efficace pour les listes de biens
+- **Vues** : Permettre le basculement entre vue grille et vue liste
+
+## Géolocalisation
+
+- **Coordonnées** : Utiliser les coordonnées GPS pour les villes de Côte d'Ivoire
+- **Cartes** : Intégrer OpenStreetMap avec Leaflet pour l'affichage des cartes
+- **Géocodage** : Implémenter un géocodage simple basé sur les noms de villes
+- **Marqueurs** : Afficher des marqueurs sur les cartes pour localiser les biens
+
+## UX/UI Immobilier
+
+- **Images** : Gérer les galeries d'images avec navigation par miniatures
+- **Prix** : Mettre en évidence les prix avec des couleurs et tailles appropriées
+- **Badges** : Utiliser des badges pour "Nouveau", type de bien, statut
+- **Responsive** : Optimiser l'affichage pour mobile, tablette et desktop
+- **Loading** : Implémenter des états de chargement pour les images et données
+
+## SEO Immobilier
+
+- **Meta tags** : Générer dynamiquement les meta descriptions avec les détails du bien
+- **Structured data** : Implémenter le schema.org pour les biens immobiliers
+- **URLs** : Utiliser des URLs SEO-friendly (`/biens/{id}`)
+- **Breadcrumbs** : Implémenter des breadcrumbs pour la navigation
+- **Alt text** : Fournir des descriptions d'images optimisées pour le SEO
+
+## Performance Immobilier
+
+- **Images** : Optimiser les images avec lazy loading et formats appropriés
+- **Pagination** : Limiter le nombre de biens affichés par page (12 par défaut)
+- **Filtrage** : Utiliser useMemo pour optimiser les opérations de filtrage
+- **Caching** : Implémenter un cache local pour les données des biens
+
+## Accessibilité Immobilier
+
+- **Navigation** : Permettre la navigation au clavier dans les galeries d'images
+- **Contraste** : Assurer un contraste suffisant pour les prix et informations importantes
+- **Screen readers** : Fournir des descriptions appropriées pour les éléments visuels
+- **Focus** : Gérer correctement le focus lors de la navigation entre les biens
+
+## Internationalisation
+
+- **Langue** : Utiliser le français comme langue principale
+- **Devise** : Afficher les prix en FCFA avec formatage approprié
+- **Dates** : Utiliser le format français pour les dates
+- **Localisation** : Adapter le contenu aux spécificités de la Côte d'Ivoire
+
+## Données de Test
+
+- **Variété** : Inclure différents types de biens (appartements, maisons, villas)
+- **Prix** : Varier les prix de 495 000 FCFA/mois à 1 402 500 000 FCFA
+- **Localisation** : Inclure les principales villes de Côte d'Ivoire
+- **Caractéristiques** : Varier les surfaces, nombre de pièces, et équipements

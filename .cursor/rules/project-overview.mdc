@@ -1,0 +1,93 @@
+---
+description: Vue d'ensemble du projet Kylimmo - Plateforme immobilière React
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Vue d'Ensemble du Projet Kylimmo
+
+## Description du Projet
+
+Kylimmo est une plateforme immobilière moderne développée avec React, TypeScript, et shadcn/ui. Le projet permet de rechercher, filtrer et visualiser des biens immobiliers en Côte d'Ivoire.
+
+## Stack Technologique
+
+- **Frontend** : React 18.3.1 avec TypeScript
+- **Build Tool** : Vite 5.4.19 avec SWC
+- **UI Framework** : shadcn/ui avec Radix UI
+- **Styling** : Tailwind CSS 3.4.17 avec variables CSS personnalisées
+- **Routing** : React Router DOM 6.30.1
+- **State Management** : TanStack Query 5.83.0
+- **Maps** : Leaflet 1.9.4 avec React Leaflet
+- **Icons** : Lucide React 0.462.0
+- **Forms** : React Hook Form 7.61.1 avec Zod validation
+
+## Architecture du Projet
+
+```
+src/
+├── components/
+│   ├── layout/          # Composants de mise en page (Header, Footer, etc.)
+│   ├── sections/        # Sections principales (Hero, FeaturedProperties, etc.)
+│   └── ui/              # Composants UI réutilisables (shadcn/ui)
+├── pages/               # Pages de l'application
+├── data/                # Données mockées et types
+├── hooks/               # Hooks personnalisés
+├── lib/                 # Utilitaires et configurations
+└── assets/              # Images et ressources statiques
+```
+
+## Fonctionnalités Principales
+
+- **Recherche de biens** : Recherche par titre, localisation, type
+- **Filtres avancés** : Filtrage par prix, surface, nombre de pièces
+- **Affichage flexible** : Vue grille et vue liste
+- **Détails des biens** : Pages détaillées avec galerie d'images et carte
+- **Responsive design** : Optimisé pour mobile, tablette et desktop
+- **Navigation** : Breadcrumbs et navigation contextuelle
+
+## Données et Types
+
+- **Interface Property** : Structure principale des biens immobiliers
+- **Données mockées** : 18 biens de test avec variété de types et prix
+- **Géolocalisation** : Coordonnées pour les principales villes de Côte d'Ivoire
+- **Types de biens** : Appartements, maisons, villas, terrains, commerciaux
+
+## Design System
+
+- **Couleurs** : Palette professionnelle avec variables CSS HSL
+- **Typographie** : Système de typographie cohérent
+- **Espacement** : Système d'espacement basé sur Tailwind
+- **Animations** : Transitions fluides et animations subtiles
+- **Composants** : Bibliothèque de composants réutilisables
+
+## Performance et Optimisation
+
+- **Lazy loading** : Images et composants chargés à la demande
+- **Pagination** : Pagination efficace pour les listes de biens
+- **Mémoisation** : Optimisation des re-renders avec useMemo/useCallback
+- **Bundle optimization** : Configuration Vite optimisée
+- **SEO** : Meta tags dynamiques et données structurées
+
+## Développement
+
+- **Hot Reload** : Développement avec HMR
+- **TypeScript** : Typage strict pour la sécurité
+- **ESLint** : Linting avec règles React et TypeScript
+- **Prettier** : Formatage automatique du code
+- **Git hooks** : Validation pré-commit
+
+## Déploiement
+
+- **Build** : Build optimisé avec Vite
+- **Static hosting** : Compatible avec les hébergeurs statiques
+- **Environment** : Configuration pour différents environnements
+- **Performance** : Optimisations pour la production
+
+## Maintenance
+
+- **Dépendances** : Mise à jour régulière des dépendances
+- **Code quality** : Standards de qualité élevés
+- **Documentation** : Documentation complète du code
+- **Tests** : Tests unitaires et d'intégration
+- **Monitoring** : Surveillance des performances
