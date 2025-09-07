@@ -1,13 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Bed, Bath, Square, MapPin, ArrowLeft, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { getPropertyById } from "../data/properties";
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const property = getPropertyById(id || "");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     if (!property) return;
@@ -52,12 +54,36 @@ const PropertyDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <img
-              src={property.image}
-              alt={`Photo du bien: ${property.title} – ${property.location}`}
-              loading="lazy"
-              className="w-full h-80 md:h-[28rem] object-cover rounded-lg shadow-sm"
-            />
+            {/* Image principale */}
+            <div className="mb-4">
+              <img
+                src={property.images[selectedImageIndex]}
+                alt={`Photo ${selectedImageIndex + 1} du bien: ${property.title} – ${property.location}`}
+                loading="lazy"
+                className="w-full h-80 md:h-[28rem] object-cover rounded-lg shadow-sm"
+              />
+            </div>
+
+            {/* Miniatures */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {property.images.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-all ${
+                    selectedImageIndex === index 
+                      ? 'border-primary shadow-md' 
+                      : 'border-transparent hover:border-muted-foreground/30'
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`Miniature ${index + 1}`}
+                    className="w-20 h-16 object-cover"
+                  />
+                </button>
+              ))}
+            </div>
 
             <Card className="mt-6">
               <CardHeader>

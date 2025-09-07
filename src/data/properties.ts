@@ -12,6 +12,7 @@ export interface Property {
   bedrooms?: number;
   bathrooms?: number;
   image: string;
+  images: string[];
   isNew?: boolean;
   isFavorite?: boolean;
 }
@@ -27,6 +28,7 @@ export const properties: Property[] = [
     bedrooms: 3,
     bathrooms: 2,
     image: appartement1,
+    images: [appartement1, maison1, villa1],
     isNew: true,
     isFavorite: false
   },
@@ -40,6 +42,7 @@ export const properties: Property[] = [
     bedrooms: 4,
     bathrooms: 3,
     image: maison1,
+    images: [maison1, villa1, appartement1],
     isNew: false,
     isFavorite: true
   },
@@ -53,6 +56,7 @@ export const properties: Property[] = [
     bedrooms: 5,
     bathrooms: 4,
     image: villa1,
+    images: [villa1, appartement1, maison1],
     isNew: true,
     isFavorite: false
   },
@@ -66,6 +70,7 @@ export const properties: Property[] = [
     bedrooms: 1,
     bathrooms: 1,
     image: appartement1,
+    images: [appartement1, villa1, maison1],
     isNew: false,
     isFavorite: false
   },
@@ -79,6 +84,7 @@ export const properties: Property[] = [
     bedrooms: 3,
     bathrooms: 2,
     image: maison1,
+    images: [maison1, appartement1, villa1],
     isNew: true,
     isFavorite: false
   },
@@ -92,6 +98,7 @@ export const properties: Property[] = [
     bedrooms: 3,
     bathrooms: 2,
     image: villa1,
+    images: [villa1, maison1, appartement1],
     isNew: false,
     isFavorite: true
   },
@@ -105,6 +112,7 @@ export const properties: Property[] = [
     bedrooms: 6,
     bathrooms: 5,
     image: villa1,
+    images: [villa1, appartement1, maison1],
     isNew: true,
     isFavorite: false
   },
@@ -118,6 +126,7 @@ export const properties: Property[] = [
     bedrooms: 3,
     bathrooms: 3,
     image: appartement1,
+    images: [appartement1, maison1, villa1],
     isNew: false,
     isFavorite: true
   },
@@ -131,6 +140,7 @@ export const properties: Property[] = [
     bedrooms: 5,
     bathrooms: 3,
     image: maison1,
+    images: [maison1, villa1, appartement1],
     isNew: true,
     isFavorite: false
   },
@@ -144,6 +154,7 @@ export const properties: Property[] = [
     bedrooms: 1,
     bathrooms: 1,
     image: appartement1,
+    images: [appartement1, villa1, maison1],
     isNew: false,
     isFavorite: false
   },
@@ -157,6 +168,7 @@ export const properties: Property[] = [
     bedrooms: 7,
     bathrooms: 6,
     image: villa1,
+    images: [villa1, maison1, appartement1],
     isNew: true,
     isFavorite: true
   },
@@ -170,6 +182,7 @@ export const properties: Property[] = [
     bedrooms: 4,
     bathrooms: 3,
     image: maison1,
+    images: [maison1, appartement1, villa1],
     isNew: false,
     isFavorite: false
   },
@@ -183,6 +196,7 @@ export const properties: Property[] = [
     bedrooms: 2,
     bathrooms: 2,
     image: appartement1,
+    images: [appartement1, maison1, villa1],
     isNew: true,
     isFavorite: false
   },
@@ -196,6 +210,7 @@ export const properties: Property[] = [
     bedrooms: 5,
     bathrooms: 4,
     image: villa1,
+    images: [villa1, appartement1, maison1],
     isNew: false,
     isFavorite: true
   },
@@ -209,6 +224,7 @@ export const properties: Property[] = [
     bedrooms: 3,
     bathrooms: 2,
     image: maison1,
+    images: [maison1, villa1, appartement1],
     isNew: true,
     isFavorite: false
   },
@@ -222,6 +238,7 @@ export const properties: Property[] = [
     bedrooms: 4,
     bathrooms: 3,
     image: appartement1,
+    images: [appartement1, villa1, maison1],
     isNew: false,
     isFavorite: false
   },
@@ -235,6 +252,7 @@ export const properties: Property[] = [
     bedrooms: 6,
     bathrooms: 5,
     image: villa1,
+    images: [villa1, maison1, appartement1],
     isNew: true,
     isFavorite: true
   },
@@ -248,6 +266,7 @@ export const properties: Property[] = [
     bedrooms: 5,
     bathrooms: 4,
     image: maison1,
+    images: [maison1, villa1, appartement1],
     isNew: false,
     isFavorite: false
   }
