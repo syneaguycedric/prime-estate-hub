@@ -2,19 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
+import { Search, Menu, Home, PlusCircle, User, Heart, Filter, X } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 
 interface HeaderProps {
   onOpenFilters: () => void;
   onSearch: (query: string) => void;
+  onClearFilters?: () => void;
   view: 'grid' | 'list';
   onViewChange: (view: 'grid' | 'list') => void;
   activeFiltersCount?: number;
 }
 
-const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCount = 0 }: HeaderProps) => {
+const Header = ({ onOpenFilters, onSearch, onClearFilters, view, onViewChange, activeFiltersCount = 0 }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -47,22 +48,37 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
                 onKeyDown={handleSearch}
               />
             </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onOpenFilters}
-              className="relative"
-            >
-              <Filter className="h-4 w-4" />
-              {activeFiltersCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onOpenFilters}
+                className="relative"
+              >
+                <Filter className="h-4 w-4" />
+                {activeFiltersCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+              {(activeFiltersCount > 0 || searchQuery) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    onClearFilters?.();
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  {activeFiltersCount}
-                </Badge>
+                  <X className="h-4 w-4" />
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </div>
 
