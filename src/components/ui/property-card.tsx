@@ -31,8 +31,8 @@ const PropertyCard = ({
   isFavorite = false
 }: PropertyCardProps) => {
   return (
-    <Link to={`/biens/${id}`} className="block">
-      <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-gradient-card border-border/50 cursor-pointer">
+    <Link to={`/biens/${id}`} className="block h-full">
+      <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-gradient-card border-border/50 cursor-pointer h-full flex flex-col">
         <div className="relative overflow-hidden rounded-t-lg">
           <img
             src={image}
@@ -76,33 +76,35 @@ const PropertyCard = ({
           </div>
         </div>
 
-        <CardContent className="p-4 space-y-3">
-          <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-            {title}
-          </h3>
-          
-          <div className="flex items-center text-muted-foreground text-sm">
-            <MapPin className="h-4 w-4 mr-1" />
-            {location}
-          </div>
-          
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <Square className="h-4 w-4 mr-1" />
-              {surface}
+        <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+              {title}
+            </h3>
+            
+            <div className="flex items-center text-muted-foreground text-sm">
+              <MapPin className="h-4 w-4 mr-1" />
+              {location}
             </div>
-            {bedrooms && (
+            
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center">
-                <Bed className="h-4 w-4 mr-1" />
-                {bedrooms}
+                <Square className="h-4 w-4 mr-1" />
+                {surface}
               </div>
-            )}
-            {bathrooms && (
-              <div className="flex items-center">
-                <Bath className="h-4 w-4 mr-1" />
-                {bathrooms}
-              </div>
-            )}
+              {bedrooms && (
+                <div className="flex items-center">
+                  <Bed className="h-4 w-4 mr-1" />
+                  {bedrooms}
+                </div>
+              )}
+              {bathrooms && (
+                <div className="flex items-center">
+                  <Bath className="h-4 w-4 mr-1" />
+                  {bathrooms}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex gap-2 pt-2">
