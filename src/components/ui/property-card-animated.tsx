@@ -38,18 +38,33 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
             <div onClick={handleCardClick} className="block h-full cursor-pointer">
                 <Card className="group bg-gradient-card border-border/50 cursor-pointer h-full flex flex-col overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                     <div className="relative overflow-hidden rounded-t-lg">
-                        <img src={image} alt={title} className="w-full h-48 object-cover" />
+                        <motion.img
+                            src={image}
+                            alt={title}
+                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                            whileHover={{ scale: 1.1 }}
+                            transition={{ duration: 0.3 }}
+                        />
 
-                        {/* Overlay badges */}
-                        <div className="absolute top-4 left-4 flex gap-2">
-                            {isNew && <Badge className="bg-success text-success-foreground">Nouveau</Badge>}
+                        {/* Overlay badges avec animation */}
+                        <motion.div
+                            className="absolute top-4 left-4 flex gap-2"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 + index * 0.1 }}
+                        >
+                            {isNew && (
+                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 200 }}>
+                                    <Badge className="bg-success text-success-foreground">Nouveau</Badge>
+                                </motion.div>
+                            )}
                             <Badge variant="secondary" className="bg-card/90 text-foreground">
                                 {type}
                             </Badge>
-                        </div>
+                        </motion.div>
 
-                        {/* Favorite button */}
-                        <div className="absolute top-4 right-4">
+                        {/* Favorite button avec animation */}
+                        <motion.div className="absolute top-4 right-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + index * 0.1 }}>
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -61,16 +76,16 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                             >
                                 <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
                             </Button>
-                        </div>
+                        </motion.div>
 
-                        {/* Price overlay */}
-                        <div className="absolute bottom-4 left-4">
+                        {/* Price overlay avec animation */}
+                        <motion.div className="absolute bottom-4 left-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + index * 0.1 }}>
                             <div className="bg-primary text-primary-foreground px-3 py-1 rounded-lg font-semibold shadow-lg">{price}</div>
-                        </div>
+                        </motion.div>
                     </div>
 
                     <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                        <div className="space-y-3">
+                        <motion.div className="space-y-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + index * 0.1 }}>
                             <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">{title}</h3>
 
                             <div className="flex items-center text-muted-foreground text-sm">
@@ -78,7 +93,12 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                                 {location}
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <motion.div
+                                className="flex items-center gap-4 text-sm text-muted-foreground"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 + index * 0.1 }}
+                            >
                                 <div className="flex items-center">
                                     <Square className="h-4 w-4 mr-1" />
                                     {surface}
@@ -95,10 +115,10 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                                         {bathrooms}
                                     </div>
                                 )}
-                            </div>
-                        </div>
+                            </motion.div>
+                        </motion.div>
 
-                        <div className="flex gap-2 pt-2">
+                        <motion.div className="flex gap-2 pt-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + index * 0.1 }}>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -122,7 +142,7 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                             >
                                 Contacter
                             </Button>
-                        </div>
+                        </motion.div>
                     </CardContent>
                 </Card>
             </div>
