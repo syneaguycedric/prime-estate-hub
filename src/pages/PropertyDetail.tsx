@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Bed, Bath, Square, MapPin, ArrowLeft } from "lucide-react";
+import { Bed, Bath, Square, MapPin, ArrowLeft, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPropertyById } from "../data/properties";
@@ -86,6 +86,29 @@ const PropertyDetail = () => {
               <CardContent className="space-y-3">
                 <Button className="w-full" size="lg">Appeler</Button>
                 <Button variant="outline" className="w-full" size="lg">Demander une visite</Button>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-lg">Informations de contact</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center text-sm">
+                  <User className="h-4 w-4 mr-3 text-primary" />
+                  <div>
+                    <p className="font-medium">Marie Dubois</p>
+                    <p className="text-muted-foreground">Agent immobilier</p>
+                  </div>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Phone className="h-4 w-4 mr-3 text-primary" />
+                  <span>01 23 45 67 89</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Mail className="h-4 w-4 mr-3 text-primary" />
+                  <span>marie.dubois@immobilier.fr</span>
+                </div>
               </CardContent>
             </Card>
           </aside>
