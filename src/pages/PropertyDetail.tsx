@@ -271,45 +271,71 @@ const PropertyDetail = () => {
           </Card>
 
           {/* Emplacement - Desktop/Tablette uniquement */}
-          <div className="hidden lg:block lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Emplacement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
-                </p>
-                <div className="grid grid-cols-1 gap-4 text-sm">
-                  <div className="flex items-center text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    Centre-ville : 5 min
-                  </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    Métro : 3 min à pied
-                  </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    Écoles : 2 min à pied
+          <Card className="hidden lg:block lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-xl">Emplacement & Localisation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Emplacement */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Emplacement</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 text-sm">
+                    <div className="flex items-center text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      Centre-ville : 5 min
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      Métro : 3 min à pied
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      Écoles : 2 min à pied
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Localisation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PropertyMap location={property.location} title={property.title} />
-              </CardContent>
-            </Card>
-          </div>
+                
+                {/* Localisation */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Localisation</h3>
+                  <PropertyMap location={property.location} title={property.title} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Carte mobile - Tout en bas */}
-        <div className="lg:hidden mt-6">
+        {/* Mobile - Emplacement et Carte séparées */}
+        <div className="lg:hidden mt-6 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Emplacement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
+              </p>
+              <div className="grid grid-cols-1 gap-3 text-sm">
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Centre-ville : 5 min
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Métro : 3 min à pied
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
+                  Écoles : 2 min à pied
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Localisation</CardTitle>
