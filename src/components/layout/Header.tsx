@@ -68,16 +68,16 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
 
         {/* Navigation */}
         <nav className="flex items-center space-x-2">
-          <div className="hidden lg:block">
+          <div className="hidden md:block">
             <ViewToggle view={view} onViewChange={onViewChange} />
           </div>
           
-          <Button variant="ghost" size="sm" className="hidden lg:flex">
+          <Button variant="ghost" size="sm" className="hidden md:flex">
             <Heart className="h-4 w-4 mr-2" />
             Favoris
           </Button>
           
-          <Button variant="ghost" size="sm" className="hidden lg:flex">
+          <Button variant="ghost" size="sm" className="hidden md:flex">
             <User className="h-4 w-4 mr-2" />
             Connexion
           </Button>
