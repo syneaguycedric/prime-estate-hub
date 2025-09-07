@@ -34,8 +34,8 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
           <span className="text-xl font-bold text-foreground">Kylimmo</span>
         </div>
 
-        {/* Search Bar - Hidden on mobile */}
-        <div className="hidden md:flex flex-1 max-w-md mx-8">
+        {/* Search Bar - Hidden on mobile and tablet */}
+        <div className="hidden lg:flex flex-1 max-w-md mx-8">
           <div className="relative w-full flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -68,16 +68,16 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
 
         {/* Navigation */}
         <nav className="flex items-center space-x-2">
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <ViewToggle view={view} onViewChange={onViewChange} />
           </div>
           
-          <Button variant="ghost" size="sm" className="hidden md:flex">
+          <Button variant="ghost" size="sm" className="hidden lg:flex">
             <Heart className="h-4 w-4 mr-2" />
             Favoris
           </Button>
           
-          <Button variant="ghost" size="sm" className="hidden md:flex">
+          <Button variant="ghost" size="sm" className="hidden lg:flex">
             <User className="h-4 w-4 mr-2" />
             Connexion
           </Button>
@@ -90,7 +90,7 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
           <Button 
             variant="ghost" 
             size="sm" 
-            className="md:hidden"
+            className="sm:hidden"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <Menu className="h-4 w-4" />

@@ -27,7 +27,7 @@ const MobileSearchBar = ({ onSearch, onOpenFilters, activeFiltersCount = 0 }: Mo
   };
 
   return (
-    <div className="md:hidden sticky top-16 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border p-4">
+    <div className="lg:hidden sticky top-16 z-40 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border p-4">
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
