@@ -209,6 +209,28 @@ const PropertyDetail = () => {
               <p className="text-muted-foreground leading-relaxed">
                 Découvrez ce bien idéalement situé, offrant un excellent compromis entre confort et praticité. Lumineux, bien agencé et proche des commodités, il conviendra parfaitement à votre projet. Ce bien bénéficie d'une exposition optimale et d'aménagements de qualité qui sauront vous séduire.
               </p>
+              
+              {/* Emplacement - Mobile uniquement dans la card Description */}
+              <div className="lg:hidden">
+                <h3 className="text-lg font-semibold mb-3 pt-6 border-t border-border">Emplacement</h3>
+                <p className="text-muted-foreground mb-4">
+                  Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles : commerces, écoles, transports en commun et espaces verts.
+                </p>
+                <div className="grid grid-cols-1 gap-3 text-sm">
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    Centre-ville : 5 min
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    Métro : 3 min à pied
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    Écoles : 2 min à pied
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -247,7 +269,8 @@ const PropertyDetail = () => {
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2">
+          {/* Emplacement - Desktop/Tablette uniquement */}
+          <Card className="hidden lg:block lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-xl">Emplacement</CardTitle>
             </CardHeader>
