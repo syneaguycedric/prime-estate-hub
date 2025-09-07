@@ -27,7 +27,7 @@ const PropertyListCard = ({
   images,
 }: PropertyListCardProps) => {
   return (
-    <Link to={`/biens/${id}`}>
+    <Link to={`/biens/${id}`} className="block mb-4">
       <Card className="group hover:shadow-md transition-all duration-300 hover:border-primary/30">
         <CardContent className="p-3">
           <div className="flex gap-3">
