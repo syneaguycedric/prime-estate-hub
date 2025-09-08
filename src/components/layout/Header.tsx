@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Menu, Home, PlusCircle, User, Heart, Filter } from "lucide-react";
+import { Search, Menu, Home, PlusCircle, User, Heart, Filter, RotateCcw } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
@@ -11,12 +11,13 @@ import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 interface HeaderProps {
     onOpenFilters: () => void;
     onSearch: (query: string) => void;
+    onReset: () => void;
     view: "grid" | "list";
     onViewChange: (view: "grid" | "list") => void;
     activeFiltersCount?: number;
 }
 
-const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCount = 0 }: HeaderProps) => {
+const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFiltersCount = 0 }: HeaderProps) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { navigateWithTransition } = useNavigationTransition();
@@ -24,8 +25,13 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && searchQuery.trim()) {
             onSearch(searchQuery);
-            onOpenFilters();
+            onOpenFilters(); // Ouvrir automatiquement les filtres sur tablette/desktop
         }
+    };
+
+    const handleReset = () => {
+        setSearchQuery("");
+        onReset();
     };
 
     const handleHomeClick = () => {
@@ -76,6 +82,9 @@ const Header = ({ onOpenFilters, onSearch, view, onViewChange, activeFiltersCoun
                                     {activeFiltersCount}
                                 </Badge>
                             )}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleReset} title="Réinitialiser les filtres et la recherche">
+                            <RotateCcw className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
