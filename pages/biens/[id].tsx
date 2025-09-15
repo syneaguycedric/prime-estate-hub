@@ -1,0 +1,541 @@
+import { useState } from "react";
+import { GetServerSideProps } from "next";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import { motion } from "framer-motion";
+import { Bed, Bath, Square, MapPin, Phone, Mail, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPropertyById, Property } from "@/data/properties";
+import PageNavbar from "@/components/layout/PageNavbar";
+// Import dynamique temporairement désactivé
+
+interface PropertyDetailPageProps {
+    property: Property | null;
+    seoData: {
+        title: string;
+        description: string;
+        keywords: string;
+        canonicalUrl: string;
+        ogImage: string;
+    };
+}
+
+const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
+    const router = useRouter();
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+    // Gestion des erreurs
+    if (router.isFallback) {
+        return (
+            <div className="bg-background">
+                <PageNavbar breadcrumbs={[{ label: "Chargement..." }]} />
+                <main className="container py-16 pt-20">
+                    <div className="flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                            <p className="text-muted-foreground">Chargement du bien...</p>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    if (!property) {
+        return (
+            <>
+                <Head>
+                    <title>Bien introuvable - Kylimmo</title>
+                    <meta name="description" content="Le bien immobilier demandé n'a pas été trouvé." />
+                    <meta name="robots" content="noindex, nofollow" />
+                </Head>
+                <div className="bg-background">
+                    <PageNavbar breadcrumbs={[{ label: "Bien introuvable" }]} />
+                    <main className="container py-16 pt-20">
+                        <h1 className="text-2xl font-bold text-foreground">Bien introuvable</h1>
+                        <p className="text-muted-foreground mt-2">Le bien demandé n'existe pas ou a été déplacé.</p>
+                        <Button onClick={() => router.push("/")} className="mt-4">
+                            Retour à l'accueil
+                        </Button>
+                    </main>
+                </div>
+            </>
+        );
+    }
+
+    return (
+        <>
+            <Head>
+                <title>{seoData.title}</title>
+                <meta name="description" content={seoData.description} />
+                <meta name="keywords" content={seoData.keywords} />
+                <link rel="canonical" href={seoData.canonicalUrl} />
+
+                {/* Open Graph / Facebook */}
+                <meta property="og:title" content={seoData.title} />
+                <meta property="og:description" content={seoData.description} />
+                <meta property="og:url" content={seoData.canonicalUrl} />
+                <meta property="og:type" content="article" />
+                <meta property="og:image" content={seoData.ogImage} />
+                <meta property="og:image:width" content="1200" />
+                <meta property="og:image:height" content="630" />
+                <meta property="og:image:alt" content={`Photo de ${property.title}`} />
+
+                {/* Twitter Card */}
+                <meta name="twitter:title" content={seoData.title} />
+                <meta name="twitter:description" content={seoData.description} />
+                <meta name="twitter:image" content={seoData.ogImage} />
+                <meta name="twitter:card" content="summary_large_image" />
+
+                {/* Preload de l'image principale */}
+                <link rel="preload" as="image" href={property.images[0]} />
+
+                {/* Structured Data - Real Estate Listing */}
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "RealEstateListing",
+                            name: property.title,
+                            description: `${property.type} de ${property.surface} situé à ${property.location}`,
+                            url: seoData.canonicalUrl,
+                            image: property.images,
+                            priceRange: property.price,
+                            address: {
+                                "@type": "PostalAddress",
+                                addressLocality: property.location.split(", ")[0],
+                                addressRegion: property.location.split(", ")[1] || property.location.split(", ")[0],
+                                addressCountry: "CI",
+                            },
+                            floorSize: {
+                                "@type": "QuantitativeValue",
+                                value: parseInt(property.surface.replace(/\D/g, "")),
+                                unitText: "m²",
+                            },
+                            ...(property.bedrooms && {
+                                numberOfRooms: property.bedrooms,
+                            }),
+                            ...(property.bathrooms && {
+                                numberOfBathroomsTotal: property.bathrooms,
+                            }),
+                            category: property.type,
+                            availableAtOrFrom: {
+                                "@type": "Place",
+                                address: {
+                                    "@type": "PostalAddress",
+                                    addressLocality: property.location.split(", ")[0],
+                                    addressRegion: property.location.split(", ")[1] || property.location.split(", ")[0],
+                                    addressCountry: "CI",
+                                },
+                            },
+                            offers: {
+                                "@type": "Offer",
+                                price: property.price,
+                                priceCurrency: "XOF",
+                                availability: "https://schema.org/InStock",
+                                seller: {
+                                    "@type": "Organization",
+                                    name: "Kylimmo",
+                                },
+                            },
+                        }),
+                    }}
+                />
+            </Head>
+
+            <div className="bg-background">
+                <PageNavbar breadcrumbs={[{ label: "Biens immobiliers", href: "/" }]} />
+                <main>
+                    <section className="container py-6 pt-20">
+                        <motion.h1
+                            className="text-3xl md:text-4xl font-bold text-foreground mb-2"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        >
+                            {property.title}
+                        </motion.h1>
+                        <motion.p
+                            className="text-lg text-muted-foreground mb-6 flex items-center"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        >
+                            <MapPin className="h-4 w-4 mr-2" />
+                            {property.location}
+                        </motion.p>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                {/* Image principale */}
+                                <motion.div
+                                    className="mb-4"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                >
+                                    <motion.img
+                                        src={property.images[selectedImageIndex]}
+                                        alt={`Photo ${selectedImageIndex + 1} du bien: ${property.title} – ${property.location}`}
+                                        loading={selectedImageIndex === 0 ? "eager" : "lazy"}
+                                        className="w-full h-80 md:h-[28rem] object-cover rounded-lg shadow-sm"
+                                        key={selectedImageIndex}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                    />
+                                </motion.div>
+
+                                {/* Miniatures */}
+                                <motion.div
+                                    className="flex gap-2 overflow-x-auto pb-2"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                >
+                                    {property.images.map((image, index) => (
+                                        <motion.button
+                                            key={index}
+                                            onClick={() => setSelectedImageIndex(index)}
+                                            className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-all ${
+                                                selectedImageIndex === index ? "border-primary shadow-md" : "border-transparent hover:border-muted-foreground/30"
+                                            }`}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.4 + index * 0.05 }}
+                                        >
+                                            <img src={image} alt={`Miniature ${index + 1}`} className="w-20 h-16 object-cover" loading="lazy" />
+                                        </motion.button>
+                                    ))}
+                                </motion.div>
+
+                                {/* Card Prix - Mobile uniquement */}
+                                <Card className="mt-4 lg:hidden">
+                                    <CardHeader>
+                                        <CardTitle className="text-2xl text-primary">{property.price}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <Button className="w-full" size="lg">
+                                            Appeler
+                                        </Button>
+                                        <Button variant="outline" className="w-full" size="lg">
+                                            Demander une visite
+                                        </Button>
+
+                                        {/* Informations de contact - Mobile uniquement */}
+                                        <div className="pt-4 border-t border-border space-y-3">
+                                            <h3 className="text-lg font-semibold">Informations de contact</h3>
+                                            <div className="flex items-center text-sm">
+                                                <User className="h-4 w-4 mr-3 text-primary" />
+                                                <div>
+                                                    <p className="font-medium">Marie Dubois</p>
+                                                    <p className="text-muted-foreground">Agent immobilier</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center text-sm">
+                                                <Phone className="h-4 w-4 mr-3 text-primary" />
+                                                <span>01 23 45 67 89</span>
+                                            </div>
+                                            <div className="flex items-center text-sm">
+                                                <Mail className="h-4 w-4 mr-3 text-primary" />
+                                                <span>marie.dubois@immobilier.fr</span>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="mt-6">
+                                    <CardHeader>
+                                        <CardTitle className="text-2xl">Détails</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
+                                            <div className="flex items-center text-foreground">
+                                                <Square className="h-4 w-4 mr-2" />
+                                                {property.surface}
+                                            </div>
+                                            {property.bedrooms !== undefined && (
+                                                <div className="flex items-center text-foreground">
+                                                    <Bed className="h-4 w-4 mr-2" />
+                                                    {property.bedrooms} chambre(s)
+                                                </div>
+                                            )}
+                                            {property.bathrooms !== undefined && (
+                                                <div className="flex items-center text-foreground">
+                                                    <Bath className="h-4 w-4 mr-2" />
+                                                    {property.bathrooms} salle(s) de bain
+                                                </div>
+                                            )}
+                                            <div className="text-foreground">Type: {property.type}</div>
+                                        </div>
+
+                                        {/* Caractéristiques - Mobile uniquement dans la card Détails */}
+                                        <div className="lg:hidden">
+                                            <h3 className="text-lg font-semibold mb-3 pt-4 border-t border-border">Caractéristiques</h3>
+                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    Balcon/Terrasse
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    Parking
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    Cave/Cellier
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    Ascenseur
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    Chauffage individuel
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    Proche transports
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Sidebar Desktop uniquement */}
+                            <aside className="hidden lg:block lg:col-span-1">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-2xl text-primary">{property.price}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <Button className="w-full" size="lg">
+                                            Appeler
+                                        </Button>
+                                        <Button variant="outline" className="w-full" size="lg">
+                                            Demander une visite
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="mt-4">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Informations de contact</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="flex items-center text-sm">
+                                            <User className="h-4 w-4 mr-3 text-primary" />
+                                            <div>
+                                                <p className="font-medium">Marie Dubois</p>
+                                                <p className="text-muted-foreground">Agent immobilier</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center text-sm">
+                                            <Phone className="h-4 w-4 mr-3 text-primary" />
+                                            <span>01 23 45 67 89</span>
+                                        </div>
+                                        <div className="flex items-center text-sm">
+                                            <Mail className="h-4 w-4 mr-3 text-primary" />
+                                            <span>marie.dubois@immobilier.fr</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </aside>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl">Description</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                        Découvrez ce bien idéalement situé, offrant un excellent compromis entre confort et praticité. Lumineux, bien agencé et proche des
+                                        commodités, il conviendra parfaitement à votre projet. Ce bien bénéficie d'une exposition optimale et d'aménagements de qualité qui sauront
+                                        vous séduire.
+                                    </p>
+
+                                    {/* Emplacement - Mobile uniquement dans la card Description */}
+                                    <div className="lg:hidden">
+                                        <h3 className="text-lg font-semibold mb-3 pt-6 border-t border-border">Emplacement</h3>
+                                        <p className="text-muted-foreground mb-4">
+                                            Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles :
+                                            commerces, écoles, transports en commun et espaces verts.
+                                        </p>
+                                        <div className="grid grid-cols-1 gap-3 text-sm mb-4">
+                                            <div className="flex items-center text-muted-foreground">
+                                                <MapPin className="h-4 w-4 mr-2 text-primary" />
+                                                Centre-ville : 5 min
+                                            </div>
+                                            <div className="flex items-center text-muted-foreground">
+                                                <MapPin className="h-4 w-4 mr-2 text-primary" />
+                                                Métro : 3 min à pied
+                                            </div>
+                                            <div className="flex items-center text-muted-foreground">
+                                                <MapPin className="h-4 w-4 mr-2 text-primary" />
+                                                Écoles : 2 min à pied
+                                            </div>
+                                        </div>
+                                        <div className="mt-4">
+                                            <h4 className="text-base font-medium mb-3 lg:hidden">Localisation</h4>
+                                            <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <p className="text-muted-foreground">Carte temporairement indisponible</p>
+                                                    <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Caractéristiques - Desktop/Tablette uniquement */}
+                            <Card className="hidden lg:block">
+                                <CardHeader>
+                                    <CardTitle className="text-xl">Caractéristiques</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                            Balcon/Terrasse
+                                        </div>
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                            Parking
+                                        </div>
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                            Cave/Cellier
+                                        </div>
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                            Ascenseur
+                                        </div>
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                            Chauffage individuel
+                                        </div>
+                                        <div className="flex items-center">
+                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                            Proche transports
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Emplacement - Desktop/Tablette uniquement */}
+                            <Card className="hidden lg:block lg:col-span-2">
+                                <CardHeader>
+                                    <CardTitle className="text-xl">Emplacement</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Emplacement */}
+                                        <div>
+                                            <p className="text-muted-foreground mb-4">
+                                                Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles :
+                                                commerces, écoles, transports en commun et espaces verts.
+                                            </p>
+                                            <div className="grid grid-cols-1 gap-3 text-sm">
+                                                <div className="flex items-center text-muted-foreground">
+                                                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                                                    Centre-ville : 5 min
+                                                </div>
+                                                <div className="flex items-center text-muted-foreground">
+                                                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                                                    Métro : 3 min à pied
+                                                </div>
+                                                <div className="flex items-center text-muted-foreground">
+                                                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                                                    Écoles : 2 min à pied
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Localisation */}
+                                        <div>
+                                            <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <p className="text-muted-foreground">Carte temporairement indisponible</p>
+                                                    <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </>
+    );
+};
+
+// Fonction pour générer les données SEO
+function generateSeoData(property: Property, baseUrl: string) {
+    return {
+        title: `${property.title} - ${property.price} | Kylimmo`,
+        description: `${property.type} de ${property.surface} à ${property.location}. ${property.bedrooms ? `${property.bedrooms} chambres, ` : ""}${
+            property.bathrooms ? `${property.bathrooms} salles de bain. ` : ""
+        }Prix: ${property.price}`,
+        keywords: `${property.type.toLowerCase()}, ${property.location.toLowerCase()}, immobilier côte d'ivoire, ${property.surface}, ${property.price.toLowerCase()}`,
+        canonicalUrl: `${baseUrl}/biens/${property.id}`,
+        ogImage: property.images[0],
+    };
+}
+
+// Server-Side Rendering pour une page de bien spécifique
+export const getServerSideProps: GetServerSideProps<PropertyDetailPageProps> = async (context) => {
+    try {
+        const { id } = context.params!;
+
+        // Construire l'URL de base
+        const protocol = context.req.headers["x-forwarded-proto"] || "http";
+        const host = context.req.headers["x-forwarded-host"] || context.req.headers.host;
+        const baseUrl = `${protocol}://${host}`;
+
+        // Récupérer le bien immobilier
+        const property = getPropertyById(id as string);
+
+        if (!property) {
+            // Retourner 404 si le bien n'existe pas
+            return {
+                notFound: true,
+            };
+        }
+
+        // Génération des données SEO
+        const seoData = generateSeoData(property, baseUrl);
+
+        // Simulation d'un délai de réseau (pour démontrer le loading)
+        if (process.env.NODE_ENV === "development") {
+            await new Promise((resolve) => setTimeout(resolve, 800));
+        }
+
+        // Headers pour la mise en cache - plus long pour les pages de détail
+        context.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+
+        return {
+            props: {
+                property,
+                seoData,
+            },
+        };
+    } catch (error) {
+        console.error("Error in getServerSideProps for property detail:", error);
+
+        // En cas d'erreur, retourner 404
+        return {
+            notFound: true,
+        };
+    }
+};
+
+export default PropertyDetailPage;

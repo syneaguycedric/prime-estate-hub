@@ -2,32 +2,45 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import PropertyCardAnimated from "@/components/ui/property-card-animated";
 import PropertyListCardAnimated from "@/components/ui/property-list-card-animated";
+import PropertySkeleton from "@/components/ui/property-skeleton";
 import { Input } from "@/components/ui/input";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from "@/components/ui/pagination";
-import { properties } from "@/data/properties";
+import { properties, Property } from "@/data/properties";
 
 interface FeaturedPropertiesProps {
     searchQuery?: string;
     view: "grid" | "list";
+    initialProperties?: Property[]; // Données initiales pour SSR
+    isLoading?: boolean; // État de chargement
 }
 
 const PAGE_SIZE = 12;
 
-const FeaturedProperties = ({ searchQuery = "", view }: FeaturedPropertiesProps) => {
+const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoading = false }: FeaturedPropertiesProps) => {
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState("");
 
+    // Utiliser les données initiales SSR ou fallback vers les données statiques
+    const baseProperties = useMemo(() => {
+        if (initialProperties && initialProperties.length > 0) {
+            // Si on a des données initiales SSR, les utiliser
+            return initialProperties;
+        }
+        // Fallback vers les données statiques (pour la compatibilité)
+        return properties;
+    }, [initialProperties]);
+
     const filteredProperties = useMemo(() => {
         const searchTerm = searchQuery || query;
-        if (!searchTerm.trim()) return properties;
+        if (!searchTerm.trim()) return baseProperties;
 
-        return properties.filter(
+        return baseProperties.filter(
             (property) =>
                 property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 property.type.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [searchQuery, query]);
+    }, [searchQuery, query, baseProperties]);
 
     const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PAGE_SIZE));
     const start = (page - 1) * PAGE_SIZE;
@@ -47,7 +60,9 @@ const FeaturedProperties = ({ searchQuery = "", view }: FeaturedPropertiesProps)
     return (
         <section className="py-8 bg-background">
             <div className="container">
-                {paginatedProperties.length === 0 ? (
+                {isLoading ? (
+                    <PropertySkeleton view={view} count={PAGE_SIZE} />
+                ) : paginatedProperties.length === 0 ? (
                     <motion.p className="text-center text-muted-foreground py-16" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                         Aucun bien ne correspond à votre recherche.
                     </motion.p>
@@ -58,7 +73,7 @@ const FeaturedProperties = ({ searchQuery = "", view }: FeaturedPropertiesProps)
                             layout
                             transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                         >
-                            <AnimatePresence mode="wait">
+                            <AnimatePresence>
                                 {paginatedProperties.map((property, index) => (
                                     <motion.div
                                         key={`${view}-${property.id}`}

@@ -1,6 +1,7 @@
-import appartement1 from "@/assets/appartement-1.jpg";
-import maison1 from "@/assets/maison-1.jpg";
-import villa1 from "@/assets/villa-1.jpg";
+// Remplacés par des chemins directs pour compatibilité Next.js
+const appartement1 = "/assets/appartement-1.jpg";
+const maison1 = "/assets/maison-1.jpg";
+const villa1 = "/assets/villa-1.jpg";
 
 export interface Property {
   id: string;
@@ -15,6 +16,7 @@ export interface Property {
   images: string[];
   isNew?: boolean;
   isFavorite?: boolean;
+  description?: string;
 }
 
 export const properties: Property[] = [

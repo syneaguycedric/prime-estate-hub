@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bed, Bath, Square, MapPin } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
+import ImageWithLoading from "@/components/ui/image-with-loading";
 
 interface PropertyListCardAnimatedProps {
     id: string;
@@ -49,7 +50,7 @@ const PropertyListCardAnimated = ({ id, title, price, location, type, surface, b
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
                                 >
-                                    <img src={images[0]} alt={title} loading="lazy" className="w-full h-full object-cover rounded-md" />
+                                    <ImageWithLoading src={images[0]} alt={`${title} - ${location}`} loading={index < 6 ? "eager" : "lazy"} className="w-full h-full rounded-md" />
                                 </motion.div>
 
                                 {/* Contenu avec animations échelonnées */}

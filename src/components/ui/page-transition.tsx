@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
+import { useRouter } from "next/router";
 import { ReactNode } from "react";
 
 interface PageTransitionProps {
@@ -7,11 +7,11 @@ interface PageTransitionProps {
 }
 
 const PageTransition = ({ children }: PageTransitionProps) => {
-    const location = useLocation();
+    const router = useRouter();
 
     return (
         <motion.div
-            key={location.pathname}
+            key={router.asPath}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{

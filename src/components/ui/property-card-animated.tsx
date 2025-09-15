@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, MapPin, Bed, Bath, Square, Eye } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
+import ImageWithLoading from "@/components/ui/image-with-loading";
 
 interface PropertyCardAnimatedProps {
     id: string;
@@ -38,12 +39,11 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
             <div onClick={handleCardClick} className="block h-full cursor-pointer">
                 <Card className="group bg-gradient-card border-border/50 cursor-pointer h-full flex flex-col overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                     <div className="relative overflow-hidden rounded-t-lg">
-                        <motion.img
+                        <ImageWithLoading
                             src={image}
-                            alt={title}
-                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.3 }}
+                            alt={`${title} - ${location}`}
+                            className="w-full h-48 group-hover:scale-110 transition-transform duration-300"
+                            loading={index < 4 ? "eager" : "lazy"}
                         />
 
                         {/* Overlay badges avec animation */}

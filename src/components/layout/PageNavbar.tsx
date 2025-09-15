@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,14 @@ interface PageNavbarProps {
 }
 
 const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
-    const location = useLocation();
+    const router = useRouter();
     const [isScrolled, setIsScrolled] = useState(false);
     const { navigateWithTransition } = useNavigationTransition();
 
     useEffect(() => {
+        // Vérification SSR-safe
+        if (typeof window === "undefined") return;
+
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
@@ -28,7 +31,7 @@ const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
         navigateWithTransition("/");
     };
 
-    const isHomePage = location.pathname === "/";
+    const isHomePage = router.pathname === "/";
 
     if (isHomePage) {
         return null;

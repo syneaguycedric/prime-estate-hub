@@ -34,6 +34,9 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFilt
         if (isOpen) {
             // Fonction pour gérer le scroll selon la taille d'écran
             const handleScrollManagement = () => {
+                // Vérification SSR-safe
+                if (typeof window === "undefined") return;
+
                 const isMobile = window.innerWidth < 768; // Seuil mobile à 768px
 
                 if (isMobile) {
@@ -68,7 +71,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFilt
                 document.body.style.width = "";
 
                 // Restaurer la position si elle était sauvegardée
-                if (savedScrollY !== null) {
+                if (savedScrollY !== null && typeof window !== "undefined") {
                     window.scrollTo(0, savedScrollY);
                 }
 
@@ -76,11 +79,16 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFilt
                 handleScrollManagement();
             };
 
-            window.addEventListener("resize", handleResize);
+            // Vérification SSR-safe
+            if (typeof window !== "undefined") {
+                window.addEventListener("resize", handleResize);
+            }
 
             // Cleanup function
             return () => {
-                window.removeEventListener("resize", handleResize);
+                if (typeof window !== "undefined") {
+                    window.removeEventListener("resize", handleResize);
+                }
                 document.body.style.overflow = "";
                 document.body.style.overflowX = "";
                 document.body.style.position = "";
@@ -88,7 +96,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFilt
                 document.body.style.width = "";
 
                 // Restaurer la position si elle était sauvegardée
-                if (savedScrollY !== null) {
+                if (savedScrollY !== null && typeof window !== "undefined") {
                     window.scrollTo(0, savedScrollY);
                 }
             };
