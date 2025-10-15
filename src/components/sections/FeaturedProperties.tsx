@@ -5,7 +5,8 @@ import PropertyListCardAnimated from "@/components/ui/property-list-card-animate
 import PropertySkeleton from "@/components/ui/property-skeleton";
 import { Input } from "@/components/ui/input";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from "@/components/ui/pagination";
-import { properties, Property } from "@/data/properties";
+import { Property } from "@/data/properties";
+import { searchProperties } from "@/lib/property-helpers";
 
 interface FeaturedPropertiesProps {
     searchQuery?: string;
@@ -20,26 +21,14 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState("");
 
-    // Utiliser les données initiales SSR ou fallback vers les données statiques
+    // Utiliser les données initiales SSR
     const baseProperties = useMemo(() => {
-        if (initialProperties && initialProperties.length > 0) {
-            // Si on a des données initiales SSR, les utiliser
-            return initialProperties;
-        }
-        // Fallback vers les données statiques (pour la compatibilité)
-        return properties;
+        return initialProperties || [];
     }, [initialProperties]);
 
     const filteredProperties = useMemo(() => {
         const searchTerm = searchQuery || query;
-        if (!searchTerm.trim()) return baseProperties;
-
-        return baseProperties.filter(
-            (property) =>
-                property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                property.type.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        return searchProperties(baseProperties, searchTerm);
     }, [searchQuery, query, baseProperties]);
 
     const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PAGE_SIZE));

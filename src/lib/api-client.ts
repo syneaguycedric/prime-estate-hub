@@ -25,7 +25,7 @@ class SecureApiClient {
         // En production, utiliser l'URL complète du site
         this.baseUrl = process.env.NODE_ENV === 'production'
             ? process.env.NEXT_PUBLIC_SITE_URL || ''
-            : '';
+            : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
     }
 
     /**
@@ -47,6 +47,11 @@ class SecureApiClient {
 
         // Construction de l'URL du proxy
         const proxyUrl = `${this.baseUrl}/api/proxy/${path}`;
+
+        // Log de debugging pour tracer l'URL du proxy (peut être supprimé en production)
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[API CLIENT DEBUG] Proxy URL: ${proxyUrl}`);
+        }
 
         // Headers requis pour le proxy
         const proxyHeaders: Record<string, string> = {

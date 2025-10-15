@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -6,7 +6,9 @@ import { motion } from "framer-motion";
 import { Bed, Bath, Square, MapPin, Phone, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPropertyById, Property } from "@/data/properties";
+import { Property } from "@/data/properties";
+import { fetchPropertyById } from "@/lib/directus-api";
+import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
 import PageNavbar from "@/components/layout/PageNavbar";
 // Import dynamique temporairement désactivé
 
@@ -24,23 +26,147 @@ interface PropertyDetailPageProps {
 const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
     const router = useRouter();
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [isNavigating, setIsNavigating] = useState(false);
 
-    // Gestion des erreurs
-    if (router.isFallback) {
+    // Détecter la navigation VERS cette page (pas le chargement initial)
+    useEffect(() => {
+        const handleRouteChangeStart = (url: string) => {
+            // Activer le skeleton seulement si on navigue VERS une page de détail
+            if (url.includes("/biens/")) {
+                setIsNavigating(true);
+            }
+        };
+
+        const handleRouteChangeComplete = () => {
+            setIsNavigating(false);
+        };
+
+        router.events.on("routeChangeStart", handleRouteChangeStart);
+        router.events.on("routeChangeComplete", handleRouteChangeComplete);
+        router.events.on("routeChangeError", handleRouteChangeComplete);
+
+        return () => {
+            router.events.off("routeChangeStart", handleRouteChangeStart);
+            router.events.off("routeChangeComplete", handleRouteChangeComplete);
+            router.events.off("routeChangeError", handleRouteChangeComplete);
+        };
+    }, [router.events]);
+
+    // Formater les données pour l'affichage
+    const formattedPrice = property ? formatPrice(property.price, property.billingCycle) : "";
+    const formattedSurface = property ? formatSurface(property.surfaceArea, property.surfaceAreaUnit) : "";
+    const propertyTypeLabel = property ? getPropertyTypeLabel(property.type) : "";
+    const contractTypeLabel = property ? getContractTypeLabel(property.contractType) : "";
+    const imageUrls = property ? getAllImageUrls(property) : [];
+    const characteristicsList = property ? formatCharacteristics(property.characteristics) : [];
+
+    // Afficher le skeleton pendant la navigation VERS cette page
+    if (isNavigating) {
         return (
-            <div className="bg-background">
-                <PageNavbar breadcrumbs={[{ label: "Chargement..." }]} />
+            <div className="bg-background min-h-screen">
+                <PageNavbar breadcrumbs={[{ label: "Chargement du bien..." }]} />
                 <main className="container py-16 pt-20">
-                    <div className="flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                            <p className="text-muted-foreground">Chargement du bien...</p>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Gros bloc à gauche - 2/3 de la largeur */}
+                        <div className="lg:col-span-2">
+                            {/* Titre et localisation skeleton */}
+                            <div className="mb-6">
+                                <div className="h-8 bg-gray-200 rounded-lg w-3/4 mb-3 animate-pulse"></div>
+                                <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                            </div>
+
+                            {/* Image principale skeleton */}
+                            <div className="mb-6">
+                                <div className="aspect-video bg-gray-200 rounded-lg animate-pulse"></div>
+                            </div>
+
+                            {/* Miniatures skeleton */}
+                            <div className="flex gap-3 mb-8">
+                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+
+                            {/* Section Détails skeleton */}
+                            <div className="mb-8">
+                                <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-22 animate-pulse"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Description skeleton */}
+                            <div className="mb-8">
+                                <div className="h-6 bg-gray-200 rounded w-40 mb-4 animate-pulse"></div>
+                                <div className="space-y-3">
+                                    <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sidebar à droite - 1/3 de la largeur */}
+                        <div className="lg:col-span-1">
+                            <Card className="sticky top-24">
+                                <CardContent className="p-6">
+                                    {/* Prix skeleton */}
+                                    <div className="mb-6">
+                                        <div className="h-10 bg-gray-200 rounded w-40 mb-2 animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+                                    </div>
+
+                                    {/* Boutons skeleton */}
+                                    <div className="space-y-3 mb-6">
+                                        <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+
+                                    {/* Informations de contact skeleton */}
+                                    <div>
+                                        <div className="h-6 bg-gray-200 rounded w-48 mb-4 animate-pulse"></div>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                                <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+                                            </div>
+                                            <div className="h-3 bg-gray-200 rounded w-40 animate-pulse"></div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                                <div className="h-4 bg-gray-200 rounded w-36 animate-pulse"></div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                                <div className="h-4 bg-gray-200 rounded w-44 animate-pulse"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
                 </main>
             </div>
         );
     }
+
+    // Pas de skeleton - laisser le système global gérer les transitions
 
     if (!property) {
         return (
@@ -99,7 +225,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             "@context": "https://schema.org",
                             "@type": "RealEstateListing",
                             name: property.title,
-                            description: `${property.type} de ${property.surface} situé à ${property.location}`,
+                            description: `${property.type} de ${property.surfaceArea} ${property.surfaceAreaUnit} situé à ${property.location}`,
                             url: seoData.canonicalUrl,
                             image: property.images,
                             priceRange: property.price,
@@ -111,7 +237,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             },
                             floorSize: {
                                 "@type": "QuantitativeValue",
-                                value: parseInt(property.surface.replace(/\D/g, "")),
+                                value: parseInt(property.surfaceArea?.replace(/\D/g, "") || "0"),
                                 unitText: "m²",
                             },
                             ...(property.bedrooms && {
@@ -177,7 +303,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
                                 >
                                     <motion.img
-                                        src={property.images[selectedImageIndex]}
+                                        src={imageUrls[selectedImageIndex]}
                                         alt={`Photo ${selectedImageIndex + 1} du bien: ${property.title} – ${property.location}`}
                                         loading={selectedImageIndex === 0 ? "eager" : "lazy"}
                                         className="w-full h-80 md:h-[28rem] object-cover rounded-lg shadow-sm"
@@ -195,7 +321,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                                 >
-                                    {property.images.map((image, index) => (
+                                    {imageUrls.map((imageUrl, index) => (
                                         <motion.button
                                             key={index}
                                             onClick={() => setSelectedImageIndex(index)}
@@ -208,7 +334,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: 0.4 + index * 0.05 }}
                                         >
-                                            <img src={image} alt={`Miniature ${index + 1}`} className="w-20 h-16 object-cover" loading="lazy" />
+                                            <img src={imageUrl} alt={`Miniature ${index + 1}`} className="w-20 h-16 object-cover" loading="lazy" />
                                         </motion.button>
                                     ))}
                                 </motion.div>
@@ -216,7 +342,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                 {/* Card Prix - Mobile uniquement */}
                                 <Card className="mt-4 lg:hidden">
                                     <CardHeader>
-                                        <CardTitle className="text-2xl text-primary">{property.price}</CardTitle>
+                                        <CardTitle className="text-2xl text-primary">{formattedPrice}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         <Button className="w-full" size="lg">
@@ -256,12 +382,12 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6">
                                             <div className="flex items-center text-foreground">
                                                 <Square className="h-4 w-4 mr-2" />
-                                                {property.surface}
+                                                {formattedSurface}
                                             </div>
-                                            {property.bedrooms !== undefined && (
+                                            {property.rooms !== undefined && (
                                                 <div className="flex items-center text-foreground">
                                                     <Bed className="h-4 w-4 mr-2" />
-                                                    {property.bedrooms} chambre(s)
+                                                    {property.rooms} pièce(s)
                                                 </div>
                                             )}
                                             {property.bathrooms !== undefined && (
@@ -270,39 +396,31 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                                     {property.bathrooms} salle(s) de bain
                                                 </div>
                                             )}
-                                            <div className="text-foreground">Type: {property.type}</div>
+                                            {property.kitchens !== undefined && (
+                                                <div className="flex items-center text-foreground">
+                                                    <Square className="h-4 w-4 mr-2" />
+                                                    {property.kitchens} cuisine(s)
+                                                </div>
+                                            )}
+                                            <div className="text-foreground">Type: {propertyTypeLabel}</div>
+                                            <div className="text-foreground">Contrat: {contractTypeLabel}</div>
+                                            {property.floors !== undefined && <div className="text-foreground">Étages: {property.floors}</div>}
                                         </div>
 
                                         {/* Caractéristiques - Mobile uniquement dans la card Détails */}
-                                        <div className="lg:hidden">
-                                            <h3 className="text-lg font-semibold mb-3 pt-4 border-t border-border">Caractéristiques</h3>
-                                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                                <div className="flex items-center">
-                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                                    Balcon/Terrasse
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                                    Parking
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                                    Cave/Cellier
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                                    Ascenseur
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                                    Chauffage individuel
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                                    Proche transports
+                                        {characteristicsList.length > 0 && (
+                                            <div className="lg:hidden">
+                                                <h3 className="text-lg font-semibold mb-3 pt-4 border-t border-border">Caractéristiques</h3>
+                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                    {characteristicsList.map((characteristic, index) => (
+                                                        <div key={index} className="flex items-center">
+                                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                            {characteristic}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             </div>
@@ -311,7 +429,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             <aside className="hidden lg:block lg:col-span-1">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle className="text-2xl text-primary">{property.price}</CardTitle>
+                                        <CardTitle className="text-2xl text-primary">{formattedPrice}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         <Button className="w-full" size="lg">
@@ -354,11 +472,14 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     <CardTitle className="text-xl">Description</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-muted-foreground leading-relaxed">
-                                        Découvrez ce bien idéalement situé, offrant un excellent compromis entre confort et praticité. Lumineux, bien agencé et proche des
-                                        commodités, il conviendra parfaitement à votre projet. Ce bien bénéficie d'une exposition optimale et d'aménagements de qualité qui sauront
-                                        vous séduire.
-                                    </p>
+                                    {property.description && (
+                                        <div
+                                            className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                                            dangerouslySetInnerHTML={{
+                                                __html: property.description,
+                                            }}
+                                        />
+                                    )}
 
                                     {/* Emplacement - Mobile uniquement dans la card Description */}
                                     <div className="lg:hidden">
@@ -395,39 +516,23 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             </Card>
 
                             {/* Caractéristiques - Desktop/Tablette uniquement */}
-                            <Card className="hidden lg:block">
-                                <CardHeader>
-                                    <CardTitle className="text-xl">Caractéristiques</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                            Balcon/Terrasse
+                            {characteristicsList.length > 0 && (
+                                <Card className="hidden lg:block">
+                                    <CardHeader>
+                                        <CardTitle className="text-xl">Caractéristiques</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                            {characteristicsList.map((characteristic, index) => (
+                                                <div key={index} className="flex items-center">
+                                                    <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                                                    {characteristic}
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                            Parking
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                            Cave/Cellier
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                            Ascenseur
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                            Chauffage individuel
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                                            Proche transports
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* Emplacement - Desktop/Tablette uniquement */}
                             <Card className="hidden lg:block lg:col-span-2">
@@ -482,10 +587,12 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
 function generateSeoData(property: Property, baseUrl: string) {
     return {
         title: `${property.title} - ${property.price} | Kylimmo`,
-        description: `${property.type} de ${property.surface} à ${property.location}. ${property.bedrooms ? `${property.bedrooms} chambres, ` : ""}${
-            property.bathrooms ? `${property.bathrooms} salles de bain. ` : ""
-        }Prix: ${property.price}`,
-        keywords: `${property.type.toLowerCase()}, ${property.location.toLowerCase()}, immobilier côte d'ivoire, ${property.surface}, ${property.price.toLowerCase()}`,
+        description: `${property.type} de ${property.surfaceArea} ${property.surfaceAreaUnit} à ${property.location}. ${
+            property.bedrooms ? `${property.bedrooms} chambres, ` : ""
+        }${property.bathrooms ? `${property.bathrooms} salles de bain. ` : ""}Prix: ${property.price}`,
+        keywords: `${property.type.toLowerCase()}, ${property.location.toLowerCase()}, immobilier côte d'ivoire, ${property.surfaceArea} ${
+            property.surfaceAreaUnit
+        }, ${property.price.toLowerCase()}`,
         canonicalUrl: `${baseUrl}/biens/${property.id}`,
         ogImage: property.images[0],
     };
@@ -501,8 +608,9 @@ export const getServerSideProps: GetServerSideProps<PropertyDetailPageProps> = a
         const host = context.req.headers["x-forwarded-host"] || context.req.headers.host;
         const baseUrl = `${protocol}://${host}`;
 
-        // Récupérer le bien immobilier
-        const property = getPropertyById(id as string);
+        // Récupérer le bien immobilier depuis l'API Directus
+        // Forcer le refresh pour éviter les données en cache lors des modifications
+        const property = await fetchPropertyById(id as string, true);
 
         if (!property) {
             // Retourner 404 si le bien n'existe pas
@@ -514,10 +622,7 @@ export const getServerSideProps: GetServerSideProps<PropertyDetailPageProps> = a
         // Génération des données SEO
         const seoData = generateSeoData(property, baseUrl);
 
-        // Simulation d'un délai de réseau (pour démontrer le loading)
-        if (process.env.NODE_ENV === "development") {
-            await new Promise((resolve) => setTimeout(resolve, 800));
-        }
+        // Pas de délai artificiel pour une meilleure expérience utilisateur
 
         // Headers pour la mise en cache - plus long pour les pages de détail
         context.res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");

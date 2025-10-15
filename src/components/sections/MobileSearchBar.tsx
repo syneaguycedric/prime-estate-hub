@@ -39,7 +39,7 @@ const MobileSearchBar = ({ onSearch, onOpenFilters, onReset, activeFiltersCount 
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Rechercher un bien, une ville..."
-                        className="pl-10 h-11 bg-secondary/50 border-border focus:bg-card transition-colors"
+                        className="pl-10 h-11 bg-card border-border focus:bg-card transition-colors"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyPress}

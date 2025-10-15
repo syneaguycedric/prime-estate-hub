@@ -1,274 +1,283 @@
-// Remplacés par des chemins directs pour compatibilité Next.js
+// Interfaces pour l'API Directus
+export interface DirectusFile {
+  id: string;
+  title: string;
+  description: string | null;
+  tags: string | null;
+  focal_point_x: number | null;
+  focal_point_y: number | null;
+  filename_download: string;
+  metadata: Record<string, any>;
+  type: string;
+  filesize: string;
+  width: number;
+  height: number;
+  charset: string | null;
+  duration: number | null;
+  created_on: string;
+  embed: string | null;
+  modified_on: string;
+}
+
+export interface PropertyImage {
+  directus_files_id: DirectusFile;
+}
+
+export interface Property {
+  id: string;
+  status: string;
+  sort: number | null;
+  user_created: string;
+  date_created: string;
+  user_updated: string | null;
+  date_updated: string | null;
+  title: string;
+  description: string | null;
+  price: string;
+  billingCycle: "monthly" | "yearly" | "daily";
+  contractType: "leasing" | "sale" | "rent";
+  surfaceArea: string;
+  surfaceAreaUnit: string;
+  rooms: number;
+  bathrooms: number;
+  kitchens: number;
+  floors: number;
+  address: number | string;
+  agency: string;
+  characteristics: Array<{ name: string; value: string }>;
+  type: "appartment" | "house" | "villa" | "land" | "commercial";
+  documents: number[];
+  images: PropertyImage[]; // Objets PropertyImage avec métadonnées complètes
+  // Champs calculés/dérivés pour compatibilité UI
+  location?: string; // À construire depuis address
+  isNew?: boolean; // À calculer depuis date_created
+  isFavorite?: boolean; // État local
+}
+
+// Remplacés par des chemins directs pour compatibilité Next.js (fallback)
 const appartement1 = "/assets/appartement-1.jpg";
 const maison1 = "/assets/maison-1.jpg";
 const villa1 = "/assets/villa-1.jpg";
 
-export interface Property {
-  id: string;
-  title: string;
-  price: string;
-  location: string;
-  type: string;
-  surface: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  image: string;
-  images: string[];
-  isNew?: boolean;
-  isFavorite?: boolean;
-  description?: string;
-}
-
 export const properties: Property[] = [
   {
     id: "1",
+    status: "published",
+    sort: null,
+    user_created: "mock-user-id",
+    date_created: "2024-01-15T10:00:00.000Z",
+    user_updated: null,
+    date_updated: null,
     title: "Magnifique appartement avec vue panoramique",
-    price: "185 000 000 FCFA",
-    location: "Plateau, Abidjan",
-    type: "Appartement",
-    surface: "85 m²",
-    bedrooms: 3,
+    description: "Découvrez ce magnifique appartement avec vue panoramique sur la ville.",
+    price: "185000000.00",
+    billingCycle: "monthly",
+    contractType: "sale",
+    surfaceArea: "85.00000",
+    surfaceAreaUnit: "m2",
+    rooms: 3,
     bathrooms: 2,
-    image: appartement1,
-    images: [appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1],
+    kitchens: 1,
+    floors: 1,
+    address: 1,
+    agency: "mock-agency-id",
+    characteristics: [
+      { name: "Vue", value: "Panoramique" },
+      { name: "Étage", value: "5ème" }
+    ],
+    type: "appartment",
+    documents: [],
+    images: [
+      {
+        directus_files_id: {
+          id: "mock-file-1",
+          title: "Appartement 1",
+          description: null,
+          tags: null,
+          focal_point_x: null,
+          focal_point_y: null,
+          filename_download: "appartement-1.jpg",
+          metadata: {},
+          type: "image/jpeg",
+          filesize: "150000",
+          width: 800,
+          height: 600,
+          charset: null,
+          duration: null,
+          created_on: "2024-01-15T10:00:00.000Z",
+          embed: null,
+          modified_on: "2024-01-15T10:00:00.000Z"
+        }
+      }
+    ],
+    // Champs calculés pour compatibilité
+    location: "Plateau, Abidjan",
     isNew: true,
     isFavorite: false
   },
   {
     id: "2",
+    status: "published",
+    sort: null,
+    user_created: "mock-user-id",
+    date_created: "2024-01-10T10:00:00.000Z",
+    user_updated: null,
+    date_updated: null,
     title: "Maison moderne avec jardin",
-    price: "267 500 000 FCFA",
-    location: "Cocody, Abidjan",
-    type: "Maison",
-    surface: "150 m²",
-    bedrooms: 4,
+    description: "Magnifique maison moderne avec un beau jardin, idéale pour les familles.",
+    price: "267500000.00",
+    billingCycle: "monthly",
+    contractType: "sale",
+    surfaceArea: "150.00000",
+    surfaceAreaUnit: "m2",
+    rooms: 4,
     bathrooms: 3,
-    image: maison1,
-    images: [maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1],
+    kitchens: 1,
+    floors: 2,
+    address: 2,
+    agency: "mock-agency-id",
+    characteristics: [
+      { name: "Jardin", value: "Oui" },
+      { name: "Garage", value: "2 places" }
+    ],
+    type: "house",
+    documents: [],
+    images: [
+      {
+        directus_files_id: {
+          id: "mock-file-2",
+          title: "Maison 1",
+          description: null,
+          tags: null,
+          focal_point_x: null,
+          focal_point_y: null,
+          filename_download: "maison-1.jpg",
+          metadata: {},
+          type: "image/jpeg",
+          filesize: "200000",
+          width: 800,
+          height: 600,
+          charset: null,
+          duration: null,
+          created_on: "2024-01-10T10:00:00.000Z",
+          embed: null,
+          modified_on: "2024-01-10T10:00:00.000Z"
+        }
+      }
+    ],
+    // Champs calculés pour compatibilité
+    location: "Cocody, Abidjan",
     isNew: false,
     isFavorite: true
   },
   {
     id: "3",
+    status: "published",
+    sort: null,
+    user_created: "mock-user-id",
+    date_created: "2024-01-20T10:00:00.000Z",
+    user_updated: null,
+    date_updated: null,
     title: "Villa de luxe avec piscine",
-    price: "494 000 000 FCFA",
-    location: "Grand-Bassam, Comoé",
-    type: "Villa",
-    surface: "280 m²",
-    bedrooms: 5,
+    description: "Villa de luxe exceptionnelle avec piscine privée et vue sur mer.",
+    price: "494000000.00",
+    billingCycle: "monthly",
+    contractType: "sale",
+    surfaceArea: "280.00000",
+    surfaceAreaUnit: "m2",
+    rooms: 5,
     bathrooms: 4,
-    image: villa1,
-    images: [villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1, appartement1, maison1, villa1],
+    kitchens: 2,
+    floors: 2,
+    address: 3,
+    agency: "mock-agency-id",
+    characteristics: [
+      { name: "Piscine", value: "Privée" },
+      { name: "Vue", value: "Mer" },
+      { name: "Garage", value: "3 places" }
+    ],
+    type: "villa",
+    documents: [],
+    images: [
+      {
+        directus_files_id: {
+          id: "mock-file-3",
+          title: "Villa 1",
+          description: null,
+          tags: null,
+          focal_point_x: null,
+          focal_point_y: null,
+          filename_download: "villa-1.jpg",
+          metadata: {},
+          type: "image/jpeg",
+          filesize: "250000",
+          width: 800,
+          height: 600,
+          charset: null,
+          duration: null,
+          created_on: "2024-01-20T10:00:00.000Z",
+          embed: null,
+          modified_on: "2024-01-20T10:00:00.000Z"
+        }
+      }
+    ],
+    // Champs calculés pour compatibilité
+    location: "Grand-Bassam, Comoé",
     isNew: true,
     isFavorite: false
   },
   {
     id: "4",
+    status: "published",
+    sort: null,
+    user_created: "mock-user-id",
+    date_created: "2024-01-05T10:00:00.000Z",
+    user_updated: null,
+    date_updated: null,
     title: "Studio lumineux centre-ville",
-    price: "495 000 FCFA/mois",
+    description: "Studio moderne et lumineux en plein centre-ville, parfait pour les jeunes actifs.",
+    price: "495000.00",
+    billingCycle: "monthly",
+    contractType: "leasing",
+    surfaceArea: "35.00000",
+    surfaceAreaUnit: "m2",
+    rooms: 1,
+    bathrooms: 1,
+    kitchens: 1,
+    floors: 1,
+    address: 4,
+    agency: "mock-agency-id",
+    characteristics: [
+      { name: "Meublé", value: "Oui" },
+      { name: "Climatisation", value: "Oui" }
+    ],
+    type: "appartment",
+    documents: [],
+    images: [
+      {
+        directus_files_id: {
+          id: "mock-file-4",
+          title: "Studio 1",
+          description: null,
+          tags: null,
+          focal_point_x: null,
+          focal_point_y: null,
+          filename_download: "appartement-1.jpg",
+          metadata: {},
+          type: "image/jpeg",
+          filesize: "120000",
+          width: 800,
+          height: 600,
+          charset: null,
+          duration: null,
+          created_on: "2024-01-05T10:00:00.000Z",
+          embed: null,
+          modified_on: "2024-01-05T10:00:00.000Z"
+        }
+      }
+    ],
+    // Champs calculés pour compatibilité
     location: "Marcory, Abidjan",
-    type: "Appartement",
-    surface: "35 m²",
-    bedrooms: 1,
-    bathrooms: 1,
-    image: appartement1,
-    images: [appartement1, villa1, maison1],
-    isNew: false,
-    isFavorite: false
-  },
-  {
-    id: "5",
-    title: "Maison de ville rénovée",
-    price: "1 155 000 FCFA/mois",
-    location: "Bouaké Centre, Gbêkê",
-    type: "Maison",
-    surface: "90 m²",
-    bedrooms: 3,
-    bathrooms: 2,
-    image: maison1,
-    images: [maison1, appartement1, villa1],
-    isNew: true,
-    isFavorite: false
-  },
-  {
-    id: "6",
-    title: "Penthouse avec terrasse",
-    price: "403 700 000 FCFA",
-    location: "Zone 4, Abidjan",
-    type: "Appartement",
-    surface: "110 m²",
-    bedrooms: 3,
-    bathrooms: 2,
-    image: villa1,
-    images: [villa1, maison1, appartement1],
-    isNew: false,
-    isFavorite: true
-  },
-  {
-    id: "7",
-    title: "Villa moderne avec piscine",
-    price: "825 000 000 FCFA",
-    location: "Riviera Golf, Abidjan",
-    type: "Villa",
-    surface: "320 m²",
-    bedrooms: 6,
-    bathrooms: 5,
-    image: villa1,
-    images: [villa1, appartement1, maison1],
-    isNew: true,
-    isFavorite: false
-  },
-  {
-    id: "8",
-    title: "Appartement standing",
-    price: "2 750 000 FCFA/mois",
-    location: "Les Deux Plateaux, Abidjan",
-    type: "Appartement",
-    surface: "120 m²",
-    bedrooms: 3,
-    bathrooms: 3,
-    image: appartement1,
-    images: [appartement1, maison1, villa1],
-    isNew: false,
-    isFavorite: true
-  },
-  {
-    id: "9",
-    title: "Maison familiale spacieuse",
-    price: "385 000 000 FCFA",
-    location: "Anyama, Abidjan",
-    type: "Maison",
-    surface: "180 m²",
-    bedrooms: 5,
-    bathrooms: 3,
-    image: maison1,
-    images: [maison1, villa1, appartement1],
-    isNew: true,
-    isFavorite: false
-  },
-  {
-    id: "10",
-    title: "Studio moderne",
-    price: "742 500 FCFA/mois",
-    location: "Treichville, Abidjan",
-    type: "Appartement",
-    surface: "42 m²",
-    bedrooms: 1,
-    bathrooms: 1,
-    image: appartement1,
-    images: [appartement1, villa1, maison1],
-    isNew: false,
-    isFavorite: false
-  },
-  {
-    id: "11",
-    title: "Villa de prestige",
-    price: "1 237 500 000 FCFA",
-    location: "Bassam Plage, Grand-Bassam",
-    type: "Villa",
-    surface: "450 m²",
-    bedrooms: 7,
-    bathrooms: 6,
-    image: villa1,
-    images: [villa1, maison1, appartement1],
-    isNew: true,
-    isFavorite: true
-  },
-  {
-    id: "12",
-    title: "Duplex avec jardin",
-    price: "577 500 000 FCFA",
-    location: "Koumassi, Abidjan",
-    type: "Maison",
-    surface: "200 m²",
-    bedrooms: 4,
-    bathrooms: 3,
-    image: maison1,
-    images: [maison1, appartement1, villa1],
-    isNew: false,
-    isFavorite: false
-  },
-  {
-    id: "13",
-    title: "Appartement neuf avec balcon",
-    price: "1 485 000 FCFA/mois",
-    location: "Yopougon, Abidjan",
-    type: "Appartement",
-    surface: "75 m²",
-    bedrooms: 2,
-    bathrooms: 2,
-    image: appartement1,
-    images: [appartement1, maison1, villa1],
-    isNew: true,
-    isFavorite: false
-  },
-  {
-    id: "14",
-    title: "Villa contemporaine",
-    price: "962 500 000 FCFA",
-    location: "Bingerville, Abidjan",
-    type: "Villa",
-    surface: "380 m²",
-    bedrooms: 5,
-    bathrooms: 4,
-    image: villa1,
-    images: [villa1, appartement1, maison1],
-    isNew: false,
-    isFavorite: true
-  },
-  {
-    id: "15",
-    title: "Maison traditionnelle rénovée",
-    price: "1 237 500 FCFA/mois",
-    location: "Daloa Centre, Haut-Sassandra",
-    type: "Maison",
-    surface: "110 m²",
-    bedrooms: 3,
-    bathrooms: 2,
-    image: maison1,
-    images: [maison1, villa1, appartement1],
-    isNew: true,
-    isFavorite: false
-  },
-  {
-    id: "16",
-    title: "Grand appartement familial",
-    price: "445 500 000 FCFA",
-    location: "Adjamé, Abidjan",
-    type: "Appartement",
-    surface: "140 m²",
-    bedrooms: 4,
-    bathrooms: 3,
-    image: appartement1,
-    images: [appartement1, villa1, maison1],
-    isNew: false,
-    isFavorite: false
-  },
-  {
-    id: "17",
-    title: "Villa avec piscine et jardin",
-    price: "1 402 500 000 FCFA",
-    location: "Yamoussoukro Centre, Yamoussoukro",
-    type: "Villa",
-    surface: "520 m²",
-    bedrooms: 6,
-    bathrooms: 5,
-    image: villa1,
-    images: [villa1, maison1, appartement1],
-    isNew: true,
-    isFavorite: true
-  },
-  {
-    id: "18",
-    title: "Maison de maître",
-    price: "687 500 000 FCFA",
-    location: "San-Pédro Centre, San-Pédro",
-    type: "Maison",
-    surface: "250 m²",
-    bedrooms: 5,
-    bathrooms: 4,
-    image: maison1,
-    images: [maison1, villa1, appartement1],
     isNew: false,
     isFavorite: false
   }

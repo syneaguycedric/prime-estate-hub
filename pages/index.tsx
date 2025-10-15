@@ -6,7 +6,8 @@ import FeaturedProperties from "@/components/sections/FeaturedProperties";
 import Footer from "@/components/layout/Footer";
 import SearchFilters from "@/components/sections/SearchFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
-import { properties, Property } from "@/data/properties";
+import { Property } from "@/data/properties";
+import { fetchProperties } from "@/lib/directus-api";
 import { usePageLoading } from "@/hooks/use-page-loading";
 
 interface HomePageProps {
@@ -204,13 +205,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         const host = context.req.headers["x-forwarded-host"] || context.req.headers.host;
         const baseUrl = `${protocol}://${host}`;
 
-        // Simulation d'un appel API pour récupérer les propriétés
-        // En production, ceci ferait appel à une vraie base de données
-        const initialProperties = properties.map((property) => ({
-            ...property,
-            // Optimisation: ne garder que les données essentielles pour la page d'accueil
-            images: [property.images[0]], // Seulement la première image
-        }));
+        // Récupérer les propriétés depuis l'API Directus
+        const initialProperties = await fetchProperties();
 
         // Génération des données SEO
         const seoData = generateSeoData(baseUrl);
@@ -235,9 +231,17 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         // Fallback en cas d'erreur
         const baseUrl = "https://kylimmo.com"; // URL par défaut
 
+        // En cas d'erreur, utiliser les données mockées
+        const { properties } = await import("@/data/properties");
+        const fallbackProperties = properties.slice(0, 12).map((property) => ({
+            ...property,
+            // Optimisation: ne garder que les données essentielles pour la page d'accueil
+            images: [property.images[0]], // Seulement la première image
+        }));
+
         return {
             props: {
-                initialProperties: properties.slice(0, 12), // Données de fallback
+                initialProperties: fallbackProperties,
                 seoData: generateSeoData(baseUrl),
             },
         };

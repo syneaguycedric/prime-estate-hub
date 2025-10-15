@@ -3,10 +3,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Menu, Home, PlusCircle, User, Heart, Filter, RotateCcw } from "lucide-react";
+import { Search, Menu, PlusCircle, User, Heart, Filter, RotateCcw } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
+import { ApiStatusIndicator } from "@/components/ui/api-status-indicator";
+import Image from "next/image";
 
 interface HeaderProps {
     onOpenFilters: () => void;
@@ -56,8 +58,8 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                     whileTap={{ scale: 0.98 }}
                     onClick={handleHomeClick}
                 >
-                    <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.4, ease: "easeInOut" }}>
-                        <Home className="h-8 w-8 text-primary" />
+                    <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.3, ease: "easeInOut" }}>
+                        <Image src="/assets/killimologo.png" alt="Kylimmo Logo" width={40} height={40} className="object-contain" />
                     </motion.div>
                     <span className="text-xl font-bold text-foreground">Kylimmo</span>
                 </motion.div>
@@ -69,7 +71,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Rechercher un bien, une ville..."
-                                className="pl-10 bg-secondary/50 border-border focus:bg-card transition-colors"
+                                className="pl-10 bg-card border-border focus:bg-card transition-colors"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={handleSearch}
@@ -100,7 +102,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                         Favoris
                     </Button>
 
-                    <Button variant="ghost" size="sm" className="hidden md:flex">
+                    <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => navigateWithTransition("/login")}>
                         <User className="h-4 w-4 mr-2" />
                         Connexion
                     </Button>

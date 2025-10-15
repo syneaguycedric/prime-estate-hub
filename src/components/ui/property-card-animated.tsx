@@ -5,28 +5,42 @@ import { Button } from "@/components/ui/button";
 import { Heart, MapPin, Bed, Bath, Square, Eye } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import ImageWithLoading from "@/components/ui/image-with-loading";
+import { Property } from "@/data/properties";
+import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl } from "@/lib/property-helpers";
 
-interface PropertyCardAnimatedProps {
-    id: string;
-    title: string;
-    price: string;
-    location: string;
-    type: string;
-    surface: string;
-    bedrooms?: number;
-    bathrooms?: number;
-    image: string;
-    isNew?: boolean;
-    isFavorite?: boolean;
+interface PropertyCardAnimatedProps extends Property {
     index?: number;
 }
 
-const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedrooms, bathrooms, image, isNew, isFavorite = false, index = 0 }: PropertyCardAnimatedProps) => {
+const PropertyCardAnimated = ({
+    id,
+    title,
+    price,
+    billingCycle,
+    contractType,
+    location,
+    type,
+    surfaceArea,
+    surfaceAreaUnit,
+    rooms,
+    bathrooms,
+    images,
+    isNew,
+    isFavorite = false,
+    index = 0,
+}: PropertyCardAnimatedProps) => {
     const { navigateWithTransition } = useNavigationTransition();
 
     const handleCardClick = () => {
         navigateWithTransition(`/biens/${id}`);
     };
+
+    // Formater les données pour l'affichage
+    const formattedPrice = formatPrice(price, billingCycle);
+    const formattedSurface = formatSurface(surfaceArea, surfaceAreaUnit);
+    const propertyTypeLabel = getPropertyTypeLabel(type);
+    const contractTypeLabel = getContractTypeLabel(contractType);
+    const imageUrl = getFirstImageUrl({ images } as Property);
 
     return (
         <motion.div
@@ -40,7 +54,7 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                 <Card className="group bg-gradient-card border-border/50 cursor-pointer h-full flex flex-col overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                     <div className="relative overflow-hidden rounded-t-lg">
                         <ImageWithLoading
-                            src={image}
+                            src={imageUrl}
                             alt={`${title} - ${location}`}
                             className="w-full h-48 group-hover:scale-110 transition-transform duration-300"
                             loading={index < 4 ? "eager" : "lazy"}
@@ -53,13 +67,11 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 + index * 0.1 }}
                         >
-                            {isNew && (
-                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 200 }}>
-                                    <Badge className="bg-success text-success-foreground">Nouveau</Badge>
-                                </motion.div>
-                            )}
                             <Badge variant="secondary" className="bg-card/90 text-foreground">
-                                {type}
+                                {propertyTypeLabel}
+                            </Badge>
+                            <Badge variant="outline" className="bg-card/90 text-foreground">
+                                {contractTypeLabel}
                             </Badge>
                         </motion.div>
 
@@ -80,7 +92,7 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
 
                         {/* Price overlay avec animation */}
                         <motion.div className="absolute bottom-4 left-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + index * 0.1 }}>
-                            <div className="bg-primary text-primary-foreground px-3 py-1 rounded-lg font-semibold shadow-lg">{price}</div>
+                            <div className="bg-primary text-primary-foreground px-3 py-1 rounded-lg font-semibold shadow-lg">{formattedPrice}</div>
                         </motion.div>
                     </div>
 
@@ -101,12 +113,12 @@ const PropertyCardAnimated = ({ id, title, price, location, type, surface, bedro
                             >
                                 <div className="flex items-center">
                                     <Square className="h-4 w-4 mr-1" />
-                                    {surface}
+                                    {formattedSurface}
                                 </div>
-                                {bedrooms && (
+                                {rooms && (
                                     <div className="flex items-center">
                                         <Bed className="h-4 w-4 mr-1" />
-                                        {bedrooms}
+                                        {rooms}
                                     </div>
                                 )}
                                 {bathrooms && (

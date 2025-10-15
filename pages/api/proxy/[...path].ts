@@ -5,6 +5,8 @@ const ALLOWED_DOMAINS = [
     'api.openweathermap.org',
     'nominatim.openstreetmap.org',
     'jsonplaceholder.typicode.com',
+    'ki-backoffice.eyoboue.dev', // API Directus
+    'ki-backoffice.eyoboue.dev:8143', // API Directus avec port
     // Ajouter d'autres domaines selon les besoins
 ];
 
@@ -60,8 +62,17 @@ export default async function handler(
         const queryString = new URLSearchParams(req.query as Record<string, string>);
         queryString.delete('path'); // Retirer le paramètre path qui est interne
 
-        const targetUrl = `${protocol}://${targetDomain}/${targetPath}${queryString.toString() ? `?${queryString.toString()}` : ''
+        // Gérer le port pour le domaine Directus
+        // Si le domaine contient déjà le port, ne pas l'ajouter
+        const hasPort = targetDomain.includes(':');
+        const port = !hasPort && targetDomain === 'ki-backoffice.eyoboue.dev' ? ':8143' : '';
+        const targetUrl = `${protocol}://${targetDomain}${port}/${targetPath}${queryString.toString() ? `?${queryString.toString()}` : ''
             }`;
+
+        // Log de debugging pour tracer l'URL construite (peut être supprimé en production)
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[PROXY DEBUG] Final URL: ${targetUrl}`);
+        }
 
         // Vérification du cache si une clé est fournie
         if (cacheKey && cache.has(cacheKey)) {
