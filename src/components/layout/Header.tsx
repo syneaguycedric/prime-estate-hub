@@ -3,12 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Menu, PlusCircle, User, Heart, Filter, RotateCcw } from "lucide-react";
+import { Search, Menu, PlusCircle, User, Heart, Filter, RotateCcw, LogOut } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
-import { ApiStatusIndicator } from "@/components/ui/api-status-indicator";
+import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
     onOpenFilters: () => void;
@@ -23,6 +24,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
     const [searchQuery, setSearchQuery] = useState("");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { navigateWithTransition } = useNavigationTransition();
+    const { isAuthenticated, user, logout } = useAuth();
 
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && searchQuery.trim()) {
@@ -102,10 +104,47 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                         Favoris
                     </Button>
 
-                    <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => navigateWithTransition("/login")}>
-                        <User className="h-4 w-4 mr-2" />
-                        Connexion
-                    </Button>
+                    {isAuthenticated ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="hidden md:flex">
+                                    <User className="h-4 w-4 mr-2" />
+                                    {user?.first_name || user?.email || "Mon compte"}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <div className="flex items-center justify-start gap-2 p-2">
+                                    <div className="flex flex-col space-y-1 leading-none">
+                                        {user?.first_name && user?.last_name && (
+                                            <p className="font-medium">
+                                                {user.first_name} {user.last_name}
+                                            </p>
+                                        )}
+                                        <p className="w-[200px] truncate text-sm text-muted-foreground">{user?.email}</p>
+                                    </div>
+                                </div>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => navigateWithTransition("/profile")}>
+                                    <User className="mr-2 h-4 w-4" />
+                                    Mon profil
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigateWithTransition("/favorites")}>
+                                    <Heart className="mr-2 h-4 w-4" />
+                                    Mes favoris
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={logout} className="text-destructive">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    Se déconnecter
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : (
+                        <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => navigateWithTransition("/login")}>
+                            <User className="h-4 w-4 mr-2" />
+                            Connexion
+                        </Button>
+                    )}
 
                     <Button variant="hero" size="sm">
                         <PlusCircle className="h-4 w-4 mr-2" />

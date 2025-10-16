@@ -1,28 +1,32 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Mail, Lock, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { loginUser } from "@/lib/directus-api";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoginPage = () => {
     const router = useRouter();
+    const { login, isAuthenticated, isLoading } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
     const [validationErrors, setValidationErrors] = useState<{
         email?: string;
         password?: string;
     }>({});
+
+    // Rediriger si déjà connecté
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push("/");
+        }
+    }, [isAuthenticated, router]);
 
     // Validation du formulaire
     const validateForm = (): boolean => {
@@ -38,8 +42,8 @@ const LoginPage = () => {
         // Validation mot de passe
         if (!password) {
             errors.password = "Le mot de passe est requis";
-        } else if (password.length < 6) {
-            errors.password = "Le mot de passe doit contenir au moins 6 caractères";
+        } else if (password.length < 3) {
+            errors.password = "Le mot de passe doit contenir au moins 3 caractères";
         }
 
         setValidationErrors(errors);
@@ -49,48 +53,24 @@ const LoginPage = () => {
     // Gestion de la soumission du formulaire
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        setError("");
 
         // Valider le formulaire
         if (!validateForm()) {
             return;
         }
 
-        setIsLoading(true);
-
         try {
-            // Appel à l'API de connexion
-            const result = await loginUser(email, password);
+            // Utiliser la fonction login du contexte
+            const result = await login(email, password);
 
-            if (result.success && result.token) {
-                // Stocker le token dans localStorage
-                localStorage.setItem("auth_token", result.token);
-                if (result.refreshToken) {
-                    localStorage.setItem("refresh_token", result.refreshToken);
-                }
-                if (result.expiresAt) {
-                    localStorage.setItem("token_expires_at", result.expiresAt.toString());
-                }
-
-                // Afficher un toast de succès
-                toast.success("Connexion réussie", {
-                    description: "Vous êtes maintenant connecté à Kylimmo",
-                    duration: 3000,
-                });
-
+            if (result.success) {
                 // Redirection vers la page d'accueil
-                setTimeout(() => {
-                    router.push("/");
-                }, 500);
-            } else {
-                // Afficher l'erreur
-                setError(result.error || "Une erreur est survenue lors de la connexion");
+                router.push("/");
             }
+            // Les erreurs sont maintenant gérées par le contexte avec des toasts
         } catch (err) {
             console.error("Login error:", err);
-            setError("Une erreur inattendue est survenue");
-        } finally {
-            setIsLoading(false);
+            // Les erreurs sont maintenant gérées par le contexte avec des toasts
         }
     };
 
@@ -131,15 +111,7 @@ const LoginPage = () => {
 
                         <CardContent>
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Message d'erreur global */}
-                                {error && (
-                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                                        <Alert variant="destructive">
-                                            <AlertCircle className="h-4 w-4" />
-                                            <AlertDescription>{error}</AlertDescription>
-                                        </Alert>
-                                    </motion.div>
-                                )}
+                                {/* Les erreurs sont maintenant affichées via des toasts */}
 
                                 {/* Email */}
                                 <div className="space-y-2">

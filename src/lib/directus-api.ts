@@ -18,6 +18,18 @@ interface LoginResponse {
     };
 }
 
+// Interface pour les erreurs Directus
+interface DirectusError {
+    message: string;
+    extensions: {
+        code: string;
+    };
+}
+
+interface DirectusErrorResponse {
+    errors: DirectusError[];
+}
+
 // Interface pour les données utilisateur
 export interface User {
     id: string;
@@ -25,6 +37,11 @@ export interface User {
     first_name?: string;
     last_name?: string;
     avatar?: string;
+    location?: string;
+    title?: string;
+    description?: string;
+    language?: string;
+    theme?: string;
 }
 
 // Configuration
@@ -282,6 +299,7 @@ export async function invalidatePropertyCache(propertyId: string): Promise<void>
 
 /**
  * Connexion utilisateur via l'API Directus
+ * Utilise l'API route Next.js pour éviter les problèmes CORS
  */
 export async function loginUser(email: string, password: string): Promise<{
     success: boolean;
@@ -293,29 +311,71 @@ export async function loginUser(email: string, password: string): Promise<{
     try {
         console.log('[DIRECTUS API] Attempting login for:', email);
 
-        const response = await apiClient.post<LoginResponse>(
-            DIRECTUS_DOMAIN,
-            'auth/login',
-            {
+        // Appeler l'API route Next.js au lieu du proxy générique
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
                 email,
                 password,
-                mode: 'json',
-            },
-            {
-                cacheKey: undefined, // Pas de cache pour les requêtes d'authentification
-                cacheTtl: 0,
-            }
-        );
+            }),
+        });
 
+        // Gestion des erreurs HTTP
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[DIRECTUS API] Login error:', errorData);
+
+            let errorMessage = 'Une erreur est survenue lors de la connexion';
+
+            // Gestion des erreurs Directus avec structure spécifique
+            if (errorData.errors && Array.isArray(errorData.errors)) {
+                const directusErrors = errorData.errors as DirectusError[];
+                const firstError = directusErrors[0];
+
+                if (firstError) {
+                    // Gestion des codes d'erreur spécifiques
+                    switch (firstError.extensions?.code) {
+                        case 'INVALID_CREDENTIALS':
+                            errorMessage = 'Email ou mot de passe incorrect';
+                            break;
+                        case 'INVALID_PAYLOAD':
+                            errorMessage = 'Données de connexion invalides';
+                            break;
+                        case 'TOO_MANY_REQUESTS':
+                            errorMessage = 'Trop de tentatives de connexion. Veuillez réessayer plus tard';
+                            break;
+                        default:
+                            errorMessage = firstError.message || 'Erreur de connexion';
+                    }
+                }
+            } else if (response.status === 401) {
+                errorMessage = 'Email ou mot de passe incorrect';
+            } else if (response.status === 404) {
+                errorMessage = 'Service de connexion indisponible';
+            } else if (response.status === 429) {
+                errorMessage = 'Trop de tentatives de connexion. Veuillez réessayer plus tard';
+            }
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
+        }
+
+        // Succès - parser la réponse
+        const data: LoginResponse = await response.json();
         console.log('[DIRECTUS API] Login successful');
 
         // Calculer la date d'expiration
-        const expiresAt = Date.now() + response.data.expires;
+        const expiresAt = Date.now() + data.data.expires;
 
         return {
             success: true,
-            token: response.data.access_token,
-            refreshToken: response.data.refresh_token,
+            token: data.data.access_token,
+            refreshToken: data.data.refresh_token,
             expiresAt,
         };
 
@@ -324,12 +384,10 @@ export async function loginUser(email: string, password: string): Promise<{
 
         let errorMessage = 'Une erreur est survenue lors de la connexion';
 
-        if (error.message.includes('401')) {
-            errorMessage = 'Email ou mot de passe incorrect';
-        } else if (error.message.includes('404')) {
-            errorMessage = 'Service de connexion indisponible';
-        } else if (error.message.includes('network')) {
-            errorMessage = 'Erreur de connexion au serveur';
+        if (error.message?.includes('Failed to fetch')) {
+            errorMessage = 'Erreur de connexion au serveur. Vérifiez votre connexion internet';
+        } else if (error.message?.includes('timeout')) {
+            errorMessage = 'Délai d\'attente dépassé. Veuillez réessayer';
         }
 
         return {
@@ -375,5 +433,93 @@ export function logoutUser(): void {
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('token_expires_at');
         console.log('[DIRECTUS API] User logged out');
+    }
+}
+
+/**
+ * Récupère le profil complet de l'utilisateur connecté
+ */
+export async function getUserProfile(token: string): Promise<User | null> {
+    try {
+        console.log('[DIRECTUS API] Fetching user profile');
+
+        const response = await fetch('/api/auth/profile', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[DIRECTUS API] Profile fetch error:', errorData);
+            return null;
+        }
+
+        const data = await response.json();
+        console.log('[DIRECTUS API] Profile fetched successfully');
+        return data.data;
+
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching profile:', error);
+        return null;
+    }
+}
+
+/**
+ * Met à jour le profil de l'utilisateur connecté
+ */
+export async function updateUserProfile(
+    token: string,
+    updates: Partial<User>
+): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Updating user profile');
+
+        const response = await fetch('/api/auth/profile', {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updates),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[DIRECTUS API] Profile update error:', errorData);
+
+            let errorMessage = 'Erreur lors de la mise à jour du profil';
+
+            if (errorData.errors && Array.isArray(errorData.errors)) {
+                const firstError = errorData.errors[0];
+                errorMessage = firstError.message || errorMessage;
+            } else if (response.status === 401) {
+                errorMessage = 'Session expirée. Veuillez vous reconnecter';
+            } else if (response.status === 400) {
+                errorMessage = 'Données invalides';
+            }
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
+        }
+
+        const data = await response.json();
+        console.log('[DIRECTUS API] Profile updated successfully');
+
+        return {
+            success: true,
+            user: data.data,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error updating profile:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue lors de la mise à jour',
+        };
     }
 }

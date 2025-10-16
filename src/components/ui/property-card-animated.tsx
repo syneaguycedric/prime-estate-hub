@@ -80,7 +80,7 @@ const PropertyCardAnimated = ({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className={`bg-card/90 hover:bg-card ${isFavorite ? "text-red-500" : "text-muted-foreground"}`}
+                                className={`bg-card/90 hover:bg-card ${isFavorite ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();

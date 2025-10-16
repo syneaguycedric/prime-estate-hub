@@ -4,6 +4,11 @@ export default function Document() {
     return (
         <Html lang="fr" dir="ltr">
             <Head>
+                {/* Favicon Kylimmo */}
+                <link rel="icon" href="/assets/killimologofavicon.png" />
+                <link rel="apple-touch-icon" href="/assets/killimologofavicon.png" />
+                <link rel="shortcut icon" href="/assets/killimologofavicon.png" />
+
                 {/* Preload des fonts critiques */}
                 <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
 
@@ -14,9 +19,9 @@ export default function Document() {
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-                {/* Theme color pour les navigateurs mobiles */}
-                <meta name="theme-color" content="#0f172a" />
-                <meta name="msapplication-TileColor" content="#0f172a" />
+                {/* Theme color pour les navigateurs mobiles - Couleur primaire Kylimmo */}
+                <meta name="theme-color" content="#9E6D26" />
+                <meta name="msapplication-TileColor" content="#9E6D26" />
 
                 {/* Manifest pour PWA */}
                 <link rel="manifest" href="/manifest.json" />

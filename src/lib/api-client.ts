@@ -97,10 +97,14 @@ class SecureApiClient {
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(
+                    const error = new Error(
                         errorData.message ||
                         `Erreur HTTP ${response.status}: ${response.statusText}`
                     );
+                    // Préserver les informations HTTP pour la gestion d'erreur
+                    (error as any).status = response.status;
+                    (error as any).data = errorData;
+                    throw error;
                 }
 
                 const data = await response.json();
@@ -131,7 +135,12 @@ class SecureApiClient {
             const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
             console.error(`[API CLIENT ERROR] ${method} ${targetDomain}/${path}:`, errorMessage);
 
-            // Re-throw avec plus de contexte
+            // Préserver les erreurs HTTP avec statut (401, 404, etc.)
+            if (error instanceof Error && (error as any).status) {
+                throw error; // Laisser passer les erreurs HTTP avec statut
+            }
+
+            // Re-throw avec plus de contexte pour les autres erreurs
             throw new Error(`Erreur API (${targetDomain}): ${errorMessage}`);
         }
     }

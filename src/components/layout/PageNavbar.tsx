@@ -78,7 +78,12 @@ const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
 
                 {/* Bouton retour à droite */}
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.2 }}>
-                    <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-white hover:bg-primary transition-colors"
+                    >
                         <ArrowLeft className="h-4 w-4" />
                         <span className="hidden sm:inline">Retour</span>
                     </Button>

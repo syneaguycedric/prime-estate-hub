@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Head from "next/head";
 import LoadingBar from "@/components/ui/loading-bar";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Import des styles globaux
 import "../src/index.css";
@@ -60,8 +61,8 @@ export default function App({ Component, pageProps }: AppProps) {
                 <meta name="twitter:creator" content="@kylimmo" />
 
                 {/* Favicon */}
-                <link rel="icon" href="/favicon.ico" />
-                <link rel="apple-touch-icon" href="/favicon.ico" />
+                <link rel="icon" href="/assets/killimologofavicon.png" />
+                <link rel="apple-touch-icon" href="/assets/killimologofavicon.png" />
 
                 {/* Preconnect pour les performances */}
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -98,25 +99,27 @@ export default function App({ Component, pageProps }: AppProps) {
 
             <QueryClientProvider client={queryClient}>
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-                    <TooltipProvider>
-                        <LoadingBar />
+                    <AuthProvider>
+                        <TooltipProvider>
+                            <LoadingBar />
 
-                        {/* Éviter les problèmes d'hydratation du thème */}
-                        {mounted && (
-                            <>
-                                <Component {...pageProps} />
-                                <Toaster />
-                                <Sonner />
-                            </>
-                        )}
+                            {/* Éviter les problèmes d'hydratation du thème */}
+                            {mounted && (
+                                <>
+                                    <Component {...pageProps} />
+                                    <Toaster />
+                                    <Sonner />
+                                </>
+                            )}
 
-                        {/* Fallback pendant l'hydratation */}
-                        {!mounted && (
-                            <div style={{ visibility: "hidden" }}>
-                                <Component {...pageProps} />
-                            </div>
-                        )}
-                    </TooltipProvider>
+                            {/* Fallback pendant l'hydratation */}
+                            {!mounted && (
+                                <div style={{ visibility: "hidden" }}>
+                                    <Component {...pageProps} />
+                                </div>
+                            )}
+                        </TooltipProvider>
+                    </AuthProvider>
                 </ThemeProvider>
             </QueryClientProvider>
         </>

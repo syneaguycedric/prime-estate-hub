@@ -30,6 +30,16 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
+    // Gestion des requêtes OPTIONS (preflight requests)
+    if (req.method === 'OPTIONS') {
+        // Headers CORS pour les requêtes preflight
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Target-Domain, X-Target-Protocol, X-Cache-Key, X-Cache-TTL');
+        res.setHeader('Access-Control-Max-Age', '86400'); // 24 heures
+        return res.status(200).end();
+    }
+
     try {
         // Extraction du path et des paramètres
         const { path } = req.query;
@@ -124,11 +134,20 @@ export default async function handler(
 
             if (!response.ok) {
                 console.error(`[PROXY ERROR] ${response.status} ${response.statusText} for ${targetUrl}`);
-                return res.status(response.status).json({
-                    error: 'External API error',
-                    message: `Erreur de l'API externe: ${response.status} ${response.statusText}`,
-                    targetUrl: targetUrl.replace(/api_key=[^&]+/g, 'api_key=***'), // Masquer les clés API dans les logs
-                });
+
+                // Essayer de récupérer le corps de la réponse d'erreur
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch {
+                    // Si on ne peut pas parser le JSON, utiliser un message par défaut
+                    errorData = {
+                        error: 'External API error',
+                        message: `Erreur de l'API externe: ${response.status} ${response.statusText}`,
+                    };
+                }
+
+                return res.status(response.status).json(errorData);
             }
 
             const data = await response.json();
