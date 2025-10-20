@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api-client';
 import { Property, PropertyImage } from '@/data/properties';
 import { properties } from '@/data/properties';
 import { formatProperty } from '@/lib/property-helpers';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast-helpers';
 
 // Interface pour la réponse de l'API Directus
 interface DirectusResponse<T> {
@@ -44,9 +44,33 @@ export interface User {
     theme?: string;
 }
 
+// Interface pour les filtres de recherche
+export interface PropertyFilters {
+    search?: string;              // Recherche globale (titre, description, localisation)
+    location?: string;            // Ville/Région spécifique
+    contractType?: string;        // "leasing" (location) ou "selling" (vente)
+    propertyType?: string;        // Type de bien
+    minPrice?: number;            // Prix minimum
+    maxPrice?: number;            // Prix maximum
+    minSurface?: number;          // Surface minimum en m²
+    maxSurface?: number;          // Surface maximum en m²
+    rooms?: number;               // Nombre de pièces
+    bathrooms?: number;           // Nombre de salles de bain
+    page?: number;                // Numéro de page (défaut: 1)
+    limit?: number;               // Éléments par page (défaut: 12)
+}
+
+// Interface pour la réponse paginée
+export interface PaginatedResponse {
+    properties: Property[];
+    total: number;
+    page: number;
+    totalPages: number;
+}
+
 // Configuration
 const DIRECTUS_DOMAIN = 'ki-backoffice.eyoboue.dev:8143';
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+const USE_MOCK_DATA = false; // Forcer l'utilisation de l'API uniquement
 
 /**
  * Récupère la liste des biens immobiliers depuis l'API Directus
@@ -90,13 +114,232 @@ export async function fetchProperties(): Promise<Property[]> {
 
         // Afficher un toast d'erreur
         toast.error('Erreur de connexion', {
-            description: 'Impossible de charger les biens immobiliers. Utilisation des données de démonstration.',
+            description: 'Impossible de charger les biens immobiliers. Veuillez réessayer.',
             duration: 5000,
         });
 
-        // En cas d'erreur, fallback vers les données mockées
-        console.log('[DIRECTUS API] Falling back to mock data');
-        return properties.map(formatProperty);
+        // Retourner un tableau vide au lieu de mock data
+        return [];
+    }
+}
+
+/**
+ * Fonction helper pour filtrer les propriétés mockées (fallback)
+ */
+function mockFilteredProperties(filters: PropertyFilters): PaginatedResponse {
+    const {
+        search,
+        location,
+        contractType,
+        propertyType,
+        minPrice,
+        maxPrice,
+        minSurface,
+        maxSurface,
+        rooms,
+        bathrooms,
+        page = 1,
+        limit = 12
+    } = filters;
+
+    let filtered = properties.map(formatProperty);
+
+    // Appliquer les filtres
+    if (search) {
+        const searchLower = search.toLowerCase();
+        filtered = filtered.filter(p =>
+            p.title?.toLowerCase().includes(searchLower) ||
+            p.description?.toLowerCase().includes(searchLower) ||
+            p.location?.toLowerCase().includes(searchLower)
+        );
+    }
+
+    if (location) {
+        const locationLower = location.toLowerCase();
+        filtered = filtered.filter(p => p.location?.toLowerCase().includes(locationLower));
+    }
+
+    if (contractType) {
+        filtered = filtered.filter(p => p.contractType === contractType);
+    }
+
+    if (propertyType) {
+        filtered = filtered.filter(p => p.type === propertyType);
+    }
+
+    if (minPrice !== undefined) {
+        filtered = filtered.filter(p => p.price >= minPrice);
+    }
+
+    if (maxPrice !== undefined) {
+        filtered = filtered.filter(p => p.price <= maxPrice);
+    }
+
+    if (minSurface !== undefined) {
+        filtered = filtered.filter(p => p.surfaceArea >= minSurface);
+    }
+
+    if (maxSurface !== undefined) {
+        filtered = filtered.filter(p => p.surfaceArea <= maxSurface);
+    }
+
+    if (rooms !== undefined) {
+        filtered = filtered.filter(p => p.rooms === rooms);
+    }
+
+    if (bathrooms !== undefined) {
+        filtered = filtered.filter(p => p.bathrooms === bathrooms);
+    }
+
+    // Pagination
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
+    const paginatedProperties = filtered.slice(offset, offset + limit);
+
+    return {
+        properties: paginatedProperties,
+        total,
+        page,
+        totalPages
+    };
+}
+
+/**
+ * Récupère les biens immobiliers avec filtres et pagination depuis l'API Directus
+ */
+export async function fetchPropertiesWithFilters(
+    filters: PropertyFilters = {}
+): Promise<PaginatedResponse> {
+    // Si on utilise les données mockées, fallback vers filtrage client
+    if (USE_MOCK_DATA) {
+        console.log('[DIRECTUS API] Using mock data with filters');
+        return mockFilteredProperties(filters);
+    }
+
+    try {
+        const {
+            search,
+            location,
+            contractType,
+            propertyType,
+            minPrice,
+            maxPrice,
+            minSurface,
+            maxSurface,
+            rooms,
+            bathrooms,
+            page = 1,
+            limit = 12
+        } = filters;
+
+        console.log('[DIRECTUS API] Fetching properties with filters:', filters);
+
+        // Construire les filtres Directus
+        const directusFilters: Record<string, any> = {};
+
+        // Recherche globale (OR sur plusieurs champs)
+        if (search) {
+            directusFilters['_or'] = [
+                { title: { _contains: search } },
+                { description: { _contains: search } },
+                { location: { _contains: search } }
+            ];
+        }
+
+        // Filtres spécifiques
+        if (location) {
+            directusFilters['location'] = { _contains: location };
+        }
+
+        if (contractType) {
+            directusFilters['contractType'] = { _eq: contractType };
+        }
+
+        if (propertyType) {
+            directusFilters['type'] = { _eq: propertyType };
+        }
+
+        // Filtres de prix (range)
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            directusFilters['price'] = {};
+            if (minPrice !== undefined) {
+                directusFilters['price']['_gte'] = minPrice;
+            }
+            if (maxPrice !== undefined) {
+                directusFilters['price']['_lte'] = maxPrice;
+            }
+        }
+
+        // Filtres de surface (range)
+        if (minSurface !== undefined || maxSurface !== undefined) {
+            directusFilters['surfaceArea'] = {};
+            if (minSurface !== undefined) {
+                directusFilters['surfaceArea']['_gte'] = minSurface;
+            }
+            if (maxSurface !== undefined) {
+                directusFilters['surfaceArea']['_lte'] = maxSurface;
+            }
+        }
+
+        if (rooms !== undefined) {
+            directusFilters['rooms'] = { _eq: rooms };
+        }
+
+        if (bathrooms !== undefined) {
+            directusFilters['bathrooms'] = { _eq: bathrooms };
+        }
+
+        // Construire l'URL avec paramètres
+        const offset = (page - 1) * limit;
+        const params: Record<string, string> = {
+            fields: '*,images.directus_files_id.*',
+            limit: limit.toString(),
+            offset: offset.toString(),
+            meta: 'filter_count'
+        };
+
+        // Ajouter les filtres seulement s'il y en a
+        if (Object.keys(directusFilters).length > 0) {
+            params['filter'] = JSON.stringify(directusFilters);
+        }
+
+        const queryString = new URLSearchParams(params).toString();
+
+        const response = await apiClient.get<DirectusResponse<Property[]> & { meta: { filter_count: number } }>(
+            DIRECTUS_DOMAIN,
+            `items/real_estates?${queryString}`
+        );
+
+        const formattedProperties = response.data.map(formatProperty);
+        const total = response.meta?.filter_count || formattedProperties.length;
+        const totalPages = Math.ceil(total / limit);
+
+        console.log(`[DIRECTUS API] Fetched ${formattedProperties.length} properties (total: ${total}, page: ${page}/${totalPages})`);
+
+        return {
+            properties: formattedProperties,
+            total,
+            page,
+            totalPages
+        };
+
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching properties with filters:', error);
+
+        // Afficher un toast d'erreur à l'utilisateur
+        toast.error('Erreur de connexion', {
+            description: 'Impossible de charger les biens immobiliers. Veuillez réessayer.',
+            duration: 5000,
+        });
+
+        // Retourner une réponse vide au lieu de mock data
+        return {
+            properties: [],
+            total: 0,
+            page: 1,
+            totalPages: 0
+        };
     }
 }
 
@@ -133,69 +376,15 @@ export async function fetchPropertyById(id: string, forceRefresh: boolean = fals
 
         // Afficher un toast d'erreur
         toast.error('Erreur de connexion', {
-            description: 'Impossible de charger les détails du bien. Utilisation des données de démonstration.',
+            description: 'Impossible de charger les détails du bien. Veuillez réessayer.',
             duration: 5000,
         });
 
-        // En cas d'erreur, fallback vers les données mockées
-        console.log(`[DIRECTUS API] Falling back to mock data for property ${id}`);
-        const property = properties.find(p => p.id === id);
-        return property ? formatProperty(property) : null;
+        // Retourner null au lieu de mock data
+        return null;
     }
 }
 
-/**
- * Récupère les biens immobiliers avec des filtres
- */
-export async function fetchPropertiesWithFilters(filters: {
-    type?: string;
-    contractType?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    minRooms?: number;
-    maxRooms?: number;
-    search?: string;
-}): Promise<Property[]> {
-    const allProperties = await fetchProperties();
-
-    let filteredProperties = allProperties;
-
-    // Appliquer les filtres
-    if (filters.type && filters.type !== 'all') {
-        filteredProperties = filteredProperties.filter(p => p.type === filters.type);
-    }
-
-    if (filters.contractType && filters.contractType !== 'all') {
-        filteredProperties = filteredProperties.filter(p => p.contractType === filters.contractType);
-    }
-
-    if (filters.minPrice !== undefined) {
-        filteredProperties = filteredProperties.filter(p => parseFloat(p.price) >= filters.minPrice!);
-    }
-
-    if (filters.maxPrice !== undefined) {
-        filteredProperties = filteredProperties.filter(p => parseFloat(p.price) <= filters.maxPrice!);
-    }
-
-    if (filters.minRooms !== undefined) {
-        filteredProperties = filteredProperties.filter(p => p.rooms >= filters.minRooms!);
-    }
-
-    if (filters.maxRooms !== undefined) {
-        filteredProperties = filteredProperties.filter(p => p.rooms <= filters.maxRooms!);
-    }
-
-    if (filters.search && filters.search.trim()) {
-        const searchTerm = filters.search.toLowerCase();
-        filteredProperties = filteredProperties.filter(p =>
-            p.title.toLowerCase().includes(searchTerm) ||
-            (p.description && p.description.toLowerCase().includes(searchTerm)) ||
-            (p.location && p.location.toLowerCase().includes(searchTerm))
-        );
-    }
-
-    return filteredProperties;
-}
 
 /**
  * Vérifie si l'API Directus est accessible

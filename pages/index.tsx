@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import Header from "@/components/layout/Header";
@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import SearchFilters from "@/components/sections/SearchFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
 import { Property } from "@/data/properties";
-import { fetchProperties } from "@/lib/directus-api";
+import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse } from "@/lib/directus-api";
 import { usePageLoading } from "@/hooks/use-page-loading";
 
 interface HomePageProps {
@@ -22,9 +22,16 @@ interface HomePageProps {
 
 const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
     const [showFilters, setShowFilters] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
     const { showLoading } = usePageLoading();
+
+    // État pour les filtres et la pagination
+    const [filters, setFilters] = useState<PropertyFilters>({});
+    const [properties, setProperties] = useState<Property[]>(initialProperties);
+    const [pagination, setPagination] = useState({ total: initialProperties.length, page: 1, totalPages: 1 });
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasInitialized, setHasInitialized] = useState(false);
 
     // Définir la vue par défaut selon la taille de l'écran avec gestion SSR
     const [view, setView] = useState<"grid" | "list">("grid");
@@ -80,13 +87,90 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
         };
     }, [view, mounted]);
 
+    // Fonction pour charger les propriétés avec filtres
+    const loadProperties = useCallback(async (newFilters: PropertyFilters) => {
+        console.log("[DEBUG] loadProperties called with filters:", newFilters);
+        setIsLoading(true);
+        try {
+            const result = await fetchPropertiesWithFilters(newFilters);
+            setProperties(result.properties);
+            setPagination({
+                total: result.total,
+                page: result.page,
+                totalPages: result.totalPages,
+            });
+        } catch (error) {
+            console.error("Error loading properties:", error);
+            // L'erreur est déjà gérée par fetchPropertiesWithFilters avec un toast
+            // On affiche juste une liste vide
+            setProperties([]);
+            setPagination({ total: 0, page: 1, totalPages: 0 });
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Initialiser une seule fois au montage
+    useEffect(() => {
+        if (!hasInitialized) {
+            console.log("[DEBUG] Initializing with initial properties");
+            setHasInitialized(true);
+            // Pas besoin de charger les propriétés, on utilise déjà initialProperties
+        }
+    }, [hasInitialized]);
+
+    // Ref pour éviter les problèmes de closure dans le debounce
+    const loadPropertiesRef = useRef(loadProperties);
+    loadPropertiesRef.current = loadProperties;
+
+    // Gérer l'application des filtres
+    const handleApplyFilters = (newFilters: PropertyFilters) => {
+        const updatedFilters = { ...newFilters, page: 1 };
+        setFilters(updatedFilters);
+        loadPropertiesRef.current(updatedFilters);
+    };
+
+    // Gérer le changement de page
+    const handlePageChange = (page: number) => {
+        const updatedFilters = { ...filters, page };
+        setFilters(updatedFilters);
+        loadPropertiesRef.current(updatedFilters);
+    };
+
+    // Gérer la recherche (avec debounce)
     const handleSearch = (query: string) => {
         setSearchQuery(query);
     };
 
+    // Debounce la recherche avec useEffect
+    useEffect(() => {
+        console.log("[DEBUG] useEffect searchQuery changed:", searchQuery);
+        const timeoutId = setTimeout(() => {
+            if (searchQuery !== undefined && searchQuery !== "") {
+                console.log("[DEBUG] Calling loadProperties with searchQuery:", searchQuery);
+                setFilters((currentFilters) => {
+                    const updatedFilters = { ...currentFilters, search: searchQuery, page: 1 };
+                    loadPropertiesRef.current(updatedFilters);
+                    return updatedFilters;
+                });
+            } else if (searchQuery === "") {
+                // Si la recherche est vide, réinitialiser les filtres
+                console.log("[DEBUG] Resetting filters due to empty search");
+                setFilters({});
+                setProperties(initialProperties);
+                setPagination({ total: initialProperties.length, page: 1, totalPages: 1 });
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, initialProperties]);
+
     const handleReset = () => {
-        setSearchQuery("");
+        setSearchQuery(undefined);
         setActiveFiltersCount(0);
+        setFilters({});
+        setProperties(initialProperties);
+        setPagination({ total: initialProperties.length, page: 1, totalPages: 1 });
     };
 
     return (
@@ -174,9 +258,15 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                 />
                 <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} onReset={handleReset} activeFiltersCount={activeFiltersCount} />
                 <div className="relative">
-                    <SearchFilters isOpen={showFilters} onClose={() => setShowFilters(false)} onFiltersChange={setActiveFiltersCount} onReset={handleReset} />
+                    <SearchFilters
+                        isOpen={showFilters}
+                        onClose={() => setShowFilters(false)}
+                        onFiltersChange={setActiveFiltersCount}
+                        onReset={handleReset}
+                        onApplyFilters={handleApplyFilters}
+                    />
                     <div className={`transition-all duration-300 ${showFilters ? "ml-80" : "ml-0"}`}>
-                        <FeaturedProperties searchQuery={searchQuery} view={view} initialProperties={initialProperties} isLoading={showLoading} />
+                        <FeaturedProperties properties={properties} pagination={pagination} onPageChange={handlePageChange} view={view} isLoading={isLoading || showLoading} />
                         <Footer />
                     </div>
                 </div>

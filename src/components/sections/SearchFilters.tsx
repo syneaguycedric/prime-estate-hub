@@ -6,15 +6,17 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { X, MapPin, Home, Euro, Bed, Bath, Car, Ruler } from "lucide-react";
+import { PropertyFilters } from "@/lib/directus-api";
 
 interface SearchFiltersProps {
     isOpen: boolean;
     onClose: () => void;
     onFiltersChange?: (count: number) => void;
     onReset?: () => void;
+    onApplyFilters?: (filters: PropertyFilters) => void;
 }
 
-const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFiltersProps) => {
+const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilters }: SearchFiltersProps) => {
     const [filters, setFilters] = useState({
         location: "",
         transaction: "",
@@ -114,6 +116,53 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFilt
 
     const updateFilter = (key: string, value: string) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const applyFilters = () => {
+        // Convertir les filtres string vers PropertyFilters
+        const propertyFilters: PropertyFilters = {};
+
+        if (filters.location) propertyFilters.location = filters.location;
+        if (filters.transaction) propertyFilters.contractType = filters.transaction;
+        if (filters.propertyType) propertyFilters.propertyType = filters.propertyType;
+
+        // Convertir les prix
+        if (filters.minPrice) {
+            const minPrice = parseFloat(filters.minPrice);
+            if (!isNaN(minPrice)) propertyFilters.minPrice = minPrice;
+        }
+        if (filters.maxPrice) {
+            const maxPrice = parseFloat(filters.maxPrice);
+            if (!isNaN(maxPrice)) propertyFilters.maxPrice = maxPrice;
+        }
+
+        // Convertir les surfaces
+        if (filters.minSurface) {
+            const minSurface = parseFloat(filters.minSurface);
+            if (!isNaN(minSurface)) propertyFilters.minSurface = minSurface;
+        }
+        if (filters.maxSurface) {
+            const maxSurface = parseFloat(filters.maxSurface);
+            if (!isNaN(maxSurface)) propertyFilters.maxSurface = maxSurface;
+        }
+
+        // Convertir les nombres
+        if (filters.rooms) {
+            const rooms = parseInt(filters.rooms);
+            if (!isNaN(rooms)) propertyFilters.rooms = rooms;
+        }
+        if (filters.bathrooms) {
+            const bathrooms = parseInt(filters.bathrooms);
+            if (!isNaN(bathrooms)) propertyFilters.bathrooms = bathrooms;
+        }
+
+        // Appeler la callback avec les filtres convertis
+        if (onApplyFilters) {
+            onApplyFilters(propertyFilters);
+        }
+
+        // Fermer le panneau de filtres
+        onClose();
     };
 
     const resetFilters = () => {
@@ -309,7 +358,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset }: SearchFilt
 
                     {/* Boutons d'action */}
                     <div className="flex flex-col gap-2 pt-4">
-                        <Button variant="default" className="w-full">
+                        <Button variant="default" className="w-full" onClick={applyFilters}>
                             Appliquer les filtres
                         </Button>
                         <Button variant="outline" className="w-full" onClick={resetFilters}>

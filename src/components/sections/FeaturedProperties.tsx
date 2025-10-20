@@ -1,43 +1,22 @@
-import { useState, useMemo } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import PropertyCardAnimated from "@/components/ui/property-card-animated";
 import PropertyListCardAnimated from "@/components/ui/property-list-card-animated";
 import PropertySkeleton from "@/components/ui/property-skeleton";
-import { Input } from "@/components/ui/input";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis } from "@/components/ui/pagination";
 import { Property } from "@/data/properties";
-import { searchProperties } from "@/lib/property-helpers";
 
 interface FeaturedPropertiesProps {
-    searchQuery?: string;
+    properties: Property[];
+    pagination: { total: number; page: number; totalPages: number };
+    onPageChange: (page: number) => void;
     view: "grid" | "list";
-    initialProperties?: Property[]; // Données initiales pour SSR
-    isLoading?: boolean; // État de chargement
+    isLoading?: boolean;
 }
 
-const PAGE_SIZE = 12;
-
-const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoading = false }: FeaturedPropertiesProps) => {
-    const [page, setPage] = useState(1);
-    const [query, setQuery] = useState("");
-
-    // Utiliser les données initiales SSR
-    const baseProperties = useMemo(() => {
-        return initialProperties || [];
-    }, [initialProperties]);
-
-    const filteredProperties = useMemo(() => {
-        const searchTerm = searchQuery || query;
-        return searchProperties(baseProperties, searchTerm);
-    }, [searchQuery, query, baseProperties]);
-
-    const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PAGE_SIZE));
-    const start = (page - 1) * PAGE_SIZE;
-    const paginatedProperties = filteredProperties.slice(start, start + PAGE_SIZE);
-
+const FeaturedProperties = ({ properties, pagination, onPageChange, view, isLoading = false }: FeaturedPropertiesProps) => {
     const goToPage = (p: number) => {
-        const clamped = Math.min(Math.max(1, p), totalPages);
-        setPage(clamped);
+        const clamped = Math.min(Math.max(1, p), pagination.totalPages);
+        onPageChange(clamped);
 
         // Scroll fluide vers le haut
         window.scrollTo({
@@ -50,8 +29,8 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
         <section className="py-8 bg-background">
             <div className="container">
                 {isLoading ? (
-                    <PropertySkeleton view={view} count={PAGE_SIZE} />
-                ) : paginatedProperties.length === 0 ? (
+                    <PropertySkeleton view={view} count={12} />
+                ) : properties.length === 0 ? (
                     <motion.p className="text-center text-muted-foreground py-16" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                         Aucun bien ne correspond à votre recherche.
                     </motion.p>
@@ -63,7 +42,7 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
                             transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                         >
                             <AnimatePresence>
-                                {paginatedProperties.map((property, index) => (
+                                {properties.map((property, index) => (
                                     <motion.div
                                         key={`${view}-${property.id}`}
                                         layout
@@ -84,7 +63,7 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
                     </LayoutGroup>
                 )}
 
-                {totalPages > 1 && (
+                {pagination.totalPages > 1 && (
                     <nav aria-label="Pagination" className="flex justify-center">
                         <Pagination>
                             <PaginationContent>
@@ -93,15 +72,15 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
                                         href="#"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            goToPage(page - 1);
+                                            goToPage(pagination.page - 1);
                                         }}
                                     />
                                 </PaginationItem>
 
-                                {[...Array(totalPages)].map((_, i) => {
+                                {[...Array(pagination.totalPages)].map((_, i) => {
                                     const pageNum = i + 1;
-                                    if (totalPages > 7 && pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - page) > 2) {
-                                        if ((pageNum === 2 && page > 4) || (pageNum === totalPages - 1 && page < totalPages - 3)) {
+                                    if (pagination.totalPages > 7 && pageNum !== 1 && pageNum !== pagination.totalPages && Math.abs(pageNum - pagination.page) > 2) {
+                                        if ((pageNum === 2 && pagination.page > 4) || (pageNum === pagination.totalPages - 1 && pagination.page < pagination.totalPages - 3)) {
                                             return (
                                                 <PaginationItem key={`ellipsis-${pageNum}`}>
                                                     <PaginationEllipsis />
@@ -114,7 +93,7 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
                                         <PaginationItem key={pageNum}>
                                             <PaginationLink
                                                 href="#"
-                                                isActive={page === pageNum}
+                                                isActive={pagination.page === pageNum}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     goToPage(pageNum);
@@ -131,7 +110,7 @@ const FeaturedProperties = ({ searchQuery = "", view, initialProperties, isLoadi
                                         href="#"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            goToPage(page + 1);
+                                            goToPage(pagination.page + 1);
                                         }}
                                     />
                                 </PaginationItem>

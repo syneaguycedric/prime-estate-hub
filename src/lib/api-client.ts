@@ -125,7 +125,12 @@ class SecureApiClient {
                 clearTimeout(timeoutId);
 
                 if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-                    throw new Error(`Timeout: La requête vers ${targetDomain} a expiré`);
+                    throw new Error(`Timeout: La requête vers ${targetDomain} a expiré après ${timeout}ms`);
+                }
+
+                // Améliorer le message pour les erreurs réseau
+                if (fetchError instanceof TypeError) {
+                    throw new Error(`Erreur réseau: Impossible de contacter ${targetDomain}`);
                 }
 
                 throw fetchError;
