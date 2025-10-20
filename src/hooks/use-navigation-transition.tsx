@@ -11,10 +11,15 @@ export const useNavigationTransition = () => {
                 // Ignorer les erreurs de prefetch
             });
 
-            // Navigation avec une transition subtile
-            setTimeout(() => {
+            // Pour les pages de détail, navigation immédiate pour éviter les conflits de skeleton
+            if (to.includes("/biens/")) {
                 router.push(to);
-            }, 150); // Petit délai pour permettre l'animation de sortie
+            } else {
+                // Navigation avec une transition subtile pour les autres pages
+                setTimeout(() => {
+                    router.push(to);
+                }, 150); // Petit délai pour permettre l'animation de sortie
+            }
         },
         [router]
     );

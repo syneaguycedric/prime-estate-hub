@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -26,31 +26,6 @@ interface PropertyDetailPageProps {
 const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
     const router = useRouter();
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-    const [isNavigating, setIsNavigating] = useState(false);
-
-    // Détecter la navigation VERS cette page (pas le chargement initial)
-    useEffect(() => {
-        const handleRouteChangeStart = (url: string) => {
-            // Activer le skeleton seulement si on navigue VERS une page de détail
-            if (url.includes("/biens/")) {
-                setIsNavigating(true);
-            }
-        };
-
-        const handleRouteChangeComplete = () => {
-            setIsNavigating(false);
-        };
-
-        router.events.on("routeChangeStart", handleRouteChangeStart);
-        router.events.on("routeChangeComplete", handleRouteChangeComplete);
-        router.events.on("routeChangeError", handleRouteChangeComplete);
-
-        return () => {
-            router.events.off("routeChangeStart", handleRouteChangeStart);
-            router.events.off("routeChangeComplete", handleRouteChangeComplete);
-            router.events.off("routeChangeError", handleRouteChangeComplete);
-        };
-    }, [router.events]);
 
     // Formater les données pour l'affichage
     const formattedPrice = property ? formatPrice(property.price, property.billingCycle) : "";
@@ -59,114 +34,6 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
     const contractTypeLabel = property ? getContractTypeLabel(property.contractType) : "";
     const imageUrls = property ? getAllImageUrls(property) : [];
     const characteristicsList = property ? formatCharacteristics(property.characteristics) : [];
-
-    // Afficher le skeleton pendant la navigation VERS cette page
-    if (isNavigating) {
-        return (
-            <div className="bg-background min-h-screen">
-                <PageNavbar breadcrumbs={[{ label: "Chargement du bien..." }]} />
-                <main className="container py-16 pt-20">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Gros bloc à gauche - 2/3 de la largeur */}
-                        <div className="lg:col-span-2">
-                            {/* Titre et localisation skeleton */}
-                            <div className="mb-6">
-                                <div className="h-8 bg-gray-200 rounded-lg w-3/4 mb-3 animate-pulse"></div>
-                                <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                            </div>
-
-                            {/* Image principale skeleton */}
-                            <div className="mb-6">
-                                <div className="aspect-video bg-gray-200 rounded-lg animate-pulse"></div>
-                            </div>
-
-                            {/* Miniatures skeleton */}
-                            <div className="flex gap-3 mb-8">
-                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
-                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
-                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
-                                <div className="w-20 h-16 bg-gray-200 rounded animate-pulse"></div>
-                            </div>
-
-                            {/* Section Détails skeleton */}
-                            <div className="mb-8">
-                                <div className="h-6 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-22 animate-pulse"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Description skeleton */}
-                            <div className="mb-8">
-                                <div className="h-6 bg-gray-200 rounded w-40 mb-4 animate-pulse"></div>
-                                <div className="space-y-3">
-                                    <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sidebar à droite - 1/3 de la largeur */}
-                        <div className="lg:col-span-1">
-                            <Card className="sticky top-24">
-                                <CardContent className="p-6">
-                                    {/* Prix skeleton */}
-                                    <div className="mb-6">
-                                        <div className="h-10 bg-gray-200 rounded w-40 mb-2 animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
-                                    </div>
-
-                                    {/* Boutons skeleton */}
-                                    <div className="space-y-3 mb-6">
-                                        <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
-                                    </div>
-
-                                    {/* Informations de contact skeleton */}
-                                    <div>
-                                        <div className="h-6 bg-gray-200 rounded w-48 mb-4 animate-pulse"></div>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                                <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-                                            </div>
-                                            <div className="h-3 bg-gray-200 rounded w-40 animate-pulse"></div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                                <div className="h-4 bg-gray-200 rounded w-36 animate-pulse"></div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                                <div className="h-4 bg-gray-200 rounded w-44 animate-pulse"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        );
-    }
-
-    // Pas de skeleton - laisser le système global gérer les transitions
 
     if (!property) {
         return (

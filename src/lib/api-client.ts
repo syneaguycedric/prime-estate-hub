@@ -1,5 +1,31 @@
 // Client API sécurisé qui passe par notre serveur proxy
 
+/**
+ * Récupère le token d'authentification approprié selon l'état de connexion
+ */
+function getAuthToken(): string | null {
+    // Vérifier si on est côté client
+    if (typeof window === 'undefined') {
+        return process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
+    }
+
+    // Essayer de récupérer l'access_token du localStorage
+    try {
+        const authData = localStorage.getItem('kylimmo_auth_data');
+        if (authData) {
+            const parsed = JSON.parse(authData);
+            if (parsed.access_token) {
+                return parsed.access_token;
+            }
+        }
+    } catch (error) {
+        console.warn('[AUTH] Error reading auth token:', error);
+    }
+
+    // Fallback sur le DEFAULT_TOKEN
+    return process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
+}
+
 interface ProxyRequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     headers?: Record<string, string>;
@@ -53,6 +79,9 @@ class SecureApiClient {
             console.log(`[API CLIENT DEBUG] Proxy URL: ${proxyUrl}`);
         }
 
+        // Récupérer le token d'authentification approprié
+        const authToken = getAuthToken();
+
         // Headers requis pour le proxy
         const proxyHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -60,6 +89,11 @@ class SecureApiClient {
             'X-Target-Protocol': 'https',
             ...headers,
         };
+
+        // Ajouter le token d'authentification si disponible
+        if (authToken) {
+            proxyHeaders['Authorization'] = `Bearer ${authToken}`;
+        }
 
         // Ajout des headers de cache si spécifiés
         if (cache) {

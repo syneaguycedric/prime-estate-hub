@@ -419,7 +419,9 @@ export function buildDirectusImageUrl(fileId: string, transformations?: {
     quality?: number;
     format?: 'webp' | 'jpeg' | 'png';
 }): string {
-    const assetsUrl = process.env.NEXT_PUBLIC_DIRECTUS_ASSETS_URL || 'https://ki-backoffice.eyoboue.dev:8143/assets';
+    // URL de base pour les assets Directus
+    const baseUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://ki-backoffice.eyoboue.dev:8143';
+    const assetsUrl = `${baseUrl}/assets`;
 
     if (!transformations) {
         return `${assetsUrl}/${fileId}`;

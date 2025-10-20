@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import Head from "next/head";
 import LoadingBar from "@/components/ui/loading-bar";
+import PageSkeletonManager from "@/components/ui/page-skeleton-manager";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Import des styles globaux
@@ -102,6 +103,7 @@ export default function App({ Component, pageProps }: AppProps) {
                     <AuthProvider>
                         <TooltipProvider>
                             <LoadingBar />
+                            <PageSkeletonManager />
 
                             {/* Éviter les problèmes d'hydratation du thème */}
                             {mounted && (

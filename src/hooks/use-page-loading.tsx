@@ -16,19 +16,12 @@ export const usePageLoading = (options: UsePageLoadingOptions = {}) => {
         let delayTimer: NodeJS.Timeout;
         let timeoutTimer: NodeJS.Timeout;
 
-        const handleRouteChangeStart = () => {
+        const handleRouteChangeStart = (url: string) => {
             setIsLoading(true);
 
-            // Délai avant d'afficher le loading (évite le flash pour les chargements rapides)
-            delayTimer = setTimeout(() => {
-                setShowLoading(true);
-            }, delay);
-
-            // Timeout de sécurité
-            timeoutTimer = setTimeout(() => {
-                setIsLoading(false);
-                setShowLoading(false);
-            }, timeout);
+            // Le PageSkeletonManager gère maintenant tous les skeletons
+            // Ce hook ne gère plus que l'état de loading
+            setShowLoading(false);
         };
 
         const handleRouteChangeComplete = () => {
