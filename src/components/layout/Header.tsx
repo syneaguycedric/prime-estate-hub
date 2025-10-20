@@ -42,6 +42,28 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
         navigateWithTransition("/");
     };
 
+    const handlePublishClick = () => {
+        if (!isAuthenticated) {
+            // Stocker l'intention de redirection après connexion
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("redirect_after_login", "/create-listing");
+            }
+
+            // Afficher un toast d'invitation à se connecter
+            import("@/lib/toast-helpers").then(({ toast }) => {
+                toast.warning("Connexion requise", {
+                    description: "Vous devez être connecté pour publier une annonce. Connectez-vous ou créez un compte.",
+                    duration: 5000,
+                });
+            });
+            // Rediriger vers la page de connexion
+            navigateWithTransition("/login");
+        } else {
+            // Rediriger vers la page de création d'annonce
+            navigateWithTransition("/create-listing");
+        }
+    };
+
     return (
         <motion.header
             className="sticky top-0 z-50 w-full bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm"
@@ -146,7 +168,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                         </Button>
                     )}
 
-                    <Button variant="hero" size="sm">
+                    <Button variant="hero" size="sm" onClick={handlePublishClick}>
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Publier
                     </Button>

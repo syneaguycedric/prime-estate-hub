@@ -10,6 +10,8 @@ import { Property } from "@/data/properties";
 import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse } from "@/lib/directus-api";
 import { getFirstImageUrl } from "@/lib/property-helpers";
 import { usePageLoading } from "@/hooks/use-page-loading";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/lib/toast-helpers";
 
 interface HomePageProps {
     initialProperties: Property[];
@@ -26,6 +28,7 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
     const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
     const { showLoading } = usePageLoading();
+    const { isAuthenticated } = useAuth();
 
     // État pour les filtres et la pagination
     const [filters, setFilters] = useState<PropertyFilters>({});

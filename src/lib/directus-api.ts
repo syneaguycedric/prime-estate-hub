@@ -795,3 +795,104 @@ export async function registerUser(registerData: RegisterData): Promise<Register
         };
     }
 }
+
+/**
+ * Interface pour la création d'une annonce
+ */
+export interface CreateListingData {
+    status: 'draft' | 'published';
+    title: string;
+    description?: string | null;
+    price: number;
+    contractType: 'leasing' | 'selling';
+    surfaceArea: string;
+    surfaceAreaUnit: string;
+    rooms: number;
+    bathrooms: number;
+    kitchens: number;
+    floors: number;
+    address: {
+        country: string;
+        city: string;
+        state: string;
+        street: string;
+    };
+    agency: string;
+    characteristics: Array<{ name: string; value: string }>;
+    type: 'appartment' | 'villa' | 'land';
+    images: Array<{ directus_files_id: string }>;
+}
+
+/**
+ * Upload d'un fichier image vers Directus via l'API Next.js
+ */
+export async function uploadFile(accessToken: string, file: File): Promise<{ success: boolean; fileId?: string; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Uploading file:', file.name);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload/file', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] File upload error:', errorData);
+            return { success: false, error: 'Erreur lors de l\'upload du fichier' };
+        }
+
+        const data = await response.json();
+        console.log('[DIRECTUS API] File uploaded successfully:', data.data.id);
+
+        return { success: true, fileId: data.data.id };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error uploading file:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue lors de l\'upload',
+        };
+    }
+}
+
+/**
+ * Création d'une annonce immobilière via l'API Next.js
+ */
+export async function createListing(accessToken: string, listingData: CreateListingData): Promise<{ success: boolean; listing?: any; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Creating listing:', listingData.title);
+
+        const response = await fetch('/api/listings/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(listingData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Listing creation error:', errorData);
+            return { success: false, error: 'Erreur lors de la création de l\'annonce' };
+        }
+
+        const data = await response.json() as any;
+        console.log('[DIRECTUS API] Listing created successfully:', data.data[0].id);
+
+        return { success: true, listing: data.data[0] };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error creating listing:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue lors de la création',
+        };
+    }
+}

@@ -64,8 +64,15 @@ const LoginPage = () => {
             const result = await login(email, password);
 
             if (result.success) {
-                // Redirection vers la page d'accueil
-                router.push("/");
+                // Vérifier s'il y a une redirection stockée
+                const redirectUrl = sessionStorage.getItem("redirect_after_login");
+                if (redirectUrl) {
+                    sessionStorage.removeItem("redirect_after_login");
+                    router.push(redirectUrl);
+                } else {
+                    // Redirection vers la page d'accueil
+                    router.push("/");
+                }
             }
             // Les erreurs sont maintenant gérées par le contexte avec des toasts
         } catch (err) {

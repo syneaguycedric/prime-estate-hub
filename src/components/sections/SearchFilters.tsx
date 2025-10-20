@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, MapPin, Home, Euro, Bed, Bath, Car, Ruler } from "lucide-react";
+import { X, MapPin, Home, Euro, Bed, Bath, Ruler } from "lucide-react";
 import { PropertyFilters } from "@/lib/directus-api";
 
 interface SearchFiltersProps {
@@ -26,9 +26,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
         minSurface: "",
         maxSurface: "",
         rooms: "",
-        bedrooms: "",
         bathrooms: "",
-        parking: "",
     });
 
     // Gérer l'overlay et le scroll selon la taille d'écran
@@ -123,8 +121,27 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
         const propertyFilters: PropertyFilters = {};
 
         if (filters.location) propertyFilters.location = filters.location;
-        if (filters.transaction) propertyFilters.contractType = filters.transaction;
-        if (filters.propertyType) propertyFilters.propertyType = filters.propertyType;
+
+        // Mapper les valeurs de transaction
+        if (filters.transaction) {
+            const transactionMap: Record<string, string> = {
+                achat: "selling",
+                location: "leasing",
+            };
+            propertyFilters.contractType = transactionMap[filters.transaction] || filters.transaction;
+        }
+
+        // Mapper les types de biens
+        if (filters.propertyType) {
+            const propertyTypeMap: Record<string, string> = {
+                appartement: "appartment",
+                maison: "house",
+                villa: "villa",
+                terrain: "land",
+                commercial: "commercial",
+            };
+            propertyFilters.propertyType = propertyTypeMap[filters.propertyType] || filters.propertyType;
+        }
 
         // Convertir les prix
         if (filters.minPrice) {
@@ -175,9 +192,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
             minSurface: "",
             maxSurface: "",
             rooms: "",
-            bedrooms: "",
             bathrooms: "",
-            parking: "",
         });
         // Appeler la fonction de réinitialisation du parent
         if (onReset) {
@@ -302,22 +317,6 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                         </Select>
                     </div>
 
-                    {/* Nombre de chambres */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium text-foreground">Chambres</label>
-                        <Select value={filters.bedrooms} onValueChange={(value) => updateFilter("bedrooms", value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Indifférent" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="1">1 chambre</SelectItem>
-                                <SelectItem value="2">2 chambres</SelectItem>
-                                <SelectItem value="3">3 chambres</SelectItem>
-                                <SelectItem value="4">4+ chambres</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
                     {/* Salles de bain */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium text-foreground flex items-center">
@@ -332,24 +331,6 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                                 <SelectItem value="1">1 salle de bain</SelectItem>
                                 <SelectItem value="2">2 salles de bain</SelectItem>
                                 <SelectItem value="3">3+ salles de bain</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Parking */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium text-foreground flex items-center">
-                            <Car className="h-4 w-4 mr-2" />
-                            Parking
-                        </label>
-                        <Select value={filters.parking} onValueChange={(value) => updateFilter("parking", value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Indifférent" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">Aucun</SelectItem>
-                                <SelectItem value="1">1 place</SelectItem>
-                                <SelectItem value="2">2+ places</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Note: devIndicators.buildActivity est déprécié dans Next.js 15+
+    // L'indicateur est masqué via CSS dans src/index.css
+
     // Bypass ESLint en mode build pour accélérer le développement
     eslint: {
         ignoreDuringBuilds: true,

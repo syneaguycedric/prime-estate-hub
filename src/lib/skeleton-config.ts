@@ -2,8 +2,9 @@ import { ComponentType } from 'react';
 import PropertySkeleton from '@/components/ui/property-skeleton';
 import ProfileSkeleton from '@/components/ui/profile-skeleton';
 import DetailSkeleton from '@/components/ui/detail-skeleton';
+import LoginSkeleton from '@/components/ui/login-skeleton';
 
-export type SkeletonType = 'list' | 'detail' | 'profile' | 'none';
+export type SkeletonType = 'list' | 'detail' | 'profile' | 'login' | 'none';
 
 export interface SkeletonConfig {
     type: SkeletonType;
@@ -24,10 +25,14 @@ export const SKELETON_ROUTES: Record<string, SkeletonConfig> = {
         component: ProfileSkeleton,
     },
     '/login': {
-        type: 'none', // Pas de skeleton pour la page de login
+        type: 'login',
+        component: LoginSkeleton,
     },
     '/register': {
         type: 'none', // Pas de skeleton pour la page d'inscription
+    },
+    '/create-listing': {
+        type: 'none', // Pas de skeleton pour la page de création d'annonce
     },
     '/404': {
         type: 'none', // Pas de skeleton pour la page 404

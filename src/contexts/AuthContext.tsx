@@ -154,6 +154,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         duration: 3000,
                     });
 
+                    // Gérer la redirection après connexion
+                    if (typeof window !== "undefined") {
+                        const redirectUrl = sessionStorage.getItem("redirect_after_login");
+                        if (redirectUrl) {
+                            sessionStorage.removeItem("redirect_after_login");
+                            // La redirection sera gérée par la page de login
+                        }
+                    }
+
                     return { success: true };
                 } else {
                     throw new Error("Impossible de récupérer les informations utilisateur");

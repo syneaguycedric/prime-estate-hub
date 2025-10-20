@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Masquer complètement l'indicateur de build Next.js */
+#__next-build-watcher,
+[data-nextjs-build-indicator],
+.nextjs-container-build-indicator {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* Immobilier Platform Design System - Inspired by PrimeVue
 All colors MUST be HSL.
 */
