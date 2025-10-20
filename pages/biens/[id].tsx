@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Property } from "@/data/properties";
 import { fetchPropertyById } from "@/lib/directus-api";
-import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
+import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
 import PageNavbar from "@/components/layout/PageNavbar";
 // Import dynamique temporairement désactivé
 
@@ -82,7 +82,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                 <meta name="twitter:card" content="summary_large_image" />
 
                 {/* Preload de l'image principale */}
-                <link rel="preload" as="image" href={property.images[0]} />
+                <link rel="preload" as="image" href={getFirstImageUrl(property)} />
 
                 {/* Structured Data - Real Estate Listing */}
                 <script
@@ -94,7 +94,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             name: property.title,
                             description: `${property.type} de ${property.surfaceArea} ${property.surfaceAreaUnit} situé à ${property.location}`,
                             url: seoData.canonicalUrl,
-                            image: property.images,
+                            image: getAllImageUrls(property),
                             priceRange: property.price,
                             address: {
                                 "@type": "PostalAddress",
@@ -107,8 +107,8 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                 value: parseInt(property.surfaceArea?.replace(/\D/g, "") || "0"),
                                 unitText: "m²",
                             },
-                            ...(property.bedrooms && {
-                                numberOfRooms: property.bedrooms,
+                            ...(property.rooms && {
+                                numberOfRooms: property.rooms,
                             }),
                             ...(property.bathrooms && {
                                 numberOfBathroomsTotal: property.bathrooms,
@@ -454,14 +454,14 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
 function generateSeoData(property: Property, baseUrl: string) {
     return {
         title: `${property.title} - ${property.price} | Kylimmo`,
-        description: `${property.type} de ${property.surfaceArea} ${property.surfaceAreaUnit} à ${property.location}. ${
-            property.bedrooms ? `${property.bedrooms} chambres, ` : ""
-        }${property.bathrooms ? `${property.bathrooms} salles de bain. ` : ""}Prix: ${property.price}`,
+        description: `${property.type} de ${property.surfaceArea} ${property.surfaceAreaUnit} à ${property.location}. ${property.rooms ? `${property.rooms} chambres, ` : ""}${
+            property.bathrooms ? `${property.bathrooms} salles de bain. ` : ""
+        }Prix: ${property.price}`,
         keywords: `${property.type.toLowerCase()}, ${property.location.toLowerCase()}, immobilier côte d'ivoire, ${property.surfaceArea} ${
             property.surfaceAreaUnit
         }, ${property.price.toLowerCase()}`,
         canonicalUrl: `${baseUrl}/biens/${property.id}`,
-        ogImage: property.images[0],
+        ogImage: getFirstImageUrl(property),
     };
 }
 

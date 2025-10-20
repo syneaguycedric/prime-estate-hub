@@ -8,6 +8,7 @@ import SearchFilters from "@/components/sections/SearchFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
 import { Property } from "@/data/properties";
 import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse } from "@/lib/directus-api";
+import { getFirstImageUrl } from "@/lib/property-helpers";
 import { usePageLoading } from "@/hooks/use-page-loading";
 
 interface HomePageProps {
@@ -220,9 +221,9 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                                     item: {
                                         "@type": "RealEstateAgent",
                                         name: property.title,
-                                        description: `${property.type} - ${property.surface} à ${property.location}`,
+                                        description: `${property.type} - ${property.surfaceArea} ${property.surfaceAreaUnit} à ${property.location}`,
                                         url: `${seoData.canonicalUrl}/biens/${property.id}`,
-                                        image: property.images[0],
+                                        image: getFirstImageUrl(property),
                                         priceRange: property.price,
                                         address: {
                                             "@type": "PostalAddress",
@@ -243,7 +244,7 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
 
                 {/* Preload des images critiques */}
                 {initialProperties.slice(0, 3).map((property, index) => (
-                    <link key={property.id} rel="preload" as="image" href={property.images[0]} media={index === 0 ? "(min-width: 768px)" : "(min-width: 1024px)"} />
+                    <link key={property.id} rel="preload" as="image" href={getFirstImageUrl(property)} media={index === 0 ? "(min-width: 768px)" : "(min-width: 1024px)"} />
                 ))}
             </Head>
 

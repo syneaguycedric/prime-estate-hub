@@ -44,6 +44,25 @@ export interface User {
     theme?: string;
 }
 
+// Interface pour les données d'inscription
+export interface RegisterData {
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    title?: string;
+    location?: string;
+    phoneNumber?: string;
+    email_notifications?: boolean;
+}
+
+// Interface pour la réponse d'inscription
+export interface RegisterResponse {
+    success: boolean;
+    user?: User;
+    error?: string;
+}
+
 // Interface pour les filtres de recherche
 export interface PropertyFilters {
     search?: string;              // Recherche globale (titre, description, localisation)
@@ -168,19 +187,31 @@ function mockFilteredProperties(filters: PropertyFilters): PaginatedResponse {
     }
 
     if (minPrice !== undefined) {
-        filtered = filtered.filter(p => p.price >= minPrice);
+        filtered = filtered.filter(p => {
+            const priceNumber = parseFloat(p.price.replace(/[^\d]/g, ''));
+            return priceNumber >= minPrice;
+        });
     }
 
     if (maxPrice !== undefined) {
-        filtered = filtered.filter(p => p.price <= maxPrice);
+        filtered = filtered.filter(p => {
+            const priceNumber = parseFloat(p.price.replace(/[^\d]/g, ''));
+            return priceNumber <= maxPrice;
+        });
     }
 
     if (minSurface !== undefined) {
-        filtered = filtered.filter(p => p.surfaceArea >= minSurface);
+        filtered = filtered.filter(p => {
+            const surfaceNumber = parseFloat(p.surfaceArea.replace(/[^\d]/g, ''));
+            return surfaceNumber >= minSurface;
+        });
     }
 
     if (maxSurface !== undefined) {
-        filtered = filtered.filter(p => p.surfaceArea <= maxSurface);
+        filtered = filtered.filter(p => {
+            const surfaceNumber = parseFloat(p.surfaceArea.replace(/[^\d]/g, ''));
+            return surfaceNumber <= maxSurface;
+        });
     }
 
     if (rooms !== undefined) {
@@ -711,6 +742,56 @@ export async function updateUserProfile(
         return {
             success: false,
             error: 'Une erreur est survenue lors de la mise à jour',
+        };
+    }
+}
+
+/**
+ * Inscription d'un nouvel utilisateur
+ */
+export async function registerUser(registerData: RegisterData): Promise<RegisterResponse> {
+    try {
+        console.log('[DIRECTUS API] Registering new user:', registerData.email);
+
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(registerData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('[DIRECTUS API] Registration error:', data);
+
+            // Gestion spécifique de l'erreur email déjà utilisé
+            if (response.status === 409 && data.error === 'Email déjà utilisé') {
+                return {
+                    success: false,
+                    error: 'Cette adresse email est déjà utilisée. Veuillez en choisir une autre.',
+                };
+            }
+
+            return {
+                success: false,
+                error: data.error || 'Erreur lors de l\'inscription',
+            };
+        }
+
+        console.log('[DIRECTUS API] User registered successfully:', data.user.id);
+
+        return {
+            success: true,
+            user: data.user,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error registering user:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue lors de l\'inscription',
         };
     }
 }

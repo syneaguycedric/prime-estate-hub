@@ -178,6 +178,16 @@ const LoginPage = () => {
                                 </Button>
                             </div>
 
+                            {/* Lien vers l'inscription */}
+                            <div className="mt-4 text-center border-t pt-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Vous n'avez pas de compte ?{" "}
+                                    <Button variant="link" onClick={() => router.push("/register")} className="text-primary font-semibold p-0 h-auto" disabled={isLoading}>
+                                        Inscrivez-vous
+                                    </Button>
+                                </p>
+                            </div>
+
                             {/* Retour à l'accueil */}
                             <div className="mt-4 text-center">
                                 <Button variant="ghost" onClick={() => router.push("/")} className="text-sm" disabled={isLoading}>

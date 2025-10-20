@@ -26,6 +26,9 @@ export const SKELETON_ROUTES: Record<string, SkeletonConfig> = {
     '/login': {
         type: 'none', // Pas de skeleton pour la page de login
     },
+    '/register': {
+        type: 'none', // Pas de skeleton pour la page d'inscription
+    },
     '/404': {
         type: 'none', // Pas de skeleton pour la page 404
     },

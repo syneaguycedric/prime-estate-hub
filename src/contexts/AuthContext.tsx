@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { loginUser, getCurrentUser, logoutUser as apiLogoutUser, User } from "@/lib/directus-api";
+import { loginUser, getCurrentUser, logoutUser as apiLogoutUser, registerUser, User, RegisterData } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 
 // Interface pour les données d'authentification
@@ -21,6 +21,7 @@ interface AuthState {
 // Interface pour les actions d'authentification
 interface AuthActions {
     login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    register: (registerData: RegisterData) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
     refreshAuth: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -182,6 +183,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    // Fonction d'inscription
+    const register = async (registerData: RegisterData): Promise<{ success: boolean; error?: string }> => {
+        try {
+            setAuthState((prev) => ({ ...prev, isLoading: true }));
+
+            const result = await registerUser(registerData);
+
+            if (result.success && result.user) {
+                // Après inscription réussie, connecter automatiquement l'utilisateur
+                const loginResult = await login(registerData.email, registerData.password);
+
+                if (loginResult.success) {
+                    toast.success("Inscription réussie", {
+                        description: `Bienvenue ${result.user.first_name || result.user.email} !`,
+                        duration: 3000,
+                    });
+
+                    return { success: true };
+                } else {
+                    // Inscription réussie mais connexion échouée
+                    toast.warning("Inscription réussie", {
+                        description: "Votre compte a été créé. Veuillez vous connecter.",
+                        duration: 5000,
+                    });
+
+                    return { success: true };
+                }
+            } else {
+                setAuthState((prev) => ({ ...prev, isLoading: false }));
+
+                // Afficher un toast d'erreur
+                toast.error("Échec de l'inscription", {
+                    description: result.error || "Erreur lors de l'inscription",
+                    duration: 5000,
+                });
+
+                return { success: false, error: result.error || "Erreur lors de l'inscription" };
+            }
+        } catch (error: any) {
+            console.error("Erreur lors de l'inscription:", error);
+            setAuthState((prev) => ({ ...prev, isLoading: false }));
+
+            // Afficher un toast d'erreur
+            toast.error("Erreur d'inscription", {
+                description: error.message || "Une erreur inattendue est survenue",
+                duration: 5000,
+            });
+
+            return { success: false, error: error.message || "Une erreur inattendue est survenue" };
+        }
+    };
+
     // Fonction de déconnexion
     const logout = () => {
         // Appeler l'API de déconnexion si nécessaire
@@ -251,6 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const contextValue: AuthContextType = {
         ...authState,
         login,
+        register,
         logout,
         refreshAuth,
         refreshUser,
