@@ -190,6 +190,13 @@ const ProfilePage = () => {
                                                 {profile?.first_name} {profile?.last_name}
                                             </h1>
                                             {profile?.title && <p className="text-muted-foreground mt-1">{profile.title}</p>}
+                                            {profile?.role?.name && (
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                                        {profile.role.name}
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                                                 <Mail className="h-4 w-4 text-muted-foreground" />
                                                 <span className="text-sm text-muted-foreground">{profile?.email}</span>
@@ -296,6 +303,45 @@ const ProfilePage = () => {
                                                 placeholder="Parlez-nous de vous..."
                                             />
                                         </div>
+
+                                        {/* Informations du compte (lecture seule) */}
+                                        {profile?.account || profile?.role ? (
+                                            <div className="space-y-4 pt-4 border-t">
+                                                <h3 className="text-sm font-medium text-muted-foreground">Informations du compte</h3>
+
+                                                {/* Rôle */}
+                                                {profile?.role?.name && (
+                                                    <div className="space-y-2">
+                                                        <Label>Rôle</Label>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                                                {profile.role.name}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Type de compte */}
+                                                {profile?.account?.account_type && (
+                                                    <div className="space-y-2">
+                                                        <Label>Type de compte</Label>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                                                {profile.account.account_type}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Agence */}
+                                                {profile?.account?.agency && (
+                                                    <div className="space-y-2">
+                                                        <Label>Agence</Label>
+                                                        <Input value={profile.account.agency} disabled className="bg-muted" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : null}
 
                                         {/* Boutons d'action */}
                                         {isEditing && (

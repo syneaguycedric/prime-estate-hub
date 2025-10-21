@@ -42,6 +42,70 @@ export interface User {
     description?: string;
     language?: string;
     theme?: string;
+    account?: {
+        id: string;
+        account_type: string;
+        phoneNumber?: string;
+        agency?: string | null;
+    };
+    role?: {
+        id: string;
+        name: string;
+    };
+}
+
+// Interface pour les agences immobilières
+export interface Agency {
+    id: string;
+    title: string;
+    address: {
+        country: string;
+        state: string;
+        city: string;
+        street: string;
+        geocoord?: {
+            type: "Point";
+            coordinates: [number, number];
+        };
+        contacts?: Array<{
+            type: "email" | "phone";
+            value: string;
+        }>;
+        social_links?: Array<{
+            service: string;
+            url: string;
+        }>;
+    };
+    docs?: any[];
+    date_created?: string;
+    date_updated?: string;
+    user_created?: string;
+    user_updated?: string;
+    status?: string;
+}
+
+// Interface pour la création d'une agence
+export interface CreateAgencyData {
+    title: string;
+    address: {
+        country: string;
+        state: string;
+        city: string;
+        street: string;
+        geocoord?: {
+            type: "Point";
+            coordinates: [number, number];
+        };
+        contacts?: Array<{
+            type: "email" | "phone";
+            value: string;
+        }>;
+        social_links?: Array<{
+            service: string;
+            url: string;
+        }>;
+    };
+    docs?: any[];
 }
 
 // Interface pour les données d'inscription
@@ -626,19 +690,30 @@ export async function getCurrentUser(token: string): Promise<User | null> {
     try {
         console.log('[DIRECTUS API] Fetching current user');
 
-        const response = await apiClient.get<DirectusResponse<User>>(
-            DIRECTUS_DOMAIN,
-            'users/me',
-            {
-                cacheKey: undefined,
-                cacheTtl: 0,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            }
-        );
+        // Appeler l'API route Next.js qui utilise ?fields=*.*
+        const response = await fetch('/api/auth/profile', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
 
-        return response.data;
+        if (!response.ok) {
+            console.error('[DIRECTUS API] Error fetching user:', response.status);
+            return null;
+        }
+
+        const data = await response.json() as DirectusResponse<User>;
+
+        console.log('[DIRECTUS API] Raw response structure:', JSON.stringify(data, null, 2));
+        console.log('[DIRECTUS API] User data:', data.data);
+        console.log('[DIRECTUS API] User first_name:', data.data?.first_name);
+        console.log('[DIRECTUS API] User email:', data.data?.email);
+        console.log('[DIRECTUS API] User account:', data.data?.account);
+        console.log('[DIRECTUS API] User account_type:', data.data?.account?.account_type);
+
+        return data.data;
 
     } catch (error) {
         console.error('[DIRECTUS API] Error fetching current user:', error);
@@ -893,6 +968,394 @@ export async function createListing(accessToken: string, listingData: CreateList
         return {
             success: false,
             error: 'Une erreur est survenue lors de la création',
+        };
+    }
+}
+
+/**
+ * Récupérer les annonces d'un utilisateur spécifique
+ */
+export async function fetchUserProperties(accessToken: string, userId: string): Promise<{ success: boolean; properties?: Property[]; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Fetching properties for user:', userId);
+
+        const response = await fetch(`/api/user/properties?userId=${userId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error fetching user properties:', errorData);
+            return { success: false, error: 'Impossible de récupérer vos annonces' };
+        }
+
+        const data = await response.json() as any;
+        const properties = data.data || [];
+
+        console.log('[DIRECTUS API] Found', properties.length, 'properties');
+
+        return { success: true, properties };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Devenir annonceur
+ */
+export async function becomeAdvertiser(
+    accessToken: string,
+    userId: string,
+    accountId: string
+): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Becoming advertiser for user:', userId);
+
+        const response = await fetch('/api/user/become-advertiser', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                userId,
+                accountId
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error becoming advertiser:', errorData);
+            return { success: false, error: 'Impossible de devenir annonceur' };
+        }
+
+        const data = await response.json() as any;
+        console.log('[DIRECTUS API] User upgraded to advertiser successfully');
+
+        return { success: true, user: data.data };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error becoming advertiser:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Supprimer une annonce
+ */
+export async function deleteProperty(
+    accessToken: string,
+    propertyId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Deleting property:', propertyId);
+
+        const response = await fetch(`/api/listings/${propertyId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error deleting property:', errorData);
+            return { success: false, error: 'Impossible de supprimer l\'annonce' };
+        }
+
+        console.log('[DIRECTUS API] Property deleted successfully');
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error deleting property:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Basculer le statut d'une annonce
+ */
+export async function togglePropertyStatus(
+    accessToken: string,
+    propertyId: string,
+    newStatus: 'published' | 'draft'
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Toggling property status:', propertyId, 'to', newStatus);
+
+        const response = await fetch(`/api/listings/${propertyId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                status: newStatus
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error toggling property status:', errorData);
+            return { success: false, error: 'Impossible de modifier le statut' };
+        }
+
+        console.log('[DIRECTUS API] Property status updated successfully');
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error toggling property status:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+// ==================== AGENCES ====================
+
+/**
+ * Créer une agence immobilière
+ */
+export async function createAgency(
+    accessToken: string,
+    data: CreateAgencyData
+): Promise<{ success: boolean; agency?: Agency; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Creating agency:', data.title);
+
+        const response = await fetch('/api/agencies/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                accessToken,
+                ...data
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error creating agency:', errorData);
+            return { success: false, error: 'Impossible de créer l\'agence' };
+        }
+
+        const result = await response.json();
+        console.log('[DIRECTUS API] Agency created successfully');
+
+        return { success: true, agency: result.data };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error creating agency:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Récupérer la liste des agences
+ */
+export async function fetchAgencies(
+    accessToken: string
+): Promise<{ success: boolean; agencies?: Agency[]; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Fetching agencies list');
+
+        const response = await fetch('/api/agencies/list', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error fetching agencies:', errorData);
+            return { success: false, error: 'Impossible de récupérer les agences' };
+        }
+
+        const result = await response.json();
+        console.log('[DIRECTUS API] Agencies fetched successfully:', result.data?.length || 0);
+
+        return { success: true, agencies: result.data || [] };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error fetching agencies:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Récupérer une agence par ID
+ */
+export async function fetchAgencyById(
+    accessToken: string,
+    agencyId: string
+): Promise<{ success: boolean; agency?: Agency; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Fetching agency:', agencyId);
+
+        const response = await fetch(`/api/agencies/${agencyId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error fetching agency:', errorData);
+            return { success: false, error: 'Impossible de récupérer l\'agence' };
+        }
+
+        const result = await response.json();
+        console.log('[DIRECTUS API] Agency fetched successfully');
+
+        return { success: true, agency: result.data };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error fetching agency:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Mettre à jour une agence
+ */
+export async function updateAgency(
+    accessToken: string,
+    agencyId: string,
+    data: Partial<CreateAgencyData>
+): Promise<{ success: boolean; agency?: Agency; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Updating agency:', agencyId);
+
+        const response = await fetch(`/api/agencies/${agencyId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error updating agency:', errorData);
+            return { success: false, error: 'Impossible de mettre à jour l\'agence' };
+        }
+
+        const result = await response.json();
+        console.log('[DIRECTUS API] Agency updated successfully');
+
+        return { success: true, agency: result.data };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error updating agency:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Supprimer une agence
+ */
+export async function deleteAgency(
+    accessToken: string,
+    agencyId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Deleting agency:', agencyId);
+
+        const response = await fetch(`/api/agencies/${agencyId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error deleting agency:', errorData);
+            return { success: false, error: 'Impossible de supprimer l\'agence' };
+        }
+
+        console.log('[DIRECTUS API] Agency deleted successfully');
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error deleting agency:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
+/**
+ * Rattacher un utilisateur à une agence
+ */
+export async function attachUserToAgency(
+    accessToken: string,
+    agencyId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Attaching user to agency:', agencyId);
+
+        const response = await fetch('/api/user/attach-agency', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                accessToken,
+                agencyId
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error attaching to agency:', errorData);
+            return { success: false, error: 'Impossible de se rattacher à l\'agence' };
+        }
+
+        console.log('[DIRECTUS API] User attached to agency successfully');
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error attaching to agency:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
         };
     }
 }

@@ -34,6 +34,10 @@ export const SKELETON_ROUTES: Record<string, SkeletonConfig> = {
     '/create-listing': {
         type: 'none', // Pas de skeleton pour la page de création d'annonce
     },
+    '/my-listings': {
+        type: 'list',
+        component: PropertySkeleton,
+    },
     '/404': {
         type: 'none', // Pas de skeleton pour la page 404
     },

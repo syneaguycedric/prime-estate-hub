@@ -22,7 +22,7 @@ export default async function handler(
         if (req.method === 'GET') {
             console.log('[PROFILE API] Fetching user profile');
 
-            const response = await fetch(`${directusUrl}/users/me`, {
+            const response = await fetch(`${directusUrl}/users/me?fields=*,account.id,account.account_type,account.phoneNumber,account.agency,role.id,role.name`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -38,6 +38,13 @@ export default async function handler(
 
             const data = await response.json();
             console.log('[PROFILE API] Profile fetched successfully');
+            console.log('[PROFILE API] Full Directus response:', JSON.stringify(data, null, 2));
+            console.log('[PROFILE API] User data:', {
+                id: data.data?.id,
+                account: data.data?.account,
+                accountType: typeof data.data?.account === 'object' ? data.data?.account?.account_type : 'account is ID only',
+                role: data.data?.role
+            });
             return res.status(200).json(data);
         }
 

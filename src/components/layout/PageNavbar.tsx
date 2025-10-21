@@ -40,9 +40,7 @@ const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
     return (
         <motion.nav
             className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-                isScrolled
-                    ? "bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm"
-                    : "bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm"
+                isScrolled ? "bg-background border-b border-border shadow-sm" : "bg-background border-b border-border"
             }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

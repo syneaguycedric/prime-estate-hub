@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Menu, PlusCircle, User, Heart, Filter, RotateCcw, LogOut } from "lucide-react";
+import { Search, Menu, PlusCircle, User, Heart, Filter, RotateCcw, LogOut, Building2 } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
@@ -59,6 +59,19 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
             // Rediriger vers la page de connexion
             navigateWithTransition("/login");
         } else {
+            // Vérifier si l'utilisateur est un annonceur ET rattaché à une agence
+            if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+                // Rediriger vers l'onglet "Devenir annonceur"
+                navigateWithTransition("/my-listings?tab=advertiser");
+                import("@/lib/toast-helpers").then(({ toast }) => {
+                    toast.info("Devenez annonceur", {
+                        description: "Vous devez être annonceur avec une agence pour publier des annonces.",
+                        duration: 7000,
+                    });
+                });
+                return;
+            }
+
             // Rediriger vers la page de création d'annonce
             navigateWithTransition("/create-listing");
         }
@@ -153,6 +166,10 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                                 <DropdownMenuItem onClick={() => navigateWithTransition("/favorites")}>
                                     <Heart className="mr-2 h-4 w-4" />
                                     Mes favoris
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
+                                    <Building2 className="mr-2 h-4 w-4" />
+                                    Mon espace
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={logout} className="text-destructive">

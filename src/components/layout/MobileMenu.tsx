@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Search, Filter, Heart, User, PlusCircle } from "lucide-react";
+import { X, Search, Filter, Heart, User, PlusCircle, Building2 } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
     const [searchQuery, setSearchQuery] = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
     const sheetRef = useRef<HTMLDivElement>(null);
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const { navigateWithTransition } = useNavigationTransition();
 
     useEffect(() => {
@@ -80,6 +80,20 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
             navigateWithTransition("/login");
             onClose();
         } else {
+            // Vérifier si l'utilisateur est un annonceur ET rattaché à une agence
+            if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+                // Rediriger vers l'onglet "Devenir annonceur"
+                navigateWithTransition("/my-listings?tab=advertiser");
+                import("@/lib/toast-helpers").then(({ toast }) => {
+                    toast.info("Devenez annonceur", {
+                        description: "Vous devez être annonceur avec une agence pour publier des annonces.",
+                        duration: 7000,
+                    });
+                });
+                onClose();
+                return;
+            }
+
             // Rediriger vers la page de création d'annonce
             navigateWithTransition("/create-listing");
             onClose();
@@ -151,6 +165,18 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
                             <Button variant="ghost" className="w-full justify-start h-12">
                                 <Heart className="h-4 w-4 mr-3" />
                                 Mes favoris
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start h-12"
+                                onClick={() => {
+                                    navigateWithTransition("/my-listings");
+                                    onClose();
+                                }}
+                            >
+                                <Building2 className="h-4 w-4 mr-3" />
+                                Mon espace
                             </Button>
 
                             <Button variant="ghost" className="w-full justify-start h-12">

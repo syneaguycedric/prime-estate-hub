@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     });
 
                     toast.success("Connexion réussie", {
-                        description: `Bienvenue ${user.first_name || user.email} !`,
+                        description: "Bienvenue.",
                         duration: 3000,
                     });
 
@@ -205,7 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 if (loginResult.success) {
                     toast.success("Inscription réussie", {
-                        description: `Bienvenue ${result.user.first_name || result.user.email} !`,
+                        description: "Bienvenue.",
                         duration: 3000,
                     });
 
@@ -292,6 +292,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const user = await getCurrentUser(authState.authData.access_token);
 
             if (user) {
+                console.log("[AUTH CONTEXT] New user data received:", {
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    account_type: user.account?.account_type,
+                    role: user.role?.name,
+                });
+
                 // Mettre à jour l'état
                 setAuthState((prev) => ({
                     ...prev,
@@ -304,6 +311,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }
 
                 console.log("[AUTH CONTEXT] User data refreshed successfully");
+                console.log("[AUTH CONTEXT] Current auth state after refresh:", {
+                    isAuthenticated: true,
+                    user: user,
+                });
             }
         } catch (error) {
             console.error("Erreur lors du rafraîchissement des données utilisateur:", error);

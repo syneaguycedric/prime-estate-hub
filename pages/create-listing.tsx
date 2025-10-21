@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -28,6 +28,27 @@ interface UploadedImage {
 const CreateListingPage = () => {
     const router = useRouter();
     const { isAuthenticated, authData, user } = useAuth();
+
+    // Vérifier l'authentification et le type de compte
+    useEffect(() => {
+        if (!isAuthenticated) {
+            router.push("/login");
+            toast.warning("Connexion requise", {
+                description: "Vous devez être connecté pour créer une annonce.",
+                duration: 5000,
+            });
+            return;
+        }
+
+        if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+            router.push("/my-listings?tab=advertiser");
+            toast.info("Devenez annonceur", {
+                description: "Vous devez être annonceur avec une agence pour publier des annonces.",
+                duration: 7000,
+            });
+            return;
+        }
+    }, [isAuthenticated, user, router]);
 
     // États du formulaire
     const [formData, setFormData] = useState({
