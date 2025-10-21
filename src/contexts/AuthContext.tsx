@@ -308,24 +308,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Fonction pour rafraîchir l'authentification
     const refreshAuth = async (): Promise<void> => {
         try {
-            if (!authState.authData?.refresh_token) return;
+            if (!authState.authData?.refresh_token) {
+                console.log("[AUTH CONTEXT] No refresh token available");
+                return;
+            }
 
-            // Ici, vous pourriez implémenter une logique de refresh token
-            // Pour l'instant, on va simplement vérifier si l'utilisateur est toujours valide
-            if (authState.authData?.access_token) {
-                const user = await getCurrentUser(authState.authData.access_token);
-                if (user) {
-                    setAuthState((prev) => ({
-                        ...prev,
-                        user,
-                    }));
-                } else {
-                    // Token invalide, déconnecter
-                    logout();
-                }
+            console.log("[AUTH CONTEXT] Refreshing authentication token...");
+
+            // Appeler la route API Next.js pour le refresh token
+            const response = await fetch("/api/auth/refresh", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    refresh_token: authState.authData.refresh_token,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error("[AUTH CONTEXT] Failed to refresh token:", response.status);
+                // Token invalide, déconnecter
+                logout();
+                return;
+            }
+
+            const data = await response.json();
+            console.log("[AUTH CONTEXT] Token refreshed successfully");
+
+            // Créer le nouvel objet AuthData
+            const newAuthData: AuthData = {
+                access_token: data.data.access_token,
+                refresh_token: data.data.refresh_token,
+                expires: data.data.expires,
+                expiresAt: Date.now() + data.data.expires,
+            };
+
+            // Récupérer les données utilisateur avec le nouveau token
+            const user = await getCurrentUser(newAuthData.access_token);
+
+            if (user) {
+                console.log("[AUTH CONTEXT] User data retrieved with new token");
+
+                // Mettre à jour l'état
+                setAuthState({
+                    isAuthenticated: true,
+                    user,
+                    authData: newAuthData,
+                    isLoading: false,
+                });
+
+                // Sauvegarder les nouvelles données
+                saveAuthData(newAuthData, user);
+            } else {
+                // Impossible de récupérer l'utilisateur, déconnecter
+                logout();
             }
         } catch (error) {
-            console.error("Erreur lors du rafraîchissement de l'authentification:", error);
+            console.error("[AUTH CONTEXT] Error refreshing authentication:", error);
             logout();
         }
     };

@@ -6,12 +6,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/lib/toast-helpers";
 
 export default function BecomeAdvertiser() {
     const router = useRouter();
-    const { user, refreshUser } = useAuth();
+    const { user, refreshUser, refreshAuth } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
     // Utiliser useMemo pour recalculer quand user change
     const isAlreadyAdvertiser = React.useMemo(() => {
@@ -86,11 +97,18 @@ export default function BecomeAdvertiser() {
 
             console.log("[BECOME ADVERTISER] Success:", data);
 
-            // Rafraîchir les données utilisateur immédiatement
+            // Rafraîchir le token pour obtenir les nouvelles permissions
+            console.log("[BECOME ADVERTISER] Refreshing auth token...");
+            await refreshAuth();
+
+            // Rafraîchir les données utilisateur avec le nouveau token
             console.log("[BECOME ADVERTISER] Refreshing user data...");
             await refreshUser();
 
             console.log("[BECOME ADVERTISER] User data refreshed. New account type:", user?.account?.account_type);
+
+            // Fermer le dialog
+            setShowConfirmDialog(false);
 
             toast.success("Félicitations !", {
                 description: "Vous êtes maintenant annonceur.",
@@ -301,7 +319,7 @@ export default function BecomeAdvertiser() {
                             <h3 className="text-xl font-semibold mb-2">Prêt à devenir annonceur ?</h3>
                             <p className="text-muted-foreground mb-6">Cliquez sur le bouton ci-dessous pour activer votre statut annonceur et commencer à publier vos annonces.</p>
                         </div>
-                        <Button onClick={handleBecomeAdvertiser} disabled={isLoading} size="lg" className="w-full sm:w-auto">
+                        <Button onClick={() => setShowConfirmDialog(true)} disabled={isLoading} size="lg" className="w-full sm:w-auto">
                             {isLoading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -318,6 +336,25 @@ export default function BecomeAdvertiser() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Dialog de confirmation */}
+            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Devenir annonceur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Vous êtes sur le point de devenir annonceur. Cela vous permettra de publier des annonces immobilières sur Kylimmo. Cette action est gratuite et
+                            instantanée.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isLoading}>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBecomeAdvertiser} disabled={isLoading}>
+                            {isLoading ? "Activation en cours..." : "Confirmer"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </motion.div>
     );
 }

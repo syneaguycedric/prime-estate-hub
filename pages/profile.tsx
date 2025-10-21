@@ -288,45 +288,6 @@ const ProfilePage = () => {
                                             />
                                         </div>
 
-                                        {/* Informations du compte (lecture seule) */}
-                                        {profile?.account || profile?.role ? (
-                                            <div className="space-y-4 pt-4 border-t">
-                                                <h3 className="text-sm font-medium text-muted-foreground">Informations du compte</h3>
-
-                                                {/* Rôle */}
-                                                {profile?.role?.name && (
-                                                    <div className="space-y-2">
-                                                        <Label>Rôle</Label>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                                                {profile.role.name}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Type de compte */}
-                                                {profile?.account?.account_type && (
-                                                    <div className="space-y-2">
-                                                        <Label>Type de compte</Label>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                                                                {profile.account.account_type}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Agence */}
-                                                {profile?.account?.agency && (
-                                                    <div className="space-y-2">
-                                                        <Label>Agence</Label>
-                                                        <Input value={profile.account.agency} disabled className="bg-muted" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : null}
-
                                         {/* Boutons d'action */}
                                         {isEditing && (
                                             <div className="flex gap-3 pt-4">
