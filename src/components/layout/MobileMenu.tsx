@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Search, Filter, Heart, User, PlusCircle, Building2 } from "lucide-react";
+import { X, Search, Filter, User, PlusCircle, Building2 } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,13 +66,13 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
         if (!isAuthenticated) {
             // Stocker l'intention de redirection après connexion
             if (typeof window !== "undefined") {
-                sessionStorage.setItem("redirect_after_login", "/create-listing");
+                sessionStorage.setItem("redirect_after_login", "/advertiser");
             }
 
             // Afficher un toast d'invitation à se connecter
             import("@/lib/toast-helpers").then(({ toast }) => {
                 toast.warning("Connexion requise", {
-                    description: "Vous devez être connecté pour publier une annonce. Connectez-vous ou créez un compte.",
+                    description: "Vous devez être connecté pour devenir annonceur. Connectez-vous ou créez un compte.",
                     duration: 5000,
                 });
             });
@@ -82,14 +82,8 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
         } else {
             // Vérifier si l'utilisateur est un annonceur ET rattaché à une agence
             if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
-                // Rediriger vers l'onglet "Devenir annonceur"
-                navigateWithTransition("/my-listings?tab=advertiser");
-                import("@/lib/toast-helpers").then(({ toast }) => {
-                    toast.info("Devenez annonceur", {
-                        description: "Vous devez être annonceur avec une agence pour publier des annonces.",
-                        duration: 7000,
-                    });
-                });
+                // Rediriger vers la page "Devenir annonceur"
+                navigateWithTransition("/advertiser");
                 onClose();
                 return;
             }
@@ -98,6 +92,17 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
             navigateWithTransition("/create-listing");
             onClose();
         }
+    };
+
+    // Déterminer le label du bouton selon le statut utilisateur
+    const getPublishButtonLabel = () => {
+        if (!isAuthenticated) {
+            return "Devenir annonceur";
+        }
+        if (user?.account?.account_type !== "advertiser") {
+            return "Devenir annonceur";
+        }
+        return "Publier une annonce";
     };
 
     return (
@@ -162,31 +167,35 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
                     <div className="space-y-3">
                         <h3 className="text-sm font-medium text-muted-foreground">Navigation</h3>
                         <div className="space-y-2">
-                            <Button variant="ghost" className="w-full justify-start h-12">
-                                <Heart className="h-4 w-4 mr-3" />
-                                Mes favoris
-                            </Button>
+                            {user?.account?.account_type === "advertiser" && (
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start h-12"
+                                    onClick={() => {
+                                        navigateWithTransition("/my-listings");
+                                        onClose();
+                                    }}
+                                >
+                                    <Building2 className="h-4 w-4 mr-3" />
+                                    Mon espace
+                                </Button>
+                            )}
 
                             <Button
                                 variant="ghost"
                                 className="w-full justify-start h-12"
                                 onClick={() => {
-                                    navigateWithTransition("/my-listings");
+                                    navigateWithTransition("/profile");
                                     onClose();
                                 }}
                             >
-                                <Building2 className="h-4 w-4 mr-3" />
-                                Mon espace
-                            </Button>
-
-                            <Button variant="ghost" className="w-full justify-start h-12">
                                 <User className="h-4 w-4 mr-3" />
                                 Mon compte
                             </Button>
 
                             <Button variant="hero" className="w-full justify-start h-12" onClick={handlePublishClick}>
                                 <PlusCircle className="h-4 w-4 mr-3" />
-                                Publier une annonce
+                                {getPublishButtonLabel()}
                             </Button>
                         </div>
                     </div>

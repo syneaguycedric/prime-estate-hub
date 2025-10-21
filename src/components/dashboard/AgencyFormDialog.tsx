@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Agency, CreateAgencyData } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
@@ -32,7 +31,6 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
 
     // Données du formulaire
     const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
     const [country, setCountry] = useState("civ");
     const [state, setState] = useState("");
     const [city, setCity] = useState("");
@@ -47,7 +45,6 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
     useEffect(() => {
         if (agency && open) {
             setTitle(agency.title);
-            setDescription(agency.description || "");
             setCountry(agency.address.country);
             setState(agency.address.state);
             setCity(agency.address.city);
@@ -57,7 +54,6 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
         } else if (open) {
             // Réinitialiser le formulaire
             setTitle("");
-            setDescription("");
             setCountry("civ");
             setState("");
             setCity("");
@@ -163,7 +159,6 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
 
             const data: CreateAgencyData = {
                 title: title.trim(),
-                description: description.trim() || undefined,
                 address: {
                     country,
                     state: state.trim(),
@@ -218,18 +213,6 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
                                 className={errors.title ? "border-destructive" : ""}
                             />
                             {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
-                        </div>
-
-                        {/* Description */}
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description (optionnel)</Label>
-                            <Textarea
-                                id="description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Décrivez votre agence..."
-                                className="min-h-[80px]"
-                            />
                         </div>
                     </div>
 

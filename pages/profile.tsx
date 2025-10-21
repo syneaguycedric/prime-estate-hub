@@ -40,34 +40,18 @@ const ProfilePage = () => {
         }
     }, [isAuthenticated, authLoading, router]);
 
-    // Charger le profil
+    // Utiliser les données du contexte au lieu de charger séparément
     useEffect(() => {
-        const loadProfile = async () => {
-            if (!authData?.access_token) return;
-
-            setIsLoadingProfile(true);
-            const profileData = await getUserProfile(authData.access_token);
-
-            if (profileData) {
-                setProfile(profileData);
-                setFirstName(profileData.first_name || "");
-                setLastName(profileData.last_name || "");
-                setLocation(profileData.location || "");
-                setTitle(profileData.title || "");
-                setDescription(profileData.description || "");
-            } else {
-                toast.error("Erreur de chargement", {
-                    description: "Impossible de charger votre profil",
-                });
-            }
-
+        if (contextUser) {
+            setProfile(contextUser);
+            setFirstName(contextUser.first_name || "");
+            setLastName(contextUser.last_name || "");
+            setLocation(contextUser.location || "");
+            setTitle(contextUser.title || "");
+            setDescription(contextUser.description || "");
             setIsLoadingProfile(false);
-        };
-
-        if (isAuthenticated && authData?.access_token) {
-            loadProfile();
         }
-    }, [isAuthenticated, authData]);
+    }, [contextUser]);
 
     // Validation
     const validateForm = (): boolean => {

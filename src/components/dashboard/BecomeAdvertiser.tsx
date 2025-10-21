@@ -86,20 +86,20 @@ export default function BecomeAdvertiser() {
 
             console.log("[BECOME ADVERTISER] Success:", data);
 
-            // Rafraîchir les données utilisateur
+            // Rafraîchir les données utilisateur immédiatement
             console.log("[BECOME ADVERTISER] Refreshing user data...");
             await refreshUser();
+
             console.log("[BECOME ADVERTISER] User data refreshed. New account type:", user?.account?.account_type);
 
             toast.success("Félicitations !", {
-                description: "Vous êtes maintenant annonceur. Vous pouvez publier des annonces.",
-                duration: 5000,
+                description: "Vous êtes maintenant annonceur.",
+                duration: 2000,
             });
 
-            // Rediriger vers les annonces après un délai
-            setTimeout(() => {
-                router.push("/my-listings?tab=listings");
-            }, 2000);
+            // Redirection immédiate vers la page d'accueil
+            console.log("[BECOME ADVERTISER] Redirecting to home page...");
+            router.push("/");
         } catch (error: any) {
             console.error("Error becoming advertiser:", error);
             toast.error("Erreur", {

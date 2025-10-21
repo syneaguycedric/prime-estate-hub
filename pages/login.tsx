@@ -24,7 +24,11 @@ const LoginPage = () => {
     // Rediriger si déjà connecté
     useEffect(() => {
         if (isAuthenticated) {
-            router.push("/");
+            // Attendre un peu pour que les données utilisateur soient complètement chargées
+            setTimeout(() => {
+                console.log("[LOGIN PAGE] Redirecting after successful login");
+                router.push("/");
+            }, 500);
         }
     }, [isAuthenticated, router]);
 

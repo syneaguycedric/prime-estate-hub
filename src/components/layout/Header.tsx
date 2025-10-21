@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Menu, PlusCircle, User, Heart, Filter, RotateCcw, LogOut, Building2 } from "lucide-react";
+import { Search, Menu, PlusCircle, User, Filter, RotateCcw, LogOut, Building2 } from "lucide-react";
 import ViewToggle from "@/components/ui/view-toggle";
 import MobileMenu from "./MobileMenu";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
@@ -26,6 +26,19 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
     const { navigateWithTransition } = useNavigationTransition();
     const { isAuthenticated, user, logout } = useAuth();
 
+    // Debug: afficher les changements d'utilisateur
+    React.useEffect(() => {
+        console.log("[HEADER] User data changed:", {
+            userId: user?.id,
+            accountType: user?.account?.account_type,
+            agency: user?.account?.agency,
+            isAdvertiser: user?.account?.account_type === "advertiser",
+            buttonLabel: getPublishButtonLabel(),
+            timestamp: new Date().toISOString(),
+            source: user ? "user_loaded" : "no_user",
+        });
+    }, [user]);
+
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && searchQuery.trim()) {
             onSearch(searchQuery);
@@ -46,13 +59,13 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
         if (!isAuthenticated) {
             // Stocker l'intention de redirection après connexion
             if (typeof window !== "undefined") {
-                sessionStorage.setItem("redirect_after_login", "/create-listing");
+                sessionStorage.setItem("redirect_after_login", "/advertiser");
             }
 
             // Afficher un toast d'invitation à se connecter
             import("@/lib/toast-helpers").then(({ toast }) => {
                 toast.warning("Connexion requise", {
-                    description: "Vous devez être connecté pour publier une annonce. Connectez-vous ou créez un compte.",
+                    description: "Vous devez être connecté pour devenir annonceur. Connectez-vous ou créez un compte.",
                     duration: 5000,
                 });
             });
@@ -61,20 +74,25 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
         } else {
             // Vérifier si l'utilisateur est un annonceur ET rattaché à une agence
             if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
-                // Rediriger vers l'onglet "Devenir annonceur"
-                navigateWithTransition("/my-listings?tab=advertiser");
-                import("@/lib/toast-helpers").then(({ toast }) => {
-                    toast.info("Devenez annonceur", {
-                        description: "Vous devez être annonceur avec une agence pour publier des annonces.",
-                        duration: 7000,
-                    });
-                });
+                // Rediriger vers la page "Devenir annonceur"
+                navigateWithTransition("/advertiser");
                 return;
             }
 
             // Rediriger vers la page de création d'annonce
             navigateWithTransition("/create-listing");
         }
+    };
+
+    // Déterminer le label du bouton selon le statut utilisateur
+    const getPublishButtonLabel = () => {
+        if (!isAuthenticated) {
+            return "Devenir annonceur";
+        }
+        if (user?.account?.account_type !== "advertiser") {
+            return "Devenir annonceur";
+        }
+        return "Publier";
     };
 
     return (
@@ -134,11 +152,6 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                         <ViewToggle view={view} onViewChange={onViewChange} />
                     </div>
 
-                    <Button variant="ghost" size="sm" className="hidden md:flex">
-                        <Heart className="h-4 w-4 mr-2" />
-                        Favoris
-                    </Button>
-
                     {isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -163,14 +176,12 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                                     <User className="mr-2 h-4 w-4" />
                                     Mon profil
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigateWithTransition("/favorites")}>
-                                    <Heart className="mr-2 h-4 w-4" />
-                                    Mes favoris
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
-                                    <Building2 className="mr-2 h-4 w-4" />
-                                    Mon espace
-                                </DropdownMenuItem>
+                                {user?.account?.account_type === "advertiser" && (
+                                    <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
+                                        <Building2 className="mr-2 h-4 w-4" />
+                                        Mon espace
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={logout} className="text-destructive">
                                     <LogOut className="mr-2 h-4 w-4" />
@@ -187,7 +198,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
 
                     <Button variant="hero" size="sm" onClick={handlePublishClick}>
                         <PlusCircle className="h-4 w-4 mr-2" />
-                        Publier
+                        {getPublishButtonLabel()}
                     </Button>
 
                     <Button variant="ghost" size="sm" className="sm:hidden" onClick={() => setIsMobileMenuOpen(true)}>

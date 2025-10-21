@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, LayoutList, Building2, BadgeDollarSign, ChevronLeft, ChevronRight, Menu, X, Crown } from "lucide-react";
+import { LayoutDashboard, LayoutList, Building2, ChevronLeft, ChevronRight, Menu, X, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -36,12 +36,6 @@ const menuItems = [
         icon: Building2,
         href: "/my-listings?tab=agencies",
     },
-    {
-        id: "advertiser",
-        label: "Devenir annonceur",
-        icon: BadgeDollarSign,
-        href: "/my-listings?tab=advertiser",
-    },
 ];
 
 export default function DashboardSidebar({ isOpen, onToggle, activeTab, onTabChange, isCollapsed, onCollapseChange, user }: DashboardSidebarProps) {
@@ -59,30 +53,8 @@ export default function DashboardSidebar({ isOpen, onToggle, activeTab, onTabCha
         router.push(item.href);
     };
 
-    // Filtrer les éléments du menu selon le statut de l'utilisateur
+    // Vérifier si l'utilisateur est annonceur
     const isAdvertiser = user?.account?.account_type === "advertiser";
-
-    // Debug: afficher les données utilisateur
-    console.log("[DASHBOARD SIDEBAR] User data:", {
-        user: user,
-        account: user?.account,
-        accountType: user?.account?.account_type,
-        isAdvertiser: isAdvertiser,
-    });
-
-    const filteredMenuItems = menuItems.filter((item) => {
-        // Masquer "Devenir annonceur" si l'utilisateur est déjà annonceur
-        if (item.id === "advertiser" && isAdvertiser) {
-            console.log('[DASHBOARD SIDEBAR] Hiding "Devenir annonceur" menu item');
-            return false;
-        }
-        return true;
-    });
-
-    console.log(
-        "[DASHBOARD SIDEBAR] Filtered menu items:",
-        filteredMenuItems.map((item) => item.label)
-    );
 
     return (
         <>
@@ -150,7 +122,7 @@ export default function DashboardSidebar({ isOpen, onToggle, activeTab, onTabCha
 
                 {/* Menu items */}
                 <nav className="flex-1 p-4 space-y-2">
-                    {filteredMenuItems.map((item) => {
+                    {menuItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = activeTab === item.id;
 

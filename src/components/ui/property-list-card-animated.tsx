@@ -76,13 +76,17 @@ const PropertyListCardAnimated = ({
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.2 + index * 0.05, duration: 0.3 }}
                                         >
-                                            <h3 className="font-medium text-sm sm:text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors">{title}</h3>
-                                            <Badge variant="secondary" className="flex-shrink-0 text-xs h-5">
-                                                {propertyTypeLabel}
-                                            </Badge>
-                                            <Badge variant="outline" className="flex-shrink-0 text-xs h-5">
-                                                {contractTypeLabel}
-                                            </Badge>
+                                            <h3 className="font-medium text-sm sm:text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors flex-1 min-w-0">
+                                                {title}
+                                            </h3>
+                                            <div className="flex gap-1 flex-shrink-0">
+                                                <Badge variant="secondary" className="text-xs h-5">
+                                                    {propertyTypeLabel}
+                                                </Badge>
+                                                <Badge variant="outline" className="text-xs h-5">
+                                                    {contractTypeLabel}
+                                                </Badge>
+                                            </div>
                                         </motion.div>
 
                                         <motion.p

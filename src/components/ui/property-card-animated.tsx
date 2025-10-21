@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, MapPin, Bed, Bath, Square, Eye } from "lucide-react";
+import { MapPin, Bed, Bath, Square, Eye } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import ImageWithLoading from "@/components/ui/image-with-loading";
 import { Property } from "@/data/properties";
@@ -26,7 +26,6 @@ const PropertyCardAnimated = ({
     bathrooms,
     images,
     isNew,
-    isFavorite = false,
     index = 0,
 }: PropertyCardAnimatedProps) => {
     const { navigateWithTransition } = useNavigationTransition();
@@ -73,21 +72,6 @@ const PropertyCardAnimated = ({
                             <Badge variant="outline" className="bg-card/90 text-foreground">
                                 {contractTypeLabel}
                             </Badge>
-                        </motion.div>
-
-                        {/* Favorite button avec animation */}
-                        <motion.div className="absolute top-4 right-4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + index * 0.1 }}>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className={`bg-card/90 hover:bg-card ${isFavorite ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                }}
-                            >
-                                <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
-                            </Button>
                         </motion.div>
 
                         {/* Price overlay avec animation */}

@@ -41,7 +41,7 @@ const CreateListingPage = () => {
         }
 
         if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
-            router.push("/my-listings?tab=advertiser");
+            router.push("/advertiser");
             toast.info("Devenez annonceur", {
                 description: "Vous devez être annonceur avec une agence pour publier des annonces.",
                 duration: 7000,

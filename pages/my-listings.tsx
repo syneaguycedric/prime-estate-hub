@@ -9,7 +9,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import ListingsDataTable from "@/components/dashboard/ListingsDataTable";
 import AgenciesManager from "@/components/dashboard/AgenciesManager";
-import BecomeAdvertiser from "@/components/dashboard/BecomeAdvertiser";
 import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
 import { toast } from "@/lib/toast-helpers";
 
@@ -23,6 +22,16 @@ export default function MyListingsPage() {
     useEffect(() => {
         if (!isAuthenticated) {
             router.push("/login");
+            return;
+        }
+
+        // Vérifier si l'utilisateur est annonceur
+        if (user && user.account?.account_type !== "advertiser") {
+            toast.info("Accès restreint", {
+                description: "Cette page est réservée aux annonceurs. Devenez annonceur pour y accéder.",
+                duration: 5000,
+            });
+            router.push("/advertiser");
             return;
         }
 
@@ -77,8 +86,6 @@ export default function MyListingsPage() {
                 return <ListingsDataTable properties={properties} loading={loading} onRefresh={handleRefresh} />;
             case "agencies":
                 return <AgenciesManager />;
-            case "advertiser":
-                return <BecomeAdvertiser />;
             default:
                 return <DashboardOverview />;
         }

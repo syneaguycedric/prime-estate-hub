@@ -66,12 +66,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     // Vérifier si le token n'est pas expiré
                     const now = Date.now();
                     if (authData.expiresAt > now) {
-                        setAuthState({
-                            isAuthenticated: true,
-                            user,
-                            authData,
-                            isLoading: false,
+                        console.log("[AUTH CONTEXT] Loading from localStorage:", {
+                            userId: user.id,
+                            accountType: user.account?.account_type,
+                            isAdvertiser: user.account?.account_type === "advertiser",
                         });
+
+                        // Rafraîchir les données utilisateur pour s'assurer qu'elles sont à jour
+                        try {
+                            console.log("[AUTH CONTEXT] Refreshing user data on startup...");
+                            const freshUser = await getCurrentUser(authData.access_token);
+                            if (freshUser) {
+                                console.log("[AUTH CONTEXT] Fresh user data:", {
+                                    userId: freshUser.id,
+                                    accountType: freshUser.account?.account_type,
+                                    isAdvertiser: freshUser.account?.account_type === "advertiser",
+                                });
+
+                                // Mettre à jour avec les données fraîches
+                                setAuthState({
+                                    isAuthenticated: true,
+                                    user: freshUser,
+                                    authData,
+                                    isLoading: false,
+                                });
+
+                                // Sauvegarder les données fraîches
+                                saveAuthData(authData, freshUser);
+                            } else {
+                                // Fallback sur les données du localStorage si le rafraîchissement échoue
+                                setAuthState({
+                                    isAuthenticated: true,
+                                    user,
+                                    authData,
+                                    isLoading: false,
+                                });
+                            }
+                        } catch (error) {
+                            console.error("[AUTH CONTEXT] Error refreshing user data:", error);
+                            // Fallback sur les données du localStorage
+                            setAuthState({
+                                isAuthenticated: true,
+                                user,
+                                authData,
+                                isLoading: false,
+                            });
+                        }
 
                         // Vérifier si le token expire bientôt (dans les 5 prochaines minutes)
                         const fiveMinutesFromNow = now + 5 * 60 * 1000;
@@ -138,6 +178,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 const user = await getCurrentUser(result.token);
 
                 if (user) {
+                    console.log("[AUTH CONTEXT] Login successful, user data:", {
+                        id: user.id,
+                        accountType: user.account?.account_type,
+                        agency: user.account?.agency,
+                        isAdvertiser: user.account?.account_type === "advertiser",
+                    });
+
                     // Sauvegarder les données
                     saveAuthData(authData, user);
 
