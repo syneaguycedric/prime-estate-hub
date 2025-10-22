@@ -52,6 +52,10 @@ class SecureApiClient {
         this.baseUrl = process.env.NODE_ENV === 'production'
             ? process.env.NEXT_PUBLIC_SITE_URL || ''
             : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[API CLIENT] Base URL:', this.baseUrl);
+        }
     }
 
     /**
@@ -104,6 +108,11 @@ class SecureApiClient {
         }
 
         const startTime = Date.now();
+
+        // Logs de debug (peut être supprimé en production)
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[API CLIENT] Calling: ${method} ${targetDomain}/${path}`);
+        }
 
         try {
             // Configuration de la requête

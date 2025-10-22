@@ -333,19 +333,24 @@ export async function fetchPropertiesWithFilters(
         // Construire les filtres Directus
         const directusFilters: Record<string, any> = {};
 
+        // Nettoyer les valeurs vides ou undefined
+        const cleanSearch = search?.trim();
+        // const cleanLocation = location?.trim(); // Plus utilisé - champ location inexistant dans Directus
+
         // Recherche globale (OR sur plusieurs champs)
-        if (search) {
+        if (cleanSearch && cleanSearch.length > 0) {
             directusFilters['_or'] = [
-                { title: { _contains: search } },
-                { description: { _contains: search } },
-                { location: { _contains: search } }
+                { title: { _contains: cleanSearch } },
+                { description: { _contains: cleanSearch } }
+                // Retiré: { location: { _contains: cleanSearch } } - champ inexistant dans Directus
             ];
         }
 
         // Filtres spécifiques
-        if (location) {
-            directusFilters['location'] = { _contains: location };
-        }
+        // Retiré: filtre sur location - champ inexistant dans Directus
+        // if (cleanLocation && cleanLocation.length > 0) {
+        //     directusFilters['location'] = { _contains: cleanLocation };
+        // }
 
         if (contractType) {
             directusFilters['contractType'] = { _eq: contractType };
@@ -394,9 +399,21 @@ export async function fetchPropertiesWithFilters(
             meta: 'filter_count'
         };
 
-        // Ajouter les filtres seulement s'il y en a
+        // Ajouter les filtres seulement s'il y en a et qu'ils sont valides
         if (Object.keys(directusFilters).length > 0) {
-            params['filter'] = JSON.stringify(directusFilters);
+            // Vérifier que les filtres ne sont pas vides
+            const hasValidFilters = Object.values(directusFilters).some(value => {
+                if (Array.isArray(value)) return value.length > 0;
+                if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
+                return value !== undefined && value !== null && value !== '';
+            });
+
+            if (hasValidFilters) {
+                params['filter'] = JSON.stringify(directusFilters);
+                console.log('[DIRECTUS API] Sending filters:', directusFilters);
+            } else {
+                console.log('[DIRECTUS API] No valid filters to send');
+            }
         }
 
         const queryString = new URLSearchParams(params).toString();

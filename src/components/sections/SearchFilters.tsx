@@ -14,9 +14,10 @@ interface SearchFiltersProps {
     onFiltersChange?: (count: number) => void;
     onReset?: () => void;
     onApplyFilters?: (filters: PropertyFilters) => void;
+    currentFilters?: PropertyFilters; // Ajouter les filtres actuels
 }
 
-const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilters }: SearchFiltersProps) => {
+const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilters, currentFilters }: SearchFiltersProps) => {
     const [filters, setFilters] = useState({
         location: "",
         transaction: "",
@@ -28,6 +29,23 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
         rooms: "",
         bathrooms: "",
     });
+
+    // Synchroniser l'état local avec les filtres actuels
+    useEffect(() => {
+        if (currentFilters) {
+            setFilters({
+                location: currentFilters.location || "",
+                transaction: currentFilters.contractType || "",
+                propertyType: currentFilters.type || "",
+                minPrice: currentFilters.minPrice?.toString() || "",
+                maxPrice: currentFilters.maxPrice?.toString() || "",
+                minSurface: currentFilters.minSurface?.toString() || "",
+                maxSurface: currentFilters.maxSurface?.toString() || "",
+                rooms: currentFilters.rooms?.toString() || "",
+                bathrooms: currentFilters.bathrooms?.toString() || "",
+            });
+        }
+    }, [currentFilters]);
 
     // Gérer l'overlay et le scroll selon la taille d'écran
     useEffect(() => {
@@ -253,11 +271,9 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                                 <SelectValue placeholder="Tous les types" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="appartement">Appartement</SelectItem>
-                                <SelectItem value="maison">Maison</SelectItem>
+                                <SelectItem value="appartment">Appartement</SelectItem>
                                 <SelectItem value="villa">Villa</SelectItem>
-                                <SelectItem value="terrain">Terrain</SelectItem>
-                                <SelectItem value="commercial">Commercial</SelectItem>
+                                <SelectItem value="land">Terrain</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

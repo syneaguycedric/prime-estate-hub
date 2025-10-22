@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import FeaturedProperties from "@/components/sections/FeaturedProperties";
 import Footer from "@/components/layout/Footer";
 import SearchFilters from "@/components/sections/SearchFilters";
+import ActiveFilters from "@/components/sections/ActiveFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
 import { Property } from "@/data/properties";
 import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse } from "@/lib/directus-api";
@@ -134,6 +135,61 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
         loadPropertiesRef.current(updatedFilters);
     };
 
+    // Fonction pour calculer le nombre de filtres actifs
+    const calculateActiveFiltersCount = (filters: PropertyFilters) => {
+        let count = 0;
+
+        // Filtres simples
+        if (filters.search) count++;
+        if (filters.location) count++;
+        if (filters.contractType) count++;
+        if (filters.type) count++;
+        if (filters.rooms) count++;
+        if (filters.bathrooms) count++;
+
+        // Filtres de range
+        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) count++;
+        if (filters.minSurface !== undefined || filters.maxSurface !== undefined) count++;
+
+        return count;
+    };
+
+    // Gérer la suppression d'un filtre individuel
+    const handleRemoveFilter = (filterKey: string) => {
+        const updatedFilters = { ...filters };
+
+        if (filterKey === "search") {
+            delete updatedFilters.search;
+            setSearchQuery("");
+        } else if (filterKey === "price") {
+            delete updatedFilters.minPrice;
+            delete updatedFilters.maxPrice;
+        } else if (filterKey === "surfaceArea") {
+            delete updatedFilters.minSurface;
+            delete updatedFilters.maxSurface;
+        } else {
+            delete updatedFilters[filterKey as keyof PropertyFilters];
+        }
+
+        updatedFilters.page = 1;
+        setFilters(updatedFilters);
+
+        // Mettre à jour le compteur de filtres actifs
+        const newCount = calculateActiveFiltersCount(updatedFilters);
+        setActiveFiltersCount(newCount);
+
+        loadPropertiesRef.current(updatedFilters);
+    };
+
+    // Gérer la suppression de tous les filtres
+    const handleClearAllFilters = () => {
+        setFilters({});
+        setSearchQuery("");
+        setActiveFiltersCount(0); // Réinitialiser le compteur
+        setProperties(initialProperties);
+        setPagination({ total: initialProperties.length, page: 1, totalPages: 1 });
+    };
+
     // Gérer le changement de page
     const handlePageChange = (page: number) => {
         const updatedFilters = { ...filters, page };
@@ -150,14 +206,15 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
     useEffect(() => {
         console.log("[DEBUG] useEffect searchQuery changed:", searchQuery);
         const timeoutId = setTimeout(() => {
-            if (searchQuery !== undefined && searchQuery !== "") {
-                console.log("[DEBUG] Calling loadProperties with searchQuery:", searchQuery);
+            const trimmedQuery = searchQuery?.trim();
+            if (trimmedQuery && trimmedQuery.length > 0) {
+                console.log("[DEBUG] Calling loadProperties with searchQuery:", trimmedQuery);
                 setFilters((currentFilters) => {
-                    const updatedFilters = { ...currentFilters, search: searchQuery, page: 1 };
+                    const updatedFilters = { ...currentFilters, search: trimmedQuery, page: 1 };
                     loadPropertiesRef.current(updatedFilters);
                     return updatedFilters;
                 });
-            } else if (searchQuery === "") {
+            } else if (searchQuery === "" || (searchQuery && searchQuery.trim() === "")) {
                 // Si la recherche est vide, réinitialiser les filtres
                 console.log("[DEBUG] Resetting filters due to empty search");
                 setFilters({});
@@ -261,6 +318,10 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                     activeFiltersCount={activeFiltersCount}
                 />
                 <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} onReset={handleReset} activeFiltersCount={activeFiltersCount} />
+
+                {/* Filtres actifs avec badges supprimables */}
+                <ActiveFilters filters={filters} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} />
+
                 <div className="relative">
                     <SearchFilters
                         isOpen={showFilters}
@@ -268,6 +329,7 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                         onFiltersChange={setActiveFiltersCount}
                         onReset={handleReset}
                         onApplyFilters={handleApplyFilters}
+                        currentFilters={filters}
                     />
                     <div className={`transition-all duration-300 ${showFilters ? "ml-80" : "ml-0"}`}>
                         <FeaturedProperties properties={properties} pagination={pagination} onPageChange={handlePageChange} view={view} isLoading={isLoading || showLoading} />
