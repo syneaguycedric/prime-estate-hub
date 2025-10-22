@@ -188,13 +188,15 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll }: ActiveFiltersPro
                             <Badge
                                 key={filter.key}
                                 variant="secondary"
-                                className="flex items-center gap-1 px-3 py-1 text-xs hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer group"
+                                className="flex items-center gap-1 px-3 py-1 text-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-200 cursor-pointer group"
                                 onClick={() => onRemoveFilter(filter.key)}
                             >
                                 {filter.icon}
                                 <span className="font-medium">{filter.label}:</span>
                                 <span className="text-muted-foreground">{filter.value}</span>
-                                <X className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-gray-300 group-hover:bg-destructive/20 transition-all duration-200">
+                                    <X className="h-2.5 w-2.5 text-gray-600 group-hover:text-destructive transition-colors duration-200" />
+                                </div>
                             </Badge>
                         ))}
                     </div>

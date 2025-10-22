@@ -130,7 +130,8 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
 
     // Gérer l'application des filtres
     const handleApplyFilters = (newFilters: PropertyFilters) => {
-        const updatedFilters = { ...newFilters, page: 1 };
+        // Combiner avec les filtres existants (recherche, etc.)
+        const updatedFilters = { ...filters, ...newFilters, page: 1 };
         setFilters(updatedFilters);
         loadPropertiesRef.current(updatedFilters);
     };
@@ -215,11 +216,13 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                     return updatedFilters;
                 });
             } else if (searchQuery === "" || (searchQuery && searchQuery.trim() === "")) {
-                // Si la recherche est vide, réinitialiser les filtres
-                console.log("[DEBUG] Resetting filters due to empty search");
-                setFilters({});
-                setProperties(initialProperties);
-                setPagination({ total: initialProperties.length, page: 1, totalPages: 1 });
+                // Si la recherche est vide, supprimer seulement le filtre de recherche
+                console.log("[DEBUG] Clearing search filter");
+                setFilters((currentFilters) => {
+                    const { search, ...filtersWithoutSearch } = currentFilters;
+                    loadPropertiesRef.current(filtersWithoutSearch);
+                    return filtersWithoutSearch;
+                });
             }
         }, 500);
 
@@ -316,8 +319,15 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                     view={view}
                     onViewChange={setView}
                     activeFiltersCount={activeFiltersCount}
+                    searchQuery={searchQuery}
                 />
-                <MobileSearchBar onSearch={handleSearch} onOpenFilters={() => setShowFilters(true)} onReset={handleReset} activeFiltersCount={activeFiltersCount} />
+                <MobileSearchBar
+                    onSearch={handleSearch}
+                    onOpenFilters={() => setShowFilters(true)}
+                    onReset={handleReset}
+                    activeFiltersCount={activeFiltersCount}
+                    searchQuery={searchQuery}
+                />
 
                 {/* Filtres actifs avec badges supprimables */}
                 <ActiveFilters filters={filters} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} />

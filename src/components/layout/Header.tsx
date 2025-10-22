@@ -18,13 +18,21 @@ interface HeaderProps {
     view: "grid" | "list";
     onViewChange: (view: "grid" | "list") => void;
     activeFiltersCount?: number;
+    searchQuery?: string;
 }
 
-const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFiltersCount = 0 }: HeaderProps) => {
+const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFiltersCount = 0, searchQuery: externalSearchQuery }: HeaderProps) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { navigateWithTransition } = useNavigationTransition();
     const { isAuthenticated, user, logout } = useAuth();
+
+    // Synchroniser l'état local avec la prop externe
+    React.useEffect(() => {
+        if (externalSearchQuery !== undefined) {
+            setSearchQuery(externalSearchQuery);
+        }
+    }, [externalSearchQuery]);
 
     // Debug: afficher les changements d'utilisateur
     React.useEffect(() => {

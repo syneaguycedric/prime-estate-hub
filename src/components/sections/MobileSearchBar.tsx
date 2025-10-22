@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,18 @@ interface MobileSearchBarProps {
     onOpenFilters: () => void;
     onReset: () => void;
     activeFiltersCount?: number;
+    searchQuery?: string;
 }
 
-const MobileSearchBar = ({ onSearch, onOpenFilters, onReset, activeFiltersCount = 0 }: MobileSearchBarProps) => {
+const MobileSearchBar = ({ onSearch, onOpenFilters, onReset, activeFiltersCount = 0, searchQuery: externalSearchQuery }: MobileSearchBarProps) => {
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Synchroniser l'état local avec la prop externe
+    useEffect(() => {
+        if (externalSearchQuery !== undefined) {
+            setSearchQuery(externalSearchQuery);
+        }
+    }, [externalSearchQuery]);
 
     const handleSearch = () => {
         if (searchQuery.trim()) {
