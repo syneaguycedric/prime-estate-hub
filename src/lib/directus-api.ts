@@ -46,7 +46,10 @@ export interface User {
         id: string;
         account_type: string;
         phoneNumber?: string;
-        agency?: string | null;
+        agency?: string | null; // Agence actuelle
+        agencies?: Array<{
+            estate_agencies_id: Agency;
+        }>; // Toutes les agences de l'utilisateur
     };
     role?: {
         id: string;
@@ -54,28 +57,35 @@ export interface User {
     };
 }
 
+// Interface pour les contacts
+export interface Contact {
+    type: "email" | "phone";
+    value: string;
+}
+
+// Interface pour l'adresse d'agence
+export interface AgencyAddress {
+    id: number;
+    country: string;
+    state: string;
+    city: string;
+    street: string;
+    geocoord?: {
+        type: string;
+        coordinates: [number, number];
+    };
+    contacts: Contact[];
+    social_links?: Array<{
+        service: string;
+        url: string;
+    }>;
+}
+
 // Interface pour les agences immobilières
 export interface Agency {
     id: string;
     title: string;
-    address: {
-        country: string;
-        state: string;
-        city: string;
-        street: string;
-        geocoord?: {
-            type: "Point";
-            coordinates: [number, number];
-        };
-        contacts?: Array<{
-            type: "email" | "phone";
-            value: string;
-        }>;
-        social_links?: Array<{
-            service: string;
-            url: string;
-        }>;
-    };
+    address: AgencyAddress; // Maintenant objet complet au lieu de juste ID
     docs?: any[];
     date_created?: string;
     date_updated?: string;
@@ -1374,5 +1384,31 @@ export async function attachUserToAgency(
             success: false,
             error: 'Une erreur est survenue',
         };
+    }
+}
+
+/**
+ * Rattacher une agence à un utilisateur (PATCH /users/:id)
+ */
+export async function attachAgencyToUser(userId: string, agencyId: string, accessToken: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const response = await apiClient.secureRequest(`/users/${userId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                account: {
+                    agency: agencyId
+                }
+            }),
+            accessToken,
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            return { success: false, error: error.errors?.[0]?.message || 'Erreur lors du rattachement' };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: 'Erreur réseau' };
     }
 }

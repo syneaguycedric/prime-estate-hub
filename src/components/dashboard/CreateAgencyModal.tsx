@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/lib/toast-helpers";
+import { useApiWithRefresh } from "@/hooks/use-api-with-refresh";
 
 interface CreateAgencyModalProps {
     open: boolean;
@@ -24,7 +26,8 @@ interface SocialLink {
 }
 
 export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAgencyModalProps) {
-    const { authData } = useAuth();
+    const { authData, user, refreshUser } = useAuth();
+    const { fetchWithRefresh } = useApiWithRefresh();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -101,7 +104,7 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
         }
 
         // Vérifier que l'utilisateur est authentifié
-        if (!authData?.access_token) {
+        if (!authData?.access_token || !user?.id) {
             setErrors({ submit: "Session expirée. Veuillez vous reconnecter." });
             return;
         }
@@ -133,18 +136,31 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
             console.log("[CREATE AGENCY] Sending request with token:", authData.access_token ? "Token present" : "No token");
             console.log("[CREATE AGENCY] Agency data:", agencyData);
 
-            const response = await fetch("/api/agencies", {
+            const response = await fetchWithRefresh("/api/agencies/create", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${authData.access_token}`,
                 },
-                body: JSON.stringify(agencyData),
+                body: JSON.stringify({
+                    agencyData,
+                    userId: user.id,
+                }),
             });
 
             const result = await response.json();
 
             if (result.success) {
+                const wasSetAsCurrent = !user?.account?.agency;
+
+                toast.success("Agence créée", {
+                    description: wasSetAsCurrent ? "Votre agence a été créée et définie comme agence actuelle" : "Votre agence a été créée avec succès",
+                });
+
+                // Rafraîchir le contexte utilisateur
+                if (refreshUser) {
+                    await refreshUser();
+                }
+
                 onSuccess();
                 handleClose();
             } else {

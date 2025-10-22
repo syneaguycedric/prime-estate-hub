@@ -7,47 +7,59 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { Agency } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
+import { useApiWithRefresh } from "@/hooks/use-api-with-refresh";
 import CreateAgencyModal from "./CreateAgencyModal";
 
 export default function AgenciesManager() {
-    const { authData } = useAuth();
+    const { authData, user, refreshUser } = useAuth();
+    const { fetchWithRefresh } = useApiWithRefresh();
     const [searchQuery, setSearchQuery] = useState("");
     const [agencies, setAgencies] = useState<Agency[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
+    const [isAttaching, setIsAttaching] = useState(false);
 
     useEffect(() => {
         loadAgencies();
-    }, [authData]);
+    }, [user]);
 
     const loadAgencies = async () => {
-        if (!authData?.access_token) return;
+        if (!user?.account?.agencies) {
+            setAgencies([]);
+            setLoading(false);
+            return;
+        }
 
-        setLoading(true);
         try {
-            const response = await fetch("/api/agencies", {
-                headers: {
-                    Authorization: `Bearer ${authData.access_token}`,
-                },
+            setLoading(true);
+            // Extraire les agences depuis user.account.agencies
+            const userAgencies = user.account.agencies.map((item) => {
+                const agency = item.estate_agencies_id;
+                // S'assurer que address existe et est un objet
+                if (typeof agency.address === "number") {
+                    // Adresse non chargée, juste l'ID
+                    agency.address = {
+                        id: agency.address,
+                        country: "",
+                        state: "",
+                        city: "",
+                        street: "",
+                        contacts: [],
+                    } as any;
+                }
+                return agency;
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-                setAgencies(result.agencies || []);
-            } else {
-                toast.error("Erreur", {
-                    description: result.error || "Impossible de charger les agences",
-                });
-            }
+            setAgencies(userAgencies);
         } catch (error) {
             console.error("Error loading agencies:", error);
             toast.error("Erreur", {
-                description: "Une erreur est survenue lors du chargement des agences",
+                description: "Impossible de charger vos agences",
             });
         } finally {
             setLoading(false);
@@ -94,7 +106,7 @@ export default function AgenciesManager() {
     };
 
     const getAgencyContact = (agency: Agency, type: "email" | "phone") => {
-        const contact = agency.address.contacts?.find((c) => c.type === type);
+        const contact = agency.address?.contacts?.find((c) => c.type === type);
         return contact?.value || "-";
     };
 
@@ -121,6 +133,76 @@ export default function AgenciesManager() {
         toast.info("Fonctionnalité à venir", {
             description: "La suppression d'agence sera bientôt disponible",
         });
+    };
+
+    const handleSelectAgency = (agency: Agency) => {
+        setSelectedAgency(agency);
+    };
+
+    const handleConfirmAttachment = async () => {
+        if (!selectedAgency || !authData?.access_token || !user?.id) return;
+
+        const hasExistingAgency = user?.account?.agency;
+
+        setIsAttaching(true);
+        try {
+            const response = await fetchWithRefresh("/api/users/attach-agency", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    userId: user.id,
+                    agencyId: selectedAgency.id,
+                }),
+            });
+
+            if (!response.ok) {
+                const result = await response.json();
+                toast.error("Erreur", {
+                    description: result.error || "Impossible de rattacher l'agence",
+                });
+            } else {
+                const result = await response.json();
+
+                if (result.success) {
+                    toast.success("Agence rattachée", {
+                        description: hasExistingAgency ? "Votre agence a été changée avec succès" : "Votre compte est maintenant rattaché à cette agence",
+                    });
+
+                    // Mettre à jour le contexte utilisateur pour que le badge s'affiche
+                    if (refreshUser) {
+                        await refreshUser();
+                    }
+
+                    // Mettre à jour l'interface immédiatement
+                    setAgencies((prevAgencies) =>
+                        prevAgencies.map((agency) => ({
+                            ...agency,
+                            isCurrentAgency: agency.id === selectedAgency.id,
+                        }))
+                    );
+                }
+            }
+        } catch (error) {
+            console.error("[ATTACH AGENCY] Error:", error);
+            toast.error("Erreur", {
+                description: "Une erreur réseau est survenue",
+            });
+        } finally {
+            setIsAttaching(false);
+            // Fermer le Dialog immédiatement pour éviter l'overlay persistant
+            setSelectedAgency(null);
+
+            // Forcer le nettoyage de l'overlay après un délai
+            setTimeout(() => {
+                // Vérifier et corriger le pointer-events si nécessaire
+                const body = document.body;
+                if (body.style.pointerEvents === "none") {
+                    body.style.pointerEvents = "";
+                }
+            }, 100);
+        }
     };
 
     return (
@@ -206,8 +288,15 @@ export default function AgenciesManager() {
                                     {filteredAgencies.map((agency) => (
                                         <TableRow key={agency.id} className="hover:bg-muted/50">
                                             <TableCell>
-                                                <div className="space-y-1">
-                                                    <div className="font-medium">{agency.title}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="space-y-1">
+                                                        <div className="font-medium">{agency.title}</div>
+                                                    </div>
+                                                    {(user?.account?.agency === agency.id || (agency as any).isCurrentAgency) && (
+                                                        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 shrink-0">
+                                                            Agence actuelle
+                                                        </Badge>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -217,16 +306,17 @@ export default function AgenciesManager() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center space-x-1 text-sm">
-                                                        <Phone className="h-3 w-3" />
-                                                        <span>{getAgencyContact(agency, "phone")}</span>
+                                                {agency.address?.contacts && agency.address.contacts.length > 0 ? (
+                                                    <div className="space-y-1 text-sm">
+                                                        {agency.address.contacts.map((contact, idx) => (
+                                                            <div key={idx} className="text-muted-foreground">
+                                                                {contact.type === "email" ? "📧" : "📞"} {contact.value}
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                    <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                                                        <Mail className="h-3 w-3" />
-                                                        <span>{getAgencyContact(agency, "email")}</span>
-                                                    </div>
-                                                </div>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground">Aucun contact</span>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center space-x-1">
@@ -249,6 +339,7 @@ export default function AgenciesManager() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => handleSelectAgency(agency)}>Choisir cette agence</DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => handleEditAgency(agency.id)}>Modifier</DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => handleDeleteAgency(agency.id)} className="text-destructive">
                                                             Supprimer
@@ -267,6 +358,49 @@ export default function AgenciesManager() {
 
             {/* Modal de création d'agence */}
             <CreateAgencyModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleAgencyCreated} />
+
+            {/* Dialog de confirmation de rattachement */}
+            <Dialog
+                open={!!selectedAgency}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedAgency(null);
+                        // Forcer le nettoyage de l'overlay
+                        setTimeout(() => {
+                            const body = document.body;
+                            if (body.style.pointerEvents === "none") {
+                                body.style.pointerEvents = "";
+                            }
+                        }, 50);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirmer le rattachement</DialogTitle>
+                        <DialogDescription>
+                            {user?.account?.agency
+                                ? `Vous êtes déjà rattaché à une agence. Voulez-vous changer pour "${selectedAgency?.title}" ? Cette action remplacera votre agence actuelle.`
+                                : `Voulez-vous rattacher votre compte à l'agence "${selectedAgency?.title}" ?`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setSelectedAgency(null)} disabled={isAttaching}>
+                            Annuler
+                        </Button>
+                        <Button onClick={handleConfirmAttachment} disabled={isAttaching} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                            {isAttaching ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Rattachement...
+                                </>
+                            ) : (
+                                "Confirmer"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </motion.div>
     );
 }
