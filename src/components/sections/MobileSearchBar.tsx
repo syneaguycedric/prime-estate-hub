@@ -47,11 +47,21 @@ const MobileSearchBar = ({ onSearch, onOpenFilters, onReset, activeFiltersCount 
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Rechercher un bien, une ville..."
-                        className="pl-10 h-11 bg-card border-border focus:bg-card transition-colors"
+                        className="pl-10 pr-12 h-11 bg-card border-border focus:bg-card transition-colors"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={handleKeyPress}
                     />
+                    <Button
+                        variant={searchQuery.trim() ? "default" : "outline"}
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 shadow-sm transition-all duration-200 hover:scale-110 hover:-translate-y-1/2 active:scale-95 active:-translate-y-1/2"
+                        onClick={() => searchQuery.trim() && handleSearch()}
+                        disabled={!searchQuery.trim()}
+                        title="Rechercher"
+                    >
+                        <Search className="h-3.5 w-3.5" />
+                    </Button>
                 </div>
                 <Button variant="outline" size="sm" onClick={onOpenFilters} className="h-11 px-3 relative">
                     <Filter className="h-4 w-4" />
