@@ -28,7 +28,7 @@ const PageNavbar = ({ breadcrumbs = [] }: PageNavbarProps) => {
     }, []);
 
     const handleBack = () => {
-        navigateWithTransition("/");
+        router.back();
     };
 
     const isHomePage = router.pathname === "/";

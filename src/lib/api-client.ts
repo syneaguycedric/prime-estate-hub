@@ -1,4 +1,5 @@
 // Client API sécurisé qui passe par notre serveur proxy
+import { handleUnauthorized } from './auth-helpers';
 
 /**
  * Récupère le token d'authentification approprié selon l'état de connexion
@@ -137,6 +138,13 @@ class SecureApiClient {
                 });
 
                 clearTimeout(timeoutId);
+
+                // ✅ Intercepter les erreurs 401 (Non autorisé)
+                if (response.status === 401) {
+                    console.log('[API CLIENT] 401 Unauthorized - Déconnexion automatique');
+                    handleUnauthorized();
+                    throw new Error('Unauthorized');
+                }
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));

@@ -262,13 +262,14 @@ const CreateListingPage = () => {
             const result = await createListing(authData.access_token, listingData);
 
             if (result.success && result.listing) {
+                const isDraft = status === "draft";
                 toast.success("Annonce créée", {
-                    description: status === "published" ? "Votre annonce a été publiée avec succès" : "Votre brouillon a été sauvegardé",
+                    description: isDraft ? "Votre annonce a été sauvegardée en brouillon" : "Votre annonce a été publiée avec succès",
                     duration: 3000,
                 });
 
-                // Rediriger vers la page de détail
-                router.push(`/biens/${result.listing.id}`);
+                // Rediriger vers la liste des annonces
+                router.push("/my-listings?tab=listings");
             } else {
                 toast.error("Erreur de création", {
                     description: result.error || "Impossible de créer l'annonce",
@@ -309,7 +310,7 @@ const CreateListingPage = () => {
             </Head>
 
             <div className="bg-background min-h-screen">
-                <PageNavbar breadcrumbs={[{ label: "Accueil", href: "/" }, { label: "Créer une annonce" }]} />
+                <PageNavbar breadcrumbs={[{ label: "Mes annonces", href: "/my-listings?tab=listings" }, { label: "Créer une annonce" }]} />
 
                 <main className="container py-8 pt-20">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-4xl mx-auto">

@@ -12,7 +12,7 @@ const nextConfig = {
 
     // Configuration des images pour optimisation
     images: {
-        domains: [],
+        domains: ["ki-backoffice.eyoboue.dev"],
         dangerouslyAllowSVG: true,
         contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     },

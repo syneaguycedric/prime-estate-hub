@@ -1,17 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
+import { handleUnauthorized } from '@/lib/auth-helpers';
 
 export function useApiWithRefresh() {
     const { authData, refreshUser } = useAuth();
-
-    const handleLogout = () => {
-        localStorage.removeItem('auth');
-        document.body.style.pointerEvents = '';
-        toast.error('Session expirée', {
-            description: 'Vous avez été déconnecté pour inactivité prolongée',
-        });
-        window.location.href = '/login';
-    };
 
     const fetchWithRefresh = async (url: string, options: RequestInit = {}) => {
         try {
@@ -57,7 +48,7 @@ export function useApiWithRefresh() {
                 } else {
                     console.log('[API REFRESH] Refresh failed, logging out');
                     // Refresh échoué → déconnexion
-                    handleLogout();
+                    handleUnauthorized();
                     throw new Error('Refresh token expired');
                 }
             }
@@ -70,7 +61,7 @@ export function useApiWithRefresh() {
                 // Erreur réseau, ne pas déconnecter automatiquement
                 throw error;
             }
-            handleLogout();
+            handleUnauthorized();
             throw error;
         }
     };
