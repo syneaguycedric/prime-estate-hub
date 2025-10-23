@@ -1087,6 +1087,37 @@ export async function updateProperty(
     }
 }
 
+/**
+ * Supprimer une propriété
+ */
+export async function deleteProperty(
+    propertyId: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Deleting property:', propertyId);
+
+        const response = await createAuthenticatedFetch(`/api/properties/${propertyId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error deleting property:', errorData);
+            return { success: false, error: 'Impossible de supprimer l\'annonce' };
+        }
+
+        console.log('[DIRECTUS API] Property deleted successfully');
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error deleting property:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue',
+        };
+    }
+}
+
 export async function fetchUserProperties(accessToken: string, userId: string): Promise<{ success: boolean; properties?: Property[]; error?: string }> {
     try {
         console.log('[DIRECTUS API] Fetching properties for user:', userId);
@@ -1156,38 +1187,6 @@ export async function becomeAdvertiser(
     }
 }
 
-/**
- * Supprimer une annonce
- */
-export async function deleteProperty(
-    accessToken: string,
-    propertyId: string
-): Promise<{ success: boolean; error?: string }> {
-    try {
-        console.log('[DIRECTUS API] Deleting property:', propertyId);
-
-        const response = await createAuthenticatedFetch(`/api/listings/${propertyId}`, {
-            method: 'DELETE',
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('[DIRECTUS API] Error deleting property:', errorData);
-            return { success: false, error: 'Impossible de supprimer l\'annonce' };
-        }
-
-        console.log('[DIRECTUS API] Property deleted successfully');
-
-        return { success: true };
-
-    } catch (error: any) {
-        console.error('[DIRECTUS API] Error deleting property:', error);
-        return {
-            success: false,
-            error: 'Une erreur est survenue',
-        };
-    }
-}
 
 /**
  * Basculer le statut d'une annonce

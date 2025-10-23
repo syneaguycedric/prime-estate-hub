@@ -13,7 +13,7 @@ import { Agency } from "@/lib/directus-api";
 interface AgencyFormModalProps {
     open: boolean;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess: (newAgency?: Agency) => void;
     agency?: Agency | null;
     mode: "create" | "edit";
 }
@@ -194,16 +194,16 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                 result = await response.json();
 
                 if (result.data) {
-                    // 1. Fermer IMMÉDIATEMENT le modal
+                    // 1. Rafraîchir AVANT de fermer le modal
+                    if (refreshUser) {
+                        await refreshUser();
+                    }
+
+                    // 2. Fermer le modal
                     handleClose();
 
-                    // 2. Appeler les callbacks APRÈS fermeture
-                    setTimeout(async () => {
-                        if (refreshUser) {
-                            await refreshUser();
-                        }
-                        onSuccess();
-                    }, 50);
+                    // 3. Appeler le callback avec les données
+                    onSuccess(result.data);
                 } else {
                     setErrors({ submit: result.error || "Erreur lors de la mise à jour de l'agence" });
                 }
@@ -225,17 +225,16 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                 if (result.success) {
                     const wasSetAsCurrent = !user?.account?.agency;
 
-                    // 1. Fermer IMMÉDIATEMENT le modal
+                    // 1. Rafraîchir AVANT de fermer le modal
+                    if (refreshUser) {
+                        await refreshUser();
+                    }
+
+                    // 2. Fermer le modal
                     handleClose();
 
-                    // 2. Appeler les callbacks APRÈS fermeture
-                    setTimeout(async () => {
-                        if (refreshUser) {
-                            await refreshUser();
-                        }
-
-                        onSuccess();
-                    }, 50);
+                    // 3. Appeler le callback avec les données
+                    onSuccess(result.data);
                 } else {
                     setErrors({ submit: result.error || "Erreur lors de la création de l'agence" });
                 }

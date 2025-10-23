@@ -49,7 +49,7 @@ export default function AgenciesManager() {
         return cleanupPointerEvents;
     }, [isEditModalOpen, showCreateModal, selectedAgency, deletingAgency]);
 
-    const loadAgencies = async () => {
+    const loadAgencies = async (showSkeleton = true) => {
         if (!user?.account?.agencies) {
             setAgencies([]);
             setLoading(false);
@@ -57,7 +57,9 @@ export default function AgenciesManager() {
         }
 
         try {
-            setLoading(true);
+            if (showSkeleton) {
+                setLoading(true);
+            }
             // Extraire les agences depuis user.account.agencies
             const userAgencies = user.account.agencies.map((item) => {
                 const agency = item.estate_agencies_id;
@@ -134,12 +136,16 @@ export default function AgenciesManager() {
         setShowCreateModal(true);
     };
 
-    const handleAgencyCreated = () => {
+    const handleAgencyCreated = (newAgency?: Agency) => {
         const wasSetAsCurrent = !user?.account?.agency;
+
+        // Toast immédiat pour feedback utilisateur
         toast.success("Agence créée", {
             description: wasSetAsCurrent ? "Votre agence a été créée et définie comme agence actuelle" : "Votre agence a été créée avec succès",
         });
-        loadAgencies();
+
+        // Recharger les agences (le contexte a déjà été rafraîchi dans le modal)
+        loadAgencies(false);
     };
 
     const handleEditAgency = (agencyId: string) => {
@@ -165,20 +171,19 @@ export default function AgenciesManager() {
             const result = await deleteAgency(authData?.access_token || "", deletingAgency.id);
 
             if (result.success) {
-                // Fermer immédiatement le dialog
+                // Rafraîchir AVANT de fermer le dialog
+                if (refreshUser) {
+                    await refreshUser();
+                }
+
+                // Fermer le dialog
                 setDeletingAgency(null);
 
-                // Rafraîchir après fermeture
-                setTimeout(async () => {
-                    toast.success("Agence supprimée", {
-                        description: "L'agence a été supprimée avec succès",
-                    });
-
-                    if (refreshUser) {
-                        await refreshUser();
-                    }
-                    loadAgencies();
-                }, 50);
+                // Toast et rechargement
+                toast.success("Agence supprimée", {
+                    description: "L'agence a été supprimée avec succès",
+                });
+                loadAgencies(false);
             } else {
                 toast.error("Erreur", {
                     description: result.error || "Impossible de supprimer l'agence",
@@ -426,11 +431,11 @@ export default function AgenciesManager() {
                     setIsEditModalOpen(false);
                     setEditingAgency(null);
                 }}
-                onSuccess={() => {
+                onSuccess={(updatedAgency?: Agency) => {
                     toast.success("Agence mise à jour", {
                         description: "Les modifications ont été enregistrées",
                     });
-                    loadAgencies();
+                    loadAgencies(false);
                 }}
                 agency={editingAgency}
                 mode="edit"

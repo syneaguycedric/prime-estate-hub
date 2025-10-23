@@ -71,6 +71,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             return res.status(200).json(data);
 
+        } else if (req.method === 'DELETE') {
+            // Supprimer une propriété
+            console.log('[PROPERTY API] Deleting property:', id);
+
+            const response = await fetch(`${directusUrl}/items/real_estates/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': authHeader,
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[PROPERTY API] Error deleting property:', errorData);
+                return res.status(response.status).json({
+                    error: errorData.error || `Erreur ${response.status}: Impossible de supprimer l'annonce`,
+                });
+            }
+
+            console.log('[PROPERTY API] Property deleted successfully');
+            return res.status(200).json({ success: true });
+
         } else {
             return res.status(405).json({ error: 'Method not allowed' });
         }

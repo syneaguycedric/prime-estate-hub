@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast-helpers";
+import { deleteProperty } from "@/lib/directus-api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ListingsDataTableProps {
     properties: Property[];
@@ -33,11 +35,23 @@ interface ListingsDataTableProps {
 
 export default function ListingsDataTable({ properties, loading, onRefresh }: ListingsDataTableProps) {
     const router = useRouter();
+    const { authData, refreshUser } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Nettoyage global des pointer-events au montage
+    useEffect(() => {
+        const body = document.body;
+        if (body.style.pointerEvents === "none") {
+            body.style.pointerEvents = "";
+            body.style.removeProperty("pointer-events");
+            console.log("[LISTINGS] Global pointer-events cleanup on mount");
+        }
+    }, []);
 
     // Filtrage des propriétés
     const filteredProperties = useMemo(() => {
@@ -69,19 +83,41 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
     const confirmDelete = async () => {
         if (!propertyToDelete) return;
 
+        setIsDeleting(true);
         try {
-            // TODO: Implémenter l'appel API de suppression
-            toast.success("Annonce supprimée", {
-                description: "L'annonce a été supprimée avec succès.",
-            });
-            onRefresh();
+            const result = await deleteProperty(propertyToDelete.id);
+
+            if (result.success) {
+                // Rafraîchir AVANT de fermer le dialog
+                if (refreshUser) {
+                    await refreshUser();
+                }
+
+                // Fermer le dialog (onOpenChange va gérer setPropertyToDelete)
+                setDeleteDialogOpen(false);
+
+                // Nettoyage immédiat de pointer-events
+                const body = document.body;
+                body.style.pointerEvents = "";
+                body.style.removeProperty("pointer-events");
+
+                // Toast et rechargement
+                toast.success("Annonce supprimée", {
+                    description: "L'annonce a été supprimée avec succès",
+                });
+                onRefresh();
+            } else {
+                toast.error("Erreur", {
+                    description: result.error || "Impossible de supprimer l'annonce",
+                });
+            }
         } catch (error) {
+            console.error("Error deleting property:", error);
             toast.error("Erreur", {
-                description: "Impossible de supprimer l'annonce.",
+                description: "Une erreur est survenue lors de la suppression",
             });
         } finally {
-            setDeleteDialogOpen(false);
-            setPropertyToDelete(null);
+            setIsDeleting(false);
         }
     };
 
@@ -321,7 +357,26 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
             )}
 
             {/* Dialog de confirmation de suppression */}
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialog
+                open={deleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open);
+                    if (!open) {
+                        setPropertyToDelete(null);
+                        // Nettoyage immédiat et agressif de pointer-events
+                        const body = document.body;
+                        body.style.pointerEvents = "";
+                        body.style.removeProperty("pointer-events");
+
+                        // Nettoyage supplémentaire avec délai pour être sûr
+                        setTimeout(() => {
+                            body.style.pointerEvents = "";
+                            body.style.removeProperty("pointer-events");
+                            console.log("[LISTINGS] Pointer-events cleaned:", body.style.pointerEvents);
+                        }, 100);
+                    }
+                }}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Supprimer l'annonce</AlertDialogTitle>
@@ -329,8 +384,8 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Supprimer
+                        <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            {isDeleting ? "Suppression..." : "Supprimer"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
