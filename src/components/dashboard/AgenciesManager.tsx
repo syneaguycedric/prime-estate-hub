@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Agency } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import { useApiWithRefresh } from "@/hooks/use-api-with-refresh";
+import { deleteAgency } from "@/lib/directus-api";
 import AgencyFormModal from "./AgencyFormModal";
 
 export default function AgenciesManager() {
@@ -26,6 +27,8 @@ export default function AgenciesManager() {
     const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
     const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
     const [isAttaching, setIsAttaching] = useState(false);
+    const [deletingAgency, setDeletingAgency] = useState<Agency | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         loadAgencies();
@@ -44,7 +47,7 @@ export default function AgenciesManager() {
         cleanupPointerEvents();
 
         return cleanupPointerEvents;
-    }, [isEditModalOpen, showCreateModal, selectedAgency]);
+    }, [isEditModalOpen, showCreateModal, selectedAgency, deletingAgency]);
 
     const loadAgencies = async () => {
         if (!user?.account?.agencies) {
@@ -132,8 +135,9 @@ export default function AgenciesManager() {
     };
 
     const handleAgencyCreated = () => {
+        const wasSetAsCurrent = !user?.account?.agency;
         toast.success("Agence créée", {
-            description: "L'agence a été créée avec succès",
+            description: wasSetAsCurrent ? "Votre agence a été créée et définie comme agence actuelle" : "Votre agence a été créée avec succès",
         });
         loadAgencies();
     };
@@ -147,10 +151,47 @@ export default function AgenciesManager() {
     };
 
     const handleDeleteAgency = (agencyId: string) => {
-        // TODO: Implémenter la suppression d'agence
-        toast.info("Fonctionnalité à venir", {
-            description: "La suppression d'agence sera bientôt disponible",
-        });
+        const agency = agencies.find((a) => a.id === agencyId);
+        if (agency) {
+            setDeletingAgency(agency);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingAgency) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await deleteAgency(authData?.access_token || "", deletingAgency.id);
+
+            if (result.success) {
+                // Fermer immédiatement le dialog
+                setDeletingAgency(null);
+
+                // Rafraîchir après fermeture
+                setTimeout(async () => {
+                    toast.success("Agence supprimée", {
+                        description: "L'agence a été supprimée avec succès",
+                    });
+
+                    if (refreshUser) {
+                        await refreshUser();
+                    }
+                    loadAgencies();
+                }, 50);
+            } else {
+                toast.error("Erreur", {
+                    description: result.error || "Impossible de supprimer l'agence",
+                });
+            }
+        } catch (error) {
+            console.error("Error deleting agency:", error);
+            toast.error("Erreur", {
+                description: "Une erreur est survenue lors de la suppression",
+            });
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const handleSelectAgency = (agency: Agency) => {
@@ -394,6 +435,45 @@ export default function AgenciesManager() {
                 agency={editingAgency}
                 mode="edit"
             />
+
+            {/* Dialog de confirmation de suppression */}
+            <Dialog
+                open={!!deletingAgency}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeletingAgency(null);
+                        // Forcer le nettoyage de l'overlay
+                        setTimeout(() => {
+                            const body = document.body;
+                            if (body.style.pointerEvents === "none") {
+                                body.style.pointerEvents = "";
+                            }
+                        }, 50);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirmer la suppression</DialogTitle>
+                        <DialogDescription>Êtes-vous sûr de vouloir supprimer l'agence "{deletingAgency?.title}" ? Cette action est irréversible.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeletingAgency(null)} disabled={isDeleting}>
+                            Annuler
+                        </Button>
+                        <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Suppression...
+                                </>
+                            ) : (
+                                "Supprimer"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Dialog de confirmation de rattachement */}
             <Dialog

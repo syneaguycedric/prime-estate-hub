@@ -68,6 +68,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             return res.status(200).json(data);
 
+        } else if (req.method === 'DELETE') {
+            // Supprimer une agence
+            console.log('[AGENCY API] Deleting agency:', id);
+
+            const response = await fetch(`${directusUrl}/items/estate_agencies/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': authHeader,
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[AGENCY API] Error deleting agency:', errorData);
+                return res.status(response.status).json({
+                    error: errorData.error || `Erreur ${response.status}: Impossible de supprimer l'agence`,
+                });
+            }
+
+            console.log('[AGENCY API] Agency deleted successfully');
+            return res.status(200).json({ success: true });
+
         } else {
             res.status(405).json({ message: 'Method Not Allowed' });
         }

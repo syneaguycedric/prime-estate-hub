@@ -230,10 +230,6 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
 
                     // 2. Appeler les callbacks APRÈS fermeture
                     setTimeout(async () => {
-                        toast.success("Agence créée", {
-                            description: wasSetAsCurrent ? "Votre agence a été créée et définie comme agence actuelle" : "Votre agence a été créée avec succès",
-                        });
-
                         if (refreshUser) {
                             await refreshUser();
                         }
