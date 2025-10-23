@@ -14,12 +14,16 @@ import { toast } from "@/lib/toast-helpers";
 
 export default function MyListingsPage() {
     const router = useRouter();
-    const { isAuthenticated, authData, user } = useAuth();
+    const { isAuthenticated, authData, user, isLoading } = useAuth();
     const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("dashboard");
 
     useEffect(() => {
+        // Ne rien faire pendant le chargement initial de l'auth
+        if (isLoading) return;
+
+        // Maintenant on peut vérifier en toute sécurité
         if (!isAuthenticated) {
             router.push("/login");
             return;
@@ -44,7 +48,7 @@ export default function MyListingsPage() {
         if (authData?.access_token && user?.id) {
             loadUserProperties();
         }
-    }, [authData, user, isAuthenticated, router.query]);
+    }, [authData, user, isAuthenticated, isLoading, router.query]);
 
     const loadUserProperties = async () => {
         if (!authData?.access_token || !user?.id) return;
@@ -75,6 +79,18 @@ export default function MyListingsPage() {
     };
 
     const renderContent = () => {
+        // Afficher un loader pendant le chargement de l'authentification
+        if (isLoading) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-background">
+                    <div className="text-center space-y-4">
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p className="text-muted-foreground">Chargement de votre espace...</p>
+                    </div>
+                </div>
+            );
+        }
+
         if (loading) {
             return <DashboardSkeleton />;
         }

@@ -36,7 +36,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
             setFilters({
                 location: currentFilters.location || "",
                 transaction: currentFilters.contractType || "",
-                propertyType: currentFilters.type || "",
+                propertyType: currentFilters.propertyType || "",
                 minPrice: currentFilters.minPrice?.toString() || "",
                 maxPrice: currentFilters.maxPrice?.toString() || "",
                 minSurface: currentFilters.minSurface?.toString() || "",

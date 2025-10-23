@@ -58,10 +58,7 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
     };
 
     const handleEdit = (property: Property) => {
-        // TODO: Implémenter la page d'édition
-        toast.info("Fonctionnalité en cours de développement", {
-            description: "La modification des annonces sera bientôt disponible.",
-        });
+        router.push(`/edit-listing/${property.id}`);
     };
 
     const handleDelete = (property: Property) => {

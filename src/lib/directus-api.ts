@@ -3,6 +3,7 @@ import { Property, PropertyImage } from '@/data/properties';
 import { properties } from '@/data/properties';
 import { formatProperty } from '@/lib/property-helpers';
 import { toast } from '@/lib/toast-helpers';
+import { createAuthenticatedFetch } from '@/lib/auth-helpers';
 
 // Interface pour la réponse de l'API Directus
 interface DirectusResponse<T> {
@@ -713,18 +714,31 @@ export async function loginUser(email: string, password: string): Promise<{
 /**
  * Récupère les informations de l'utilisateur connecté
  */
-export async function getCurrentUser(token: string): Promise<User | null> {
+export async function getCurrentUser(token?: string): Promise<User | null> {
     try {
         console.log('[DIRECTUS API] Fetching current user');
 
-        // Appeler l'API route Next.js qui utilise ?fields=*.*
-        const response = await fetch('/api/auth/profile', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        // Si un token est fourni directement, l'utiliser (cas du login initial)
+        // Sinon, utiliser createAuthenticatedFetch qui ira chercher dans localStorage
+        let response: Response;
+
+        if (token) {
+            // Appel direct avec le token fourni (login initial)
+            console.log('[DIRECTUS API] Using provided token');
+            response = await fetch('/api/auth/profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+        } else {
+            // Utiliser l'authentification depuis localStorage (refresh après connexion)
+            console.log('[DIRECTUS API] Using token from localStorage');
+            response = await createAuthenticatedFetch('/api/auth/profile', {
+                method: 'GET',
+            });
+        }
 
         if (!response.ok) {
             console.error('[DIRECTUS API] Error fetching user:', response.status);
@@ -767,12 +781,8 @@ export async function getUserProfile(token: string): Promise<User | null> {
     try {
         console.log('[DIRECTUS API] Fetching user profile');
 
-        const response = await fetch('/api/auth/profile', {
+        const response = await createAuthenticatedFetch('/api/auth/profile', {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
         });
 
         if (!response.ok) {
@@ -801,12 +811,8 @@ export async function updateUserProfile(
     try {
         console.log('[DIRECTUS API] Updating user profile');
 
-        const response = await fetch('/api/auth/profile', {
+        const response = await createAuthenticatedFetch('/api/auth/profile', {
             method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(updates),
         });
 
@@ -1002,15 +1008,91 @@ export async function createListing(accessToken: string, listingData: CreateList
 /**
  * Récupérer les annonces d'un utilisateur spécifique
  */
+/**
+ * Récupère une propriété de l'utilisateur par son ID (pour l'édition)
+ */
+export async function fetchUserPropertyById(propertyId: string): Promise<{ success: boolean; property?: Property; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Fetching property by ID:', propertyId);
+
+        const response = await createAuthenticatedFetch(`/api/properties/${propertyId}`, {
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error fetching property:', errorData);
+            return {
+                success: false,
+                error: errorData.error || `Erreur ${response.status}: Impossible de récupérer l'annonce`,
+            };
+        }
+
+        const data = await response.json() as DirectusResponse<Property>;
+        console.log('[DIRECTUS API] Property fetched successfully:', data.data?.id);
+
+        return {
+            success: true,
+            property: data.data,
+        };
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching property:', error);
+        return {
+            success: false,
+            error: 'Erreur réseau lors de la récupération de l\'annonce',
+        };
+    }
+}
+
+/**
+ * Met à jour une propriété existante
+ */
+export async function updateProperty(
+    propertyId: string,
+    propertyData: Partial<Property>
+): Promise<{ success: boolean; property?: Property; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Updating property:', propertyId);
+
+        const response = await createAuthenticatedFetch(`/api/properties/${propertyId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(propertyData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[DIRECTUS API] Error updating property:', errorData);
+            return {
+                success: false,
+                error: errorData.error || `Erreur ${response.status}: Impossible de mettre à jour l'annonce`,
+            };
+        }
+
+        const data = await response.json() as DirectusResponse<Property>;
+        console.log('[DIRECTUS API] Property updated successfully:', data.data?.id);
+
+        return {
+            success: true,
+            property: data.data,
+        };
+    } catch (error) {
+        console.error('[DIRECTUS API] Error updating property:', error);
+        return {
+            success: false,
+            error: 'Erreur réseau lors de la mise à jour de l\'annonce',
+        };
+    }
+}
+
 export async function fetchUserProperties(accessToken: string, userId: string): Promise<{ success: boolean; properties?: Property[]; error?: string }> {
     try {
         console.log('[DIRECTUS API] Fetching properties for user:', userId);
 
-        const response = await fetch(`/api/user/properties?userId=${userId}`, {
+        const response = await createAuthenticatedFetch(`/api/user/properties?userId=${userId}`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
         });
 
         if (!response.ok) {
@@ -1046,12 +1128,8 @@ export async function becomeAdvertiser(
     try {
         console.log('[DIRECTUS API] Becoming advertiser for user:', userId);
 
-        const response = await fetch('/api/user/become-advertiser', {
+        const response = await createAuthenticatedFetch('/api/user/become-advertiser', {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`
-            },
             body: JSON.stringify({
                 userId,
                 accountId
@@ -1088,11 +1166,8 @@ export async function deleteProperty(
     try {
         console.log('[DIRECTUS API] Deleting property:', propertyId);
 
-        const response = await fetch(`/api/listings/${propertyId}`, {
+        const response = await createAuthenticatedFetch(`/api/listings/${propertyId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
         });
 
         if (!response.ok) {
@@ -1125,12 +1200,8 @@ export async function togglePropertyStatus(
     try {
         console.log('[DIRECTUS API] Toggling property status:', propertyId, 'to', newStatus);
 
-        const response = await fetch(`/api/listings/${propertyId}/status`, {
+        const response = await createAuthenticatedFetch(`/api/listings/${propertyId}/status`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`
-            },
             body: JSON.stringify({
                 status: newStatus
             })
@@ -1207,11 +1278,8 @@ export async function fetchAgencies(
     try {
         console.log('[DIRECTUS API] Fetching agencies list');
 
-        const response = await fetch('/api/agencies/list', {
+        const response = await createAuthenticatedFetch('/api/agencies/list', {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
         });
 
         if (!response.ok) {
@@ -1244,11 +1312,8 @@ export async function fetchAgencyById(
     try {
         console.log('[DIRECTUS API] Fetching agency:', agencyId);
 
-        const response = await fetch(`/api/agencies/${agencyId}`, {
+        const response = await createAuthenticatedFetch(`/api/agencies/${agencyId}`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
         });
 
         if (!response.ok) {
@@ -1282,12 +1347,8 @@ export async function updateAgency(
     try {
         console.log('[DIRECTUS API] Updating agency:', agencyId);
 
-        const response = await fetch(`/api/agencies/${agencyId}`, {
+        const response = await createAuthenticatedFetch(`/api/agencies/${agencyId}`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`
-            },
             body: JSON.stringify(data)
         });
 
@@ -1321,11 +1382,8 @@ export async function deleteAgency(
     try {
         console.log('[DIRECTUS API] Deleting agency:', agencyId);
 
-        const response = await fetch(`/api/agencies/${agencyId}`, {
+        const response = await createAuthenticatedFetch(`/api/agencies/${agencyId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
         });
 
         if (!response.ok) {
@@ -1357,13 +1415,9 @@ export async function attachUserToAgency(
     try {
         console.log('[DIRECTUS API] Attaching user to agency:', agencyId);
 
-        const response = await fetch('/api/user/attach-agency', {
+        const response = await createAuthenticatedFetch('/api/user/attach-agency', {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
-                accessToken,
                 agencyId
             })
         });
@@ -1392,14 +1446,13 @@ export async function attachUserToAgency(
  */
 export async function attachAgencyToUser(userId: string, agencyId: string, accessToken: string): Promise<{ success: boolean; error?: string }> {
     try {
-        const response = await apiClient.secureRequest(`/users/${userId}`, {
+        const response = await createAuthenticatedFetch(`/api/users/${userId}`, {
             method: 'PATCH',
             body: JSON.stringify({
                 account: {
                     agency: agencyId
                 }
             }),
-            accessToken,
         });
 
         if (!response.ok) {

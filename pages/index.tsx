@@ -144,7 +144,7 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
         if (filters.search) count++;
         if (filters.location) count++;
         if (filters.contractType) count++;
-        if (filters.type) count++;
+        if (filters.propertyType) count++;
         if (filters.rooms) count++;
         if (filters.bathrooms) count++;
 

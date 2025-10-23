@@ -23,7 +23,8 @@ interface AuthActions {
     login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
     register: (registerData: RegisterData) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
-    refreshAuth: () => Promise<void>;
+    refreshAuth: () => Promise<boolean>;
+    refreshAuthIfNeeded: () => Promise<boolean>;
     refreshUser: () => Promise<void>;
 }
 
@@ -75,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         // Rafraîchir les données utilisateur pour s'assurer qu'elles sont à jour
                         try {
                             console.log("[AUTH CONTEXT] Refreshing user data on startup...");
-                            const freshUser = await getCurrentUser(authData.access_token);
+                            const freshUser = await getCurrentUser(); // Utilise localStorage
                             if (freshUser) {
                                 console.log("[AUTH CONTEXT] Fresh user data:", {
                                     userId: freshUser.id,
@@ -306,11 +307,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     // Fonction pour rafraîchir l'authentification
-    const refreshAuth = async (): Promise<void> => {
+    const refreshAuth = async (): Promise<boolean> => {
         try {
             if (!authState.authData?.refresh_token) {
                 console.log("[AUTH CONTEXT] No refresh token available");
-                return;
+                return false;
             }
 
             console.log("[AUTH CONTEXT] Refreshing authentication token...");
@@ -328,9 +329,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             if (!response.ok) {
                 console.error("[AUTH CONTEXT] Failed to refresh token:", response.status);
-                // Token invalide, déconnecter
-                logout();
-                return;
+                return false;
             }
 
             const data = await response.json();
@@ -344,7 +343,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 expiresAt: Date.now() + data.data.expires,
             };
 
-            // Récupérer les données utilisateur avec le nouveau token
+            // Récupérer les données utilisateur avec le nouveau token (pas encore dans localStorage)
             const user = await getCurrentUser(newAuthData.access_token);
 
             if (user) {
@@ -360,14 +359,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 // Sauvegarder les nouvelles données
                 saveAuthData(newAuthData, user);
+                return true;
             } else {
-                // Impossible de récupérer l'utilisateur, déconnecter
-                logout();
+                console.error("[AUTH CONTEXT] Failed to retrieve user with new token");
+                return false;
             }
         } catch (error) {
             console.error("[AUTH CONTEXT] Error refreshing authentication:", error);
+            return false;
+        }
+    };
+
+    // Fonction pour tenter le refresh et gérer l'échec
+    const refreshAuthIfNeeded = async (): Promise<boolean> => {
+        const success = await refreshAuth();
+        if (!success) {
+            console.log("[AUTH CONTEXT] Refresh failed, logging out");
             logout();
         }
+        return success;
     };
 
     // Fonction pour rafraîchir les données utilisateur (après modification du profil)
@@ -376,7 +386,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (!authState.authData?.access_token) return;
 
             console.log("[AUTH CONTEXT] Refreshing user data");
-            const user = await getCurrentUser(authState.authData.access_token);
+            const user = await getCurrentUser(); // Utilise localStorage
 
             if (user) {
                 console.log("[AUTH CONTEXT] New user data received:", {
@@ -414,6 +424,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         register,
         logout,
         refreshAuth,
+        refreshAuthIfNeeded,
         refreshUser,
     };
 

@@ -141,9 +141,84 @@ class SecureApiClient {
 
                 // ✅ Intercepter les erreurs 401 (Non autorisé)
                 if (response.status === 401) {
-                    console.log('[API CLIENT] 401 Unauthorized - Déconnexion automatique');
-                    handleUnauthorized();
-                    throw new Error('Unauthorized');
+                    console.log('[API CLIENT] 401 Unauthorized - Tentative de refresh token');
+
+                    // Tenter le refresh token avant de déconnecter
+                    try {
+                        const authData = JSON.parse(localStorage.getItem('kylimmo_auth_data') || '{}');
+                        if (authData.refresh_token) {
+                            const refreshResponse = await fetch('/api/auth/refresh', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    refresh_token: authData.refresh_token,
+                                }),
+                            });
+
+                            if (refreshResponse.ok) {
+                                const refreshData = await refreshResponse.json();
+                                console.log('[API CLIENT] Token refreshed successfully, retrying request');
+
+                                // Mettre à jour localStorage
+                                const newAuthData = {
+                                    access_token: refreshData.data.access_token,
+                                    refresh_token: refreshData.data.refresh_token,
+                                    expires: refreshData.data.expires,
+                                    expiresAt: Date.now() + refreshData.data.expires,
+                                };
+                                localStorage.setItem('kylimmo_auth_data', JSON.stringify(newAuthData));
+
+                                // Retenter la requête originale avec le nouveau token
+                                const newProxyHeaders = {
+                                    ...proxyHeaders,
+                                    'Authorization': `Bearer ${newAuthData.access_token}`,
+                                };
+
+                                const retryResponse = await fetch(proxyUrl, {
+                                    ...fetchOptions,
+                                    headers: newProxyHeaders,
+                                    signal: controller.signal,
+                                });
+
+                                clearTimeout(timeoutId);
+
+                                // Traiter la réponse de retry comme une réponse normale
+                                if (!retryResponse.ok) {
+                                    const errorData = await retryResponse.json().catch(() => ({}));
+                                    const error = new Error(
+                                        errorData.message ||
+                                        `Erreur HTTP ${retryResponse.status}: ${retryResponse.statusText}`
+                                    );
+                                    (error as any).status = retryResponse.status;
+                                    (error as any).data = errorData;
+                                    throw error;
+                                }
+
+                                const data = await retryResponse.json();
+                                const responseTime = Date.now() - startTime;
+
+                                return {
+                                    data,
+                                    cached: false,
+                                    responseTime,
+                                };
+                            } else {
+                                console.log('[API CLIENT] Refresh failed, logging out');
+                                handleUnauthorized();
+                                throw new Error('Unauthorized');
+                            }
+                        } else {
+                            console.log('[API CLIENT] No refresh token available');
+                            handleUnauthorized();
+                            throw new Error('Unauthorized');
+                        }
+                    } catch (refreshError) {
+                        console.error('[API CLIENT] Error during refresh:', refreshError);
+                        handleUnauthorized();
+                        throw new Error('Unauthorized');
+                    }
                 }
 
                 if (!response.ok) {

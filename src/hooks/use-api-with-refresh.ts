@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { handleUnauthorized } from '@/lib/auth-helpers';
 
 export function useApiWithRefresh() {
-    const { authData, refreshUser } = useAuth();
+    const { authData, refreshAuthIfNeeded, refreshUser } = useAuth();
 
     const fetchWithRefresh = async (url: string, options: RequestInit = {}) => {
         try {
@@ -17,38 +17,23 @@ export function useApiWithRefresh() {
             if (response.status === 401 && authData?.refresh_token) {
                 console.log('[API REFRESH] Token expired, attempting refresh...');
 
-                // Tenter le refresh
-                const refreshResponse = await fetch('/api/auth/refresh', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refresh_token: authData.refresh_token }),
-                });
+                // Utiliser la fonction centralisée du contexte
+                const refreshSuccess = await refreshAuthIfNeeded();
 
-                if (refreshResponse.ok) {
-                    const { access_token, refresh_token } = await refreshResponse.json();
-                    console.log('[API REFRESH] Token refreshed successfully');
-
-                    // Mettre à jour localStorage
-                    const newAuthData = { ...authData, access_token, refresh_token };
-                    localStorage.setItem('auth', JSON.stringify(newAuthData));
-
-                    // Rafraîchir le contexte utilisateur
-                    if (refreshUser) {
-                        await refreshUser();
-                    }
+                if (refreshSuccess) {
+                    console.log('[API REFRESH] Token refreshed successfully, retrying request');
 
                     // Retenter la requête originale avec le nouveau token
+                    const newAuthData = JSON.parse(localStorage.getItem('kylimmo_auth_data') || '{}');
                     return await fetch(url, {
                         ...options,
                         headers: {
                             ...options.headers,
-                            'Authorization': `Bearer ${access_token}`,
+                            'Authorization': `Bearer ${newAuthData.access_token}`,
                         },
                     });
                 } else {
-                    console.log('[API REFRESH] Refresh failed, logging out');
-                    // Refresh échoué → déconnexion
-                    handleUnauthorized();
+                    console.log('[API REFRESH] Refresh failed, request will fail');
                     throw new Error('Refresh token expired');
                 }
             }
@@ -61,7 +46,8 @@ export function useApiWithRefresh() {
                 // Erreur réseau, ne pas déconnecter automatiquement
                 throw error;
             }
-            handleUnauthorized();
+            // Si c'est une erreur de refresh, ne pas appeler handleUnauthorized ici
+            // car refreshAuthIfNeeded() l'a déjà fait
             throw error;
         }
     };
