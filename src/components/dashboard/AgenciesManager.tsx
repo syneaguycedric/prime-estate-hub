@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Agency } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import { useApiWithRefresh } from "@/hooks/use-api-with-refresh";
-import CreateAgencyModal from "./CreateAgencyModal";
+import AgencyFormModal from "./AgencyFormModal";
 
 export default function AgenciesManager() {
     const { authData, user, refreshUser } = useAuth();
@@ -22,12 +22,29 @@ export default function AgenciesManager() {
     const [agencies, setAgencies] = useState<Agency[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
     const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
     const [isAttaching, setIsAttaching] = useState(false);
 
     useEffect(() => {
         loadAgencies();
     }, [user]);
+
+    // Nettoyage global du pointer-events
+    useEffect(() => {
+        const cleanupPointerEvents = () => {
+            if (document.body.style.pointerEvents === "none") {
+                document.body.style.pointerEvents = "";
+                console.log("[AGENCIES MANAGER] Cleaned pointer-events");
+            }
+        };
+
+        // Nettoyer après chaque changement d'état
+        cleanupPointerEvents();
+
+        return cleanupPointerEvents;
+    }, [isEditModalOpen, showCreateModal, selectedAgency]);
 
     const loadAgencies = async () => {
         if (!user?.account?.agencies) {
@@ -122,10 +139,11 @@ export default function AgenciesManager() {
     };
 
     const handleEditAgency = (agencyId: string) => {
-        // TODO: Implémenter l'édition d'agence
-        toast.info("Fonctionnalité à venir", {
-            description: "L'édition d'agence sera bientôt disponible",
-        });
+        const agency = agencies.find((a) => a.id === agencyId);
+        if (agency) {
+            setEditingAgency(agency);
+            setIsEditModalOpen(true);
+        }
     };
 
     const handleDeleteAgency = (agencyId: string) => {
@@ -357,7 +375,25 @@ export default function AgenciesManager() {
             )}
 
             {/* Modal de création d'agence */}
-            <CreateAgencyModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleAgencyCreated} />
+            {/* Modal création */}
+            <AgencyFormModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleAgencyCreated} mode="create" />
+
+            {/* Modal édition */}
+            <AgencyFormModal
+                open={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setEditingAgency(null);
+                }}
+                onSuccess={() => {
+                    toast.success("Agence mise à jour", {
+                        description: "Les modifications ont été enregistrées",
+                    });
+                    loadAgencies();
+                }}
+                agency={editingAgency}
+                mode="edit"
+            />
 
             {/* Dialog de confirmation de rattachement */}
             <Dialog

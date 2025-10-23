@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2, MapPin, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/lib/toast-helpers";
 import { useApiWithRefresh } from "@/hooks/use-api-with-refresh";
+import { Agency } from "@/lib/directus-api";
 
-interface CreateAgencyModalProps {
+interface AgencyFormModalProps {
     open: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    agency?: Agency | null;
+    mode: "create" | "edit";
 }
 
 interface Contact {
@@ -25,7 +28,7 @@ interface SocialLink {
     url: string;
 }
 
-export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAgencyModalProps) {
+export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode }: AgencyFormModalProps) {
     const { authData, user, refreshUser } = useAuth();
     const { fetchWithRefresh } = useApiWithRefresh();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +48,45 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
 
     // Réseaux sociaux
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+
+    // Préremplir le formulaire en mode édition
+    useEffect(() => {
+        if (mode === "edit" && agency && open) {
+            console.log("[EDIT AGENCY] Prefilling form with:", agency);
+            setTitle(agency.title || "");
+            setCountry(agency.address?.country || "civ");
+            setState(agency.address?.state || "");
+            setCity(agency.address?.city || "");
+            setStreet(agency.address?.street || "");
+
+            // Préremplir geocoord
+            if (agency.address?.geocoord?.coordinates) {
+                setLongitude(agency.address.geocoord.coordinates[0].toString());
+                setLatitude(agency.address.geocoord.coordinates[1].toString());
+            }
+
+            // Préremplir contacts
+            if (agency.address?.contacts && agency.address.contacts.length > 0) {
+                setContacts(agency.address.contacts);
+            }
+
+            // Préremplir social links
+            if (agency.address?.social_links && agency.address.social_links.length > 0) {
+                setSocialLinks(agency.address.social_links);
+            }
+        } else if (mode === "create") {
+            // Réinitialiser le formulaire en mode création
+            setTitle("");
+            setCountry("civ");
+            setState("");
+            setCity("");
+            setStreet("");
+            setLatitude("");
+            setLongitude("");
+            setContacts([{ type: "email", value: "" }]);
+            setSocialLinks([]);
+        }
+    }, [mode, agency, open]);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -133,38 +175,74 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
                 docs: [],
             };
 
-            console.log("[CREATE AGENCY] Sending request with token:", authData.access_token ? "Token present" : "No token");
-            console.log("[CREATE AGENCY] Agency data:", agencyData);
+            console.log(`[${mode.toUpperCase()} AGENCY] Sending request with token:`, authData.access_token ? "Token present" : "No token");
+            console.log(`[${mode.toUpperCase()} AGENCY] Agency data:`, agencyData);
 
-            const response = await fetchWithRefresh("/api/agencies/create", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    agencyData,
-                    userId: user.id,
-                }),
-            });
+            let response;
+            let result;
 
-            const result = await response.json();
-
-            if (result.success) {
-                const wasSetAsCurrent = !user?.account?.agency;
-
-                toast.success("Agence créée", {
-                    description: wasSetAsCurrent ? "Votre agence a été créée et définie comme agence actuelle" : "Votre agence a été créée avec succès",
+            if (mode === "edit" && agency?.id) {
+                // Mode édition
+                response = await fetchWithRefresh(`/api/agencies/${agency.id}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(agencyData),
                 });
 
-                // Rafraîchir le contexte utilisateur
-                if (refreshUser) {
-                    await refreshUser();
-                }
+                result = await response.json();
 
-                onSuccess();
-                handleClose();
+                if (result.data) {
+                    // 1. Fermer IMMÉDIATEMENT le modal
+                    handleClose();
+
+                    // 2. Appeler les callbacks APRÈS fermeture
+                    setTimeout(async () => {
+                        if (refreshUser) {
+                            await refreshUser();
+                        }
+                        onSuccess();
+                    }, 50);
+                } else {
+                    setErrors({ submit: result.error || "Erreur lors de la mise à jour de l'agence" });
+                }
             } else {
-                setErrors({ submit: result.error || "Erreur lors de la création de l'agence" });
+                // Mode création
+                response = await fetchWithRefresh("/api/agencies/create", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        agencyData,
+                        userId: user.id,
+                    }),
+                });
+
+                result = await response.json();
+
+                if (result.success) {
+                    const wasSetAsCurrent = !user?.account?.agency;
+
+                    // 1. Fermer IMMÉDIATEMENT le modal
+                    handleClose();
+
+                    // 2. Appeler les callbacks APRÈS fermeture
+                    setTimeout(async () => {
+                        toast.success("Agence créée", {
+                            description: wasSetAsCurrent ? "Votre agence a été créée et définie comme agence actuelle" : "Votre agence a été créée avec succès",
+                        });
+
+                        if (refreshUser) {
+                            await refreshUser();
+                        }
+
+                        onSuccess();
+                    }, 50);
+                } else {
+                    setErrors({ submit: result.error || "Erreur lors de la création de l'agence" });
+                }
             }
         } catch (error) {
             console.error("Error creating agency:", error);
@@ -175,6 +253,7 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
     };
 
     const handleClose = () => {
+        console.log("[AGENCY MODAL] handleClose called");
         // Reset form
         setTitle("");
         setState("");
@@ -185,6 +264,11 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
         setContacts([{ type: "email", value: "" }]);
         setSocialLinks([]);
         setErrors({});
+
+        // Forcer le nettoyage immédiat du pointer-events
+        document.body.style.pointerEvents = "";
+        console.log("[AGENCY MODAL] Immediate pointer-events cleanup:", document.body.style.pointerEvents);
+
         onClose();
     };
 
@@ -217,11 +301,27 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleClose}>
+        <Dialog
+            open={open}
+            onOpenChange={(isOpen) => {
+                console.log("[AGENCY MODAL] onOpenChange called with:", isOpen);
+                if (!isOpen) {
+                    handleClose();
+                    // Forcer le nettoyage de l'overlay avec un délai plus long
+                    setTimeout(() => {
+                        console.log("[AGENCY MODAL] Cleaning pointer-events, current value:", document.body.style.pointerEvents);
+                        document.body.style.pointerEvents = "";
+                        console.log("[AGENCY MODAL] After cleaning:", document.body.style.pointerEvents);
+                    }, 300);
+                }
+            }}
+        >
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Créer une nouvelle agence</DialogTitle>
-                    <DialogDescription>Remplissez les informations de votre agence immobilière</DialogDescription>
+                    <DialogTitle>{mode === "edit" ? "Modifier l'agence" : "Créer une nouvelle agence"}</DialogTitle>
+                    <DialogDescription>
+                        {mode === "edit" ? "Modifiez les informations de votre agence" : "Remplissez les informations de votre agence immobilière"}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
@@ -436,12 +536,12 @@ export default function CreateAgencyModal({ open, onClose, onSuccess }: CreateAg
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Création...
+                                    {mode === "edit" ? "Modification..." : "Création..."}
                                 </>
                             ) : (
                                 <>
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Créer l'agence
+                                    {mode === "edit" ? "Modifier l'agence" : "Créer l'agence"}
                                 </>
                             )}
                         </Button>

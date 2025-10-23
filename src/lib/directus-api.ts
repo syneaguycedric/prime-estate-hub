@@ -1340,41 +1340,36 @@ export async function fetchAgencyById(
  * Mettre à jour une agence
  */
 export async function updateAgency(
-    accessToken: string,
     agencyId: string,
-    data: Partial<CreateAgencyData>
+    agencyData: any
 ): Promise<{ success: boolean; agency?: Agency; error?: string }> {
     try {
         console.log('[DIRECTUS API] Updating agency:', agencyId);
 
         const response = await createAuthenticatedFetch(`/api/agencies/${agencyId}`, {
             method: 'PATCH',
-            body: JSON.stringify(data)
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(agencyData),
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('[DIRECTUS API] Error updating agency:', errorData);
-            return { success: false, error: 'Impossible de mettre à jour l\'agence' };
+            return { success: false, error: errorData.error || 'Impossible de mettre à jour l\'agence' };
         }
 
-        const result = await response.json();
+        const data = await response.json();
         console.log('[DIRECTUS API] Agency updated successfully');
 
-        return { success: true, agency: result.data };
-
-    } catch (error: any) {
-        console.error('[DIRECTUS API] Error updating agency:', error);
-        return {
-            success: false,
-            error: 'Une erreur est survenue',
-        };
+        return { success: true, agency: data.data };
+    } catch (error) {
+        console.error('[DIRECTUS API] Exception updating agency:', error);
+        return { success: false, error: 'Erreur réseau' };
     }
 }
 
-/**
- * Supprimer une agence
- */
 export async function deleteAgency(
     accessToken: string,
     agencyId: string
