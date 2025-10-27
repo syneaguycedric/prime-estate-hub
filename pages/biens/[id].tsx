@@ -3,13 +3,14 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { Bed, Bath, Square, MapPin, Phone, Mail, User } from "lucide-react";
+import { Bed, Bath, Square, MapPin, Phone, Mail, User, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Property } from "@/data/properties";
 import { fetchPropertyById } from "@/lib/directus-api";
 import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
 import PageNavbar from "@/components/layout/PageNavbar";
+import ImageLightbox from "@/components/ui/image-lightbox";
 // Import dynamique temporairement désactivé
 
 interface PropertyDetailPageProps {
@@ -26,6 +27,7 @@ interface PropertyDetailPageProps {
 const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
     const router = useRouter();
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
     // Formater les données pour l'affichage
     const formattedPrice = property ? formatPrice(property.price, property.billingCycle) : "";
@@ -164,7 +166,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             <div className="lg:col-span-2">
                                 {/* Image principale */}
                                 <motion.div
-                                    className="mb-4"
+                                    className="mb-4 relative group"
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -179,6 +181,20 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
                                     />
+
+                                    {/* Bouton zoom */}
+                                    <motion.button
+                                        onClick={() => setIsLightboxOpen(true)}
+                                        className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-all duration-200 hover:scale-105"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.4 }}
+                                    >
+                                        <ZoomIn className="h-5 w-5" />
+                                        <span className="sr-only">Voir l'image en taille réelle</span>
+                                    </motion.button>
                                 </motion.div>
 
                                 {/* Miniatures */}
@@ -445,6 +461,9 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                         </div>
                     </section>
                 </main>
+
+                {/* Lightbox pour les images */}
+                <ImageLightbox images={imageUrls} initialIndex={selectedImageIndex} isOpen={isLightboxOpen} onClose={() => setIsLightboxOpen(false)} altPrefix={property.title} />
             </div>
         </>
     );

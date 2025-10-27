@@ -108,10 +108,10 @@ export default function EditListingPage() {
                     contractType: prop.contractType || "",
                     status: prop.status || "draft",
                     address: {
-                        street: prop.address?.street || "",
-                        city: prop.address?.city || "",
-                        state: prop.address?.state || "",
-                        country: prop.address?.country || "Côte d'Ivoire",
+                        street: "",
+                        city: "",
+                        state: "",
+                        country: "Côte d'Ivoire",
                     },
                 });
 
@@ -153,7 +153,7 @@ export default function EditListingPage() {
             setFormData((prev) => ({
                 ...prev,
                 [parent]: {
-                    ...prev[parent as keyof typeof prev],
+                    ...(prev[parent as keyof typeof prev] as any),
                     [child]: value,
                 },
             }));
@@ -255,7 +255,7 @@ export default function EditListingPage() {
 
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
-            handleImageUpload(files);
+            processFiles(Array.from(files));
         }
     };
 
@@ -305,22 +305,22 @@ export default function EditListingPage() {
             const updateData = {
                 title: formData.title,
                 description: formData.description,
-                price: formData.price ? parseFloat(formData.price) : undefined,
+                price: formData.price || "",
                 surfaceArea: formData.surface,
                 surfaceAreaUnit: "m2",
                 rooms: formData.rooms ? parseInt(formData.rooms) : undefined,
                 bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : undefined,
                 kitchens: 1,
                 floors: 1,
-                type: formData.propertyType,
-                contractType: formData.contractType,
+                type: formData.propertyType as "appartment" | "house" | "villa" | "land" | "commercial",
+                contractType: formData.contractType as "leasing" | "sale" | "rent",
                 status: formData.status,
-                address: formData.address,
+                address: `${formData.address.street}, ${formData.address.city}, ${formData.address.state}`,
                 characteristics: characteristics.filter((char) => char.name.trim() && char.value.trim()),
                 images: allImages.map((img) => ({ directus_files_id: img.fileId })),
             };
 
-            const result = await updateProperty(property.id, updateData);
+            const result = await updateProperty(property.id, updateData as any);
 
             if (result.success) {
                 toast.success("Annonce mise à jour", {

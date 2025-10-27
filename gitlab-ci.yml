@@ -1,0 +1,89 @@
+image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:stable
+services:
+  - docker:dind
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  REGISTRY_IMAGE: $REGISTRY_URL/$CI_PROJECT_PATH
+
+stages:
+  - build
+  - push
+  - trigger
+  
+.build-template: &build-template
+  stage: build
+  before_script:
+    - docker version
+    - echo "$CI_DEPENDENCY_PROXY_PASSWORD" | docker login -u $CI_DEPENDENCY_PROXY_USER --password-stdin $CI_DEPENDENCY_PROXY_SERVER
+  script:
+    - |
+      docker build --build-arg CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX=$CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX \
+        -t $REGISTRY_IMAGE:$BUILD_TAG -f Dockerfile .
+  after_script:
+    # Save the image as an artifact
+    - mkdir -p artifacts
+    - docker save $REGISTRY_IMAGE:$BUILD_TAG -o artifacts/$BUILD_TAG.tar
+    - docker logout $CI_DEPENDENCY_PROXY_SERVER
+  artifacts:
+    name: $CI_JOB_NAME-$CI_COMMIT_SHORT_SHA
+    expire_in: 1 hour
+    paths:
+      - artifacts/$BUILD_TAG.tar
+
+.push-template: &push-template
+  stage: push
+  before_script:
+    - echo "$REGISTRY_PASSWORD" | docker login -u $REGISTRY_USERNAME --password-stdin $REGISTRY_URL
+    # Load image from the build stage
+    - docker load -i artifacts/$BUILD_TAG.tar
+  after_script:
+    - docker logout $REGISTRY_URL
+  dependencies:
+    - build-latest
+
+build-latest:
+  <<: *build-template
+  variables:
+    BUILD_TAG: latest
+  only:
+    - master
+    - main
+    - tags
+    - pipe
+
+push-latest:
+  <<: *push-template
+  variables:
+    BUILD_TAG: latest
+  script:
+    # Tag the image
+    - docker tag $REGISTRY_IMAGE:$BUILD_TAG $REGISTRY_IMAGE
+    # Push the image
+    - docker push $REGISTRY_IMAGE:$BUILD_TAG
+  only:
+    - master
+    - main
+    - pipe
+
+push-release:
+  <<: *push-template
+  variables:
+    BUILD_TAG: latest
+  script:
+    # Tag the image
+    - docker tag $REGISTRY_IMAGE:$BUILD_TAG $REGISTRY_IMAGE:$CI_COMMIT_TAG
+    # Push the image
+    - docker push $REGISTRY_IMAGE:$CI_COMMIT_TAG
+  only:
+    - tags
+
+trigger_deploy:
+  stage: trigger
+  script:
+    - |
+      curl --fail --location '$FRONT_DEPLOY_WEBHOOK_URL' --header 'Content-Type: application/json' \
+      --data '{"project_id":"$CI_PROJECT_ID","project_name":"$CI_PROJECT_NAME","project_ns_slug":"$CI_PROJECT_NAMESPACE_SLUG","commit_sha":"$CI_COMMIT_SHA","commit_ref_name":"$CI_COMMIT_REF_NAME","commit_message":"$CI_COMMIT_MESSAGE","commit_author":"$CI_COMMIT_AUTHOR"}'
+  only:
+    - master
+    - main
+    - pipe
