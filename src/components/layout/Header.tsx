@@ -166,6 +166,11 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
 
                 {/* Navigation */}
                 <nav className="flex items-center space-x-2">
+                    {/* Link to Home */}
+                    <Button variant="ghost" onClick={() => navigateWithTransition("/")} className="hidden sm:flex">
+                        Accueil
+                    </Button>
+
                     <div className="hidden md:block">
                         <ViewToggle view={view} onViewChange={onViewChange} />
                     </div>

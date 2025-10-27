@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import Header from "@/components/layout/Header";
 import FeaturedProperties from "@/components/sections/FeaturedProperties";
 import Footer from "@/components/layout/Footer";
@@ -25,6 +26,7 @@ interface HomePageProps {
 }
 
 const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
+    const router = useRouter();
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
@@ -41,6 +43,30 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
     // Définir la vue par défaut selon la taille de l'écran avec gestion SSR
     const [view, setView] = useState<"grid" | "list">("grid");
     const [mounted, setMounted] = useState(false);
+
+    // Gestion des query params pour les communes
+    useEffect(() => {
+        if (router.isReady) {
+            const { communes, zone } = router.query;
+
+            if (communes && typeof communes === "string") {
+                const communeList = communes.split(",").filter(Boolean);
+                if (communeList.length > 0) {
+                    setFilters((prev) => ({
+                        ...prev,
+                        communes: communeList,
+                    }));
+                }
+            }
+
+            if (zone && typeof zone === "string") {
+                setFilters((prev) => ({
+                    ...prev,
+                    zone: zone,
+                }));
+            }
+        }
+    }, [router.isReady, router.query]);
 
     // Gestion de l'hydratation côté client pour éviter les erreurs SSR
     useEffect(() => {
@@ -354,12 +380,10 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
 // Fonction pour générer les données SEO
 function generateSeoData(baseUrl: string) {
     return {
-        title: "Kylimmo - Plateforme Immobilière Moderne en Côte d'Ivoire",
-        description:
-            "Découvrez les meilleurs biens immobiliers en Côte d'Ivoire. Appartements, maisons, villas à louer et à vendre à Abidjan, Yamoussoukro et dans toute la Côte d'Ivoire.",
-        keywords:
-            "immobilier côte d'ivoire, appartement abidjan, maison yamoussoukro, villa cocody, location abidjan, vente immobilière, plateforme immobilière, biens immobiliers CI",
-        canonicalUrl: baseUrl,
+        title: "Annonces immobilières - Kylimmo",
+        description: "Découvrez toutes nos annonces immobilières en Côte d'Ivoire. Appartements, maisons, villas, terrains et biens commerciaux à vendre ou à louer.",
+        keywords: "annonces immobilières, immobilier côte d'ivoire, abidjan, appartement, maison, villa, terrain, commercial, location, vente",
+        canonicalUrl: `${baseUrl}/properties`,
     };
 }
 
