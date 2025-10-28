@@ -82,8 +82,8 @@ export default function CommuneSelector({ onBack, onSearch }: CommuneSelectorPro
     const totalCount = ABIDJAN_COMMUNES.length;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-            <div className="w-full max-w-6xl mx-auto">
+        <div className="bg-gradient-to-br from-background via-background to-primary/5 py-8">
+            <div className="w-full max-w-6xl mx-auto px-4">
                 {/* Header */}
                 <motion.div className="mb-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
                     {/* Breadcrumb */}

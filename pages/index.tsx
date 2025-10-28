@@ -16,15 +16,13 @@ interface HomePageProps {
     };
 }
 
-type ViewState = "zone-selection" | "commune-selection";
-
 const HomePage = ({ seoData }: HomePageProps) => {
     const router = useRouter();
-    const [currentView, setCurrentView] = useState<ViewState>("zone-selection");
+    const [showCommunes, setShowCommunes] = useState(false);
 
     const handleZoneSelect = (zone: "abidjan" | "hors-abidjan") => {
         if (zone === "abidjan") {
-            setCurrentView("commune-selection");
+            setShowCommunes(true);
         } else {
             // Rediriger directement vers la page des propriétés pour "Hors d'Abidjan"
             router.push("/properties?zone=hors-abidjan");
@@ -38,7 +36,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
     };
 
     const handleBackToZoneSelection = () => {
-        setCurrentView("zone-selection");
+        setShowCommunes(false);
     };
 
     return (
@@ -99,26 +97,23 @@ const HomePage = ({ seoData }: HomePageProps) => {
 
             <div className="min-h-screen bg-background">
                 <HomeHeader />
-                <AnimatePresence mode="wait">
-                    {currentView === "zone-selection" && (
-                        <motion.div
-                            key="zone-selection"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        >
-                            <ZoneSelector onZoneSelect={handleZoneSelect} />
-                        </motion.div>
-                    )}
 
-                    {currentView === "commune-selection" && (
+                {/* Zone Selection - Always visible */}
+                <ZoneSelector onZoneSelect={handleZoneSelect} />
+
+                {/* Communes Selection - Appears below when Abidjan is selected */}
+                <AnimatePresence>
+                    {showCommunes && (
                         <motion.div
-                            key="commune-selection"
-                            initial={{ opacity: 0, x: 50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -50 }}
-                            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 50 }}
+                            transition={{
+                                duration: 0.6,
+                                ease: [0.25, 0.46, 0.45, 0.94],
+                                delay: 0.2,
+                            }}
+                            className="relative z-10"
                         >
                             <CommuneSelector onBack={handleBackToZoneSelection} onSearch={handleCommuneSearch} />
                         </motion.div>
