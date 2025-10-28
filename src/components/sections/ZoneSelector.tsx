@@ -56,7 +56,7 @@ export default function ZoneSelector({ onZoneSelect }: ZoneSelectorProps) {
     const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
     return (
-        <div className="bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center py-16 px-4">
+        <div className="bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center py-8 px-4">
             <div className="w-full max-w-6xl mx-auto">
                 {/* Hero Section */}
                 <motion.div
@@ -66,10 +66,10 @@ export default function ZoneSelector({ onZoneSelect }: ZoneSelectorProps) {
                     transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
                 >
                     <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        Où recherchez-vous votre bien immobilier ?
+                        Où recherchez-vous ?
                     </h1>
                     <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                        Sélectionnez votre zone de recherche pour découvrir les meilleures opportunités immobilières
+                        Sélectionnez votre zone de recherche pour découvrir les meilleures opportunités
                     </p>
                 </motion.div>
 
@@ -167,7 +167,7 @@ export default function ZoneSelector({ onZoneSelect }: ZoneSelectorProps) {
                                 </motion.div>
 
                                 {/* Title */}
-                                <h2 className="text-3xl font-bold text-foreground mb-4 group-hover:text-accent-foreground transition-colors duration-300">Hors d'Abidjan</h2>
+                                <h2 className="text-3xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors duration-300">Hors d'Abidjan</h2>
 
                                 {/* Description */}
                                 <p className="text-muted-foreground mb-6 leading-relaxed">Explorez les opportunités dans toutes les autres régions de la Côte d'Ivoire</p>
@@ -186,7 +186,7 @@ export default function ZoneSelector({ onZoneSelect }: ZoneSelectorProps) {
 
                                 {/* CTA */}
                                 <motion.div
-                                    className="flex items-center text-accent-foreground font-semibold group-hover:text-accent-foreground/80 transition-colors duration-300"
+                                    className="flex items-center text-primary font-semibold group-hover:text-primary/80 transition-colors duration-300"
                                     animate={hoveredCard === "hors-abidjan" ? { x: 5 } : { x: 0 }}
                                     transition={{ type: "spring", stiffness: 300 }}
                                 >

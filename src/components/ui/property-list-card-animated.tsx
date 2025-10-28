@@ -55,11 +55,11 @@ const PropertyListCardAnimated = ({
             <div onClick={handleCardClick} className="block mb-4 cursor-pointer">
                 <div>
                     <Card className="group hover:shadow-lg transition-all duration-300 hover:border-primary/30 bg-gradient-card border-border/50">
-                        <CardContent className="p-3">
-                            <div className="flex gap-3">
+                        <CardContent className="p-2">
+                            <div className="flex gap-2">
                                 {/* Image avec animation */}
                                 <motion.div
-                                    className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24"
+                                    className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20"
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
@@ -71,26 +71,32 @@ const PropertyListCardAnimated = ({
                                 <div className="flex-1 flex flex-col justify-between min-w-0">
                                     <div>
                                         <motion.div
-                                            className="flex items-start justify-between gap-2 mb-1"
+                                            className="mb-1"
                                             initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.2 + index * 0.05, duration: 0.3 }}
                                         >
-                                            <h3 className="font-medium text-sm sm:text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors flex-1 min-w-0">
+                                            <h3 className="font-semibold text-sm sm:text-base text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                                 {title}
                                             </h3>
-                                            <div className="flex gap-1 flex-shrink-0">
-                                                <Badge variant="secondary" className="text-xs h-5">
-                                                    {propertyTypeLabel}
-                                                </Badge>
-                                                <Badge variant="outline" className="text-xs h-5">
-                                                    {contractTypeLabel}
-                                                </Badge>
-                                            </div>
+                                        </motion.div>
+
+                                        <motion.div
+                                            className="flex flex-wrap items-center gap-1.5 mb-1.5"
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.22 + index * 0.05, duration: 0.3 }}
+                                        >
+                                            <Badge variant="secondary" className="text-[10px] h-5 px-2">
+                                                {propertyTypeLabel}
+                                            </Badge>
+                                            <Badge variant="outline" className="text-[10px] h-5 px-2">
+                                                {contractTypeLabel}
+                                            </Badge>
                                         </motion.div>
 
                                         <motion.p
-                                            className="text-xs sm:text-sm text-muted-foreground flex items-center mb-2"
+                                            className="text-[11px] sm:text-xs text-muted-foreground flex items-center mb-2"
                                             initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.25 + index * 0.05, duration: 0.3 }}
@@ -100,7 +106,7 @@ const PropertyListCardAnimated = ({
                                         </motion.p>
 
                                         <motion.div
-                                            className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground mb-2"
+                                            className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-muted-foreground mb-2"
                                             initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: 0.3 + index * 0.05, duration: 0.3 }}
@@ -130,7 +136,7 @@ const PropertyListCardAnimated = ({
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.35 + index * 0.05, duration: 0.3 }}
                                     >
-                                        <p className="text-sm sm:text-lg font-bold text-primary">{formattedPrice}</p>
+                                        <p className="text-sm sm:text-base font-extrabold text-primary leading-none">{formattedPrice}</p>
                                     </motion.div>
                                 </div>
                             </div>

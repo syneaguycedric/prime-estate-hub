@@ -84,20 +84,8 @@ export default function CommuneSelector({ onBack, onSearch }: CommuneSelectorPro
     return (
         <div className="bg-gradient-to-br from-background via-background to-primary/5 py-8">
             <div className="w-full max-w-6xl mx-auto px-4">
-                {/* Header */}
+                {/* Header (sans breadcrumb) */}
                 <motion.div className="mb-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-                    {/* Breadcrumb */}
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
-                        <button onClick={onBack} className="hover:text-foreground transition-colors duration-200 flex items-center">
-                            <ChevronLeft className="w-4 h-4 mr-1" />
-                            Retour
-                        </button>
-                        <span>/</span>
-                        <span className="text-foreground font-medium">Abidjan</span>
-                        <span>/</span>
-                        <span className="text-primary font-medium">Communes</span>
-                    </div>
-
                     {/* Title */}
                     <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Sélectionnez vos communes</h1>
                     <p className="text-lg text-muted-foreground">Choisissez les communes d'Abidjan où vous souhaitez rechercher des biens immobiliers</p>
