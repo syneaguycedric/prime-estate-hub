@@ -3,14 +3,21 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { motion } from "framer-motion";
 import { useRouter } from "next/router";
-import ZoneSelector from "@/components/sections/ZoneSelector";
-import CommuneSelector from "@/components/sections/CommuneSelector";
+// Removed progressive cards flow; using top search banner instead
 import HomeHeader from "@/components/layout/HomeHeader";
 import PropertyListCardAnimated from "@/components/ui/property-list-card-animated";
+import PropertyCardAnimated from "@/components/ui/property-card-animated";
 import { properties as mockProperties } from "@/data/properties";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Home, Building2, MapPin, ChevronRight, Star, Check } from "lucide-react";
+import { Search, Award } from "lucide-react";
 
 interface HomePageProps {
     seoData: {
@@ -70,105 +77,57 @@ const hoverVariants = {
 
 const HomePage = ({ seoData }: HomePageProps) => {
     const router = useRouter();
-    const [selectedContract, setSelectedContract] = useState<ContractType | null>(null);
-    const [selectedPropertyType, setSelectedPropertyType] = useState<PropertyType | null>(null);
-    const [showZoneSelection, setShowZoneSelection] = useState(false);
-    const [showCommuneSelection, setShowCommuneSelection] = useState(false);
+    const [selectedContract, setSelectedContract] = useState<ContractType>("sale");
+    const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
+    const [areas, setAreas] = useState<string[]>([]);
+    const [areasOpen, setAreasOpen] = useState(false);
 
     // Refs pour scroll automatique
     const propertyTypeRef = useRef<HTMLDivElement>(null);
     const zoneRef = useRef<HTMLDivElement>(null);
     const communesRef = useRef<HTMLDivElement>(null);
 
-    const handleContractSelect = (contract: ContractType) => {
-        setSelectedContract(contract);
-        setSelectedPropertyType(null);
-        setShowZoneSelection(false);
-        setShowCommuneSelection(false);
+    const ABIDJAN_COMMUNES = [
+        { id: "abobo", name: "Abobo" },
+        { id: "adjame", name: "Adjamé" },
+        { id: "attecoube", name: "Attécoubé" },
+        { id: "cocody", name: "Cocody" },
+        { id: "koumassi", name: "Koumassi" },
+        { id: "marcory", name: "Marcory" },
+        { id: "plateau", name: "Plateau" },
+        { id: "port-bouet", name: "Port-Bouët" },
+        { id: "treichville", name: "Treichville" },
+        { id: "yopougon", name: "Yopougon" },
+        { id: "bingerville", name: "Bingerville" },
+        { id: "songon", name: "Songon" },
+    ];
+    const DEPARTEMENTS_FAKE = [
+        { id: "bouake", name: "Bouaké" },
+        { id: "yamoussoukro", name: "Yamoussoukro" },
+        { id: "san-pedro", name: "San-Pédro" },
+        { id: "daloa", name: "Daloa" },
+        { id: "man", name: "Man" },
+        { id: "korhogo", name: "Korhogo" },
+    ];
 
-        // Scroll vers la section type de bien
-        setTimeout(() => {
-            propertyTypeRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        }, 300);
-    };
+    useEffect(() => {
+        const { contractType, zone: qZone, areas: qAreas } = router.query as Record<string, string>;
+        if (contractType === "rent" || contractType === "sale") setSelectedContract(contractType);
+        if (qZone === "grand-abidjan" || qZone === "hors-abidjan") setZone(qZone);
+        if (typeof qAreas === "string" && qAreas.length > 0) setAreas(qAreas.split(","));
+    }, [router.query]);
 
-    const handlePropertyTypeSelect = (propertyType: PropertyType) => {
-        setSelectedPropertyType(propertyType);
-        setShowZoneSelection(true);
-        setShowCommuneSelection(false);
-
-        // Scroll vers la section zone
-        setTimeout(() => {
-            zoneRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        }, 300);
-    };
-
-    const handleZoneSelect = (zone: "abidjan" | "hors-abidjan") => {
-        if (zone === "abidjan") {
-            setShowCommuneSelection(true);
-
-            // Scroll vers la section communes
-            setTimeout(() => {
-                communesRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
-            }, 300);
-        } else {
-            // Rediriger directement vers la page des propriétés
-            const params = new URLSearchParams();
-            if (selectedContract) params.set("contractType", selectedContract);
-            if (selectedPropertyType) params.set("type", selectedPropertyType);
-            params.set("zone", "hors-abidjan");
-            router.push(`/properties?${params.toString()}`);
-        }
+    const toggleArea = (id: string) => {
+        setAreas((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
     };
 
     const handleCommuneSearch = (communes: string[]) => {
         // Construire l'URL avec tous les paramètres
         const params = new URLSearchParams();
         if (selectedContract) params.set("contractType", selectedContract);
-        if (selectedPropertyType) params.set("type", selectedPropertyType);
-        params.set("communes", communes.join(","));
+        if (zone) params.set("zone", zone);
+        if (communes.length > 0) params.set("areas", communes.join(","));
         router.push(`/properties?${params.toString()}`);
-    };
-
-    const handleBackToPropertyType = () => {
-        setShowZoneSelection(false);
-        setShowCommuneSelection(false);
-        propertyTypeRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-        });
-    };
-
-    const handleBackToZone = () => {
-        setShowCommuneSelection(false);
-        zoneRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-        });
-    };
-
-    const getPropertyTypesForContract = (contract: ContractType): { id: PropertyType; name: string; icon: any; count: number }[] => {
-        if (contract === "sale") {
-            return [
-                { id: "house", name: "Maison", icon: Home, count: 245 },
-                { id: "appartment", name: "Appartement", icon: Building2, count: 412 },
-                { id: "land", name: "Terrain", icon: MapPin, count: 156 },
-            ];
-        } else {
-            return [
-                { id: "house", name: "Maison", icon: Home, count: 189 },
-                { id: "appartment", name: "Appartement", icon: Building2, count: 298 },
-            ];
-        }
     };
 
     return (
@@ -229,7 +188,107 @@ const HomePage = ({ seoData }: HomePageProps) => {
 
             <div className="min-h-screen bg-background">
                 <HomeHeader />
-                <div className="container grid grid-cols-1 lg:grid-cols-4 gap-6 py-8">
+                {/* Bandeau de recherche */}
+                <div className="container py-6">
+                    <Card className="border-border/60 bg-card/80 backdrop-blur">
+                        <CardContent className="p-4 md:p-6">
+                            {/* Radios */}
+                            <div className="flex items-center gap-4 mb-4">
+                                <Label className="text-sm text-muted-foreground">Type d'annonce</Label>
+                                <RadioGroup value={selectedContract} onValueChange={(v) => setSelectedContract(v as ContractType)} className="flex gap-2">
+                                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border hover:bg-muted cursor-pointer">
+                                        <RadioGroupItem id="sale" value="sale" />
+                                        <Label htmlFor="sale" className="cursor-pointer">
+                                            Vente
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border hover:bg-muted cursor-pointer">
+                                        <RadioGroupItem id="rent" value="rent" />
+                                        <Label htmlFor="rent" className="cursor-pointer">
+                                            Louer
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+
+                            {/* Ligne des filtres */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                {/* Zone */}
+                                <div className="md:col-span-4">
+                                    <Label className="text-xs text-muted-foreground">Zone</Label>
+                                    <Select
+                                        value={zone}
+                                        onValueChange={(v: any) => {
+                                            setZone(v);
+                                            setAreas([]);
+                                        }}
+                                    >
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue placeholder="Choisir une zone" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="grand-abidjan">Grand Abidjan</SelectItem>
+                                            <SelectItem value="hors-abidjan">Hors d'Abidjan</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Communes / Départements */}
+                                <div className="md:col-span-6">
+                                    <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                    <Popover open={areasOpen} onOpenChange={setAreasOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
+                                                {areas.length > 0 ? `${areas.length} sélectionné(s)` : "Choisir..."}
+                                                <Search className="h-4 w-4 opacity-60" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[320px] p-3">
+                                            <div className="max-h-64 overflow-auto pr-1">
+                                                {(zone === "grand-abidjan" ? ABIDJAN_COMMUNES : DEPARTEMENTS_FAKE).map((o) => (
+                                                    <button
+                                                        type="button"
+                                                        key={o.id}
+                                                        onClick={() => toggleArea(o.id)}
+                                                        className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
+                                                    >
+                                                        <span>{o.name}</span>
+                                                        <Checkbox checked={areas.includes(o.id)} onCheckedChange={() => toggleArea(o.id)} />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <Separator className="my-2" />
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setAreas([]);
+                                                        setAreasOpen(false);
+                                                    }}
+                                                >
+                                                    Effacer
+                                                </Button>
+                                                <Button size="sm" onClick={() => setAreasOpen(false)}>
+                                                    Terminer
+                                                </Button>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+
+                                {/* Rechercher */}
+                                <div className="md:col-span-2 flex md:justify-end">
+                                    <Button className="w-full md:w-auto mt-6 md:mt-5" disabled={!zone} onClick={() => handleCommuneSearch(areas)}>
+                                        Rechercher
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="container grid grid-cols-1 lg:grid-cols-4 gap-6 pb-8">
                     {/* Colonne gauche - En vedette */}
                     <aside className="lg:col-span-1 order-2 lg:order-1">
                         <div className="sticky top-24">
@@ -242,222 +301,58 @@ const HomePage = ({ seoData }: HomePageProps) => {
                         </div>
                     </aside>
 
-                    {/* Colonne principale */}
+                    {/* Colonne principale - Annonces VIP */}
                     <main className="lg:col-span-3 order-1 lg:order-2">
-                        {/* Étape 1: Sélection du type de contrat */}
-                        <div className="bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center py-16 px-4">
-                            <div className="w-full max-w-4xl mx-auto">
-                                {/* Hero Section */}
-                                <motion.div
-                                    className="text-center mb-16"
-                                    initial={{ opacity: 0, y: -20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                >
-                                    <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                        Que souhaitez-vous faire ?
-                                    </h1>
-                                    <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                                        Choisissez votre type de transaction pour commencer votre recherche
-                                    </p>
-                                </motion.div>
+                        <Card className="border-2 border-primary/30 bg-white shadow-lg">
+                            <CardContent className="p-6">
+                                {/* Header VIP */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                                            <Award className="h-6 w-6 text-primary" />
+                                            Annonces VIP
+                                        </h2>
+                                        <p className="text-sm text-muted-foreground mt-1">Découvrez une sélection premium d'annonces mises en avant</p>
+                                    </div>
+                                    <Badge className="bg-primary text-primary-foreground shadow-sm px-3 py-1">
+                                        <Award className="h-3 w-3 mr-1" />
+                                        Premium
+                                    </Badge>
+                                </div>
 
-                                {/* Contract Cards */}
-                                <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto" variants={containerVariants} initial="hidden" animate="visible">
-                                    {/* Achat Card */}
-                                    <motion.div
-                                        variants={cardVariants}
-                                        whileHover="hover"
-                                        whileTap="tap"
-                                        className="group cursor-pointer relative"
-                                        onClick={() => handleContractSelect("sale")}
-                                    >
-                                        <Card
-                                            className={`relative h-80 overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-card via-card to-primary/5 backdrop-blur-sm ${
-                                                selectedContract === "sale" ? "border-primary shadow-lg" : "border-transparent group-hover:border-primary/20"
-                                            }`}
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
-                                            <div className="absolute top-4 right-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-                                            <div className="absolute bottom-4 left-4 w-24 h-24 bg-accent/10 rounded-full blur-2xl" />
+                                {/* Grille des annonces VIP */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {mockProperties.slice(0, 6).map((property, index) => (
+                                        <div key={`vip-${property.id}`} className="group relative">
+                                            {/* Badge VIP simple en coin */}
+                                            <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                                VIP
+                                            </span>
 
-                                            <div className="absolute top-6 left-6 z-10">
-                                                <Badge className="bg-primary text-primary-foreground shadow-lg">
-                                                    <Star className="w-3 h-3 mr-1" />
-                                                    Populaire
-                                                </Badge>
+                                            {/* Carte premium */}
+                                            <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                <PropertyCardAnimated {...property} index={index} />
                                             </div>
+                                        </div>
+                                    ))}
+                                </div>
 
-                                            <CardContent className="relative z-10 h-full flex flex-col justify-center items-center text-center p-8">
-                                                <motion.div className="mb-6">
-                                                    <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
-                                                        <Home className="w-10 h-10 text-primary" />
-                                                    </div>
-                                                </motion.div>
-
-                                                <h2 className="text-3xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors duration-300">Acheter</h2>
-
-                                                <p className="text-muted-foreground mb-6 leading-relaxed">Trouvez le bien de vos rêves pour devenir propriétaire</p>
-
-                                                <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground mb-6">
-                                                    <div className="text-center">
-                                                        <div className="font-semibold text-foreground">3</div>
-                                                        <div>Types</div>
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <div className="font-semibold text-foreground">1,200+</div>
-                                                        <div>Annonces</div>
-                                                    </div>
-                                                </div>
-
-                                                <motion.div className="flex items-center text-primary font-semibold group-hover:text-primary/80 transition-colors duration-300">
-                                                    Choisir le type de bien
-                                                    <ChevronRight className="w-4 h-4 ml-2" />
-                                                </motion.div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-
-                                    {/* Location Card */}
-                                    <motion.div
-                                        variants={cardVariants}
-                                        whileHover="hover"
-                                        whileTap="tap"
-                                        className="group cursor-pointer relative"
-                                        onClick={() => handleContractSelect("rent")}
-                                    >
-                                        <Card
-                                            className={`relative h-80 overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-card via-card to-accent/5 backdrop-blur-sm ${
-                                                selectedContract === "rent" ? "border-primary shadow-lg" : "border-transparent group-hover:border-primary/20"
-                                            }`}
+                                {/* Footer avec séparateur et bouton */}
+                                <div className="mt-8 pt-6 border-t-2 border-primary/20">
+                                    <div className="flex justify-center">
+                                        <Button
+                                            onClick={() => router.push("/properties?vip=1")}
+                                            variant="default"
+                                            size="lg"
+                                            className="shadow-md hover:shadow-lg transition-shadow"
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-primary/5" />
-                                            <div className="absolute top-4 right-4 w-32 h-32 bg-accent/5 rounded-full blur-3xl" />
-                                            <div className="absolute bottom-4 left-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
-
-                                            <CardContent className="relative z-10 h-full flex flex-col justify-center items-center text-center p-8">
-                                                <motion.div className="mb-6">
-                                                    <div className="w-20 h-20 bg-accent/10 rounded-2xl flex items-center justify-center group-hover:bg-accent/20 transition-colors duration-300">
-                                                        <Building2 className="w-10 h-10 text-accent-foreground" />
-                                                    </div>
-                                                </motion.div>
-
-                                                <h2 className="text-3xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors duration-300">Louer</h2>
-
-                                                <p className="text-muted-foreground mb-6 leading-relaxed">Trouvez votre prochain logement à louer</p>
-
-                                                <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground mb-6">
-                                                    <div className="text-center">
-                                                        <div className="font-semibold text-foreground">2</div>
-                                                        <div>Types</div>
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <div className="font-semibold text-foreground">800+</div>
-                                                        <div>Annonces</div>
-                                                    </div>
-                                                </div>
-
-                                                <motion.div className="flex items-center text-primary font-semibold group-hover:text-primary/80 transition-colors duration-300">
-                                                    Choisir le type de bien
-                                                    <ChevronRight className="w-4 h-4 ml-2" />
-                                                </motion.div>
-                                            </CardContent>
-                                        </Card>
-                                    </motion.div>
-                                </motion.div>
-                            </div>
-                        </div>
-
-                        {/* Étape 2: Sélection du type de bien */}
-                        {selectedContract && (
-                            <motion.div
-                                ref={propertyTypeRef}
-                                initial={{ opacity: 0, y: 50 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                            >
-                                <div className="bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
-                                    <div className="w-full max-w-6xl mx-auto">
-                                        {/* Header */}
-                                        <motion.div className="mb-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-                                            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                                                Que souhaitez-vous {selectedContract === "sale" ? "acheter" : "louer"} ?
-                                            </h1>
-                                            <p className="text-lg text-muted-foreground">Choisissez le type de bien qui correspond à vos besoins</p>
-                                        </motion.div>
-
-                                        {/* Property Types Grid */}
-                                        <motion.div
-                                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                                            variants={containerVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                        >
-                                            {getPropertyTypesForContract(selectedContract).map((propertyType, index) => {
-                                                const IconComponent = propertyType.icon;
-                                                const isSelected = selectedPropertyType === propertyType.id;
-                                                return (
-                                                    <motion.div
-                                                        key={propertyType.id}
-                                                        variants={cardVariants}
-                                                        whileHover={{ scale: 1.02 }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        className="group cursor-pointer relative"
-                                                        onClick={() => handlePropertyTypeSelect(propertyType.id)}
-                                                    >
-                                                        <Card
-                                                            className={`h-48 overflow-hidden border-2 transition-all duration-300 bg-gradient-to-br from-card via-card to-primary/5 backdrop-blur-sm ${
-                                                                isSelected ? "border-primary shadow-lg" : "border-transparent group-hover:border-primary/20"
-                                                            }`}
-                                                        >
-                                                            <CardContent className="h-full flex flex-col justify-center items-center text-center p-6">
-                                                                <motion.div className="mb-4">
-                                                                    <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
-                                                                        <IconComponent className="w-8 h-8 text-primary" />
-                                                                    </div>
-                                                                </motion.div>
-
-                                                                <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">
-                                                                    {propertyType.name}
-                                                                </h3>
-
-                                                                <p className="text-sm text-muted-foreground mb-4">
-                                                                    {propertyType.count} annonce{propertyType.count > 1 ? "s" : ""}
-                                                                </p>
-
-                                                                <motion.div className="flex items-center text-primary font-semibold group-hover:text-primary/80 transition-colors duration-300">
-                                                                    Continuer
-                                                                    <ChevronRight className="w-4 h-4 ml-1" />
-                                                                </motion.div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    </motion.div>
-                                                );
-                                            })}
-                                        </motion.div>
+                                            <Award className="h-4 w-4 mr-2" />
+                                            Voir plus d'annonces VIP
+                                        </Button>
                                     </div>
                                 </div>
-                            </motion.div>
-                        )}
-
-                        {/* Étape 3: Sélection de zone */}
-                        {showZoneSelection && (
-                            <motion.div ref={zoneRef} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}>
-                                <ZoneSelector onZoneSelect={handleZoneSelect} />
-                            </motion.div>
-                        )}
-
-                        {/* Étape 4: Sélection des communes */}
-                        {showCommuneSelection && (
-                            <motion.div
-                                ref={communesRef}
-                                initial={{ opacity: 0, y: 50 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                            >
-                                <CommuneSelector onBack={handleBackToZone} onSearch={handleCommuneSearch} />
-                            </motion.div>
-                        )}
+                            </CardContent>
+                        </Card>
                     </main>
                 </div>
             </div>

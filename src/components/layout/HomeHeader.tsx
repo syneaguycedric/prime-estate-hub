@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { motion } from "framer-motion";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, PlusCircle, Building2 } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
@@ -22,6 +22,33 @@ const HomeHeader = () => {
         } catch (error) {
             console.error("Error during logout:", error);
         }
+    };
+
+    const handlePublishClick = () => {
+        if (!isAuthenticated) {
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("redirect_after_login", "/advertiser");
+            }
+            import("@/lib/toast-helpers").then(({ toast }) => {
+                toast.warning("Connexion requise", {
+                    description: "Vous devez être connecté pour devenir annonceur. Connectez-vous ou créez un compte.",
+                    duration: 5000,
+                });
+            });
+            navigateWithTransition("/login");
+        } else {
+            if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+                navigateWithTransition("/advertiser");
+                return;
+            }
+            navigateWithTransition("/create-listing");
+        }
+    };
+
+    const getPublishButtonLabel = () => {
+        if (!isAuthenticated) return "Devenir annonceur";
+        if (user?.account?.account_type !== "advertiser") return "Devenir annonceur";
+        return "Publier";
     };
 
     return (
@@ -49,13 +76,9 @@ const HomeHeader = () => {
                 </motion.div>
 
                 {/* Navigation */}
-                <nav className="flex items-center space-x-4">
+                <nav className="flex items-center space-x-3">
                     {/* Link to Properties */}
-                    <Button 
-                        variant="ghost" 
-                        onClick={() => navigateWithTransition("/properties")}
-                        className="hidden sm:flex"
-                    >
+                    <Button variant="ghost" onClick={() => navigateWithTransition("/properties")} className="hidden sm:flex">
                         Annonces
                     </Button>
 
@@ -85,8 +108,8 @@ const HomeHeader = () => {
                                 </DropdownMenuItem>
                                 {user?.account?.account_type === "advertiser" && (
                                     <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
-                                        <User className="mr-2 h-4 w-4" />
-                                        Mes annonces
+                                        <Building2 className="mr-2 h-4 w-4" />
+                                        Mon espace
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
@@ -97,22 +120,16 @@ const HomeHeader = () => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <div className="flex items-center space-x-2">
-                            <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => navigateWithTransition("/login")}
-                            >
-                                Se connecter
-                            </Button>
-                            <Button 
-                                size="sm"
-                                onClick={() => navigateWithTransition("/register")}
-                            >
-                                S'inscrire
-                            </Button>
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigateWithTransition("/login")}>
+                            <User className="h-4 w-4 mr-2" />
+                            Connexion
+                        </Button>
                     )}
+
+                    <Button variant="hero" size="sm" onClick={handlePublishClick}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        {getPublishButtonLabel()}
+                    </Button>
                 </nav>
             </div>
         </motion.header>
