@@ -4,7 +4,6 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "@/components/layout/Header";
 import FeaturedProperties from "@/components/sections/FeaturedProperties";
-import Footer from "@/components/layout/Footer";
 import SearchFilters from "@/components/sections/SearchFilters";
 import ActiveFilters from "@/components/sections/ActiveFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
@@ -369,7 +368,6 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                     />
                     <div className={`transition-all duration-300 ${showFilters ? "ml-80" : "ml-0"}`}>
                         <FeaturedProperties properties={properties} pagination={pagination} onPageChange={handlePageChange} view={view} isLoading={isLoading || showLoading} />
-                        <Footer />
                     </div>
                 </div>
             </div>

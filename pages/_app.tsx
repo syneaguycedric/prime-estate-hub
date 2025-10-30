@@ -9,6 +9,7 @@ import Head from "next/head";
 import LoadingBar from "@/components/ui/loading-bar";
 import PageSkeletonManager from "@/components/ui/page-skeleton-manager";
 import { AuthProvider } from "@/contexts/AuthContext";
+import Footer from "@/components/layout/Footer";
 
 // Import des styles globaux
 import "../src/index.css";
@@ -109,6 +110,7 @@ export default function App({ Component, pageProps }: AppProps) {
                             {mounted && (
                                 <>
                                     <Component {...pageProps} />
+                                    <Footer />
                                     <Toaster />
                                     <Sonner />
                                 </>
