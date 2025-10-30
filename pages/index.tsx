@@ -120,6 +120,8 @@ const HomePage = ({ seoData }: HomePageProps) => {
     const toggleArea = (id: string) => {
         // Sélection unique: remplace toujours par l'ID cliqué
         setAreas([id]);
+        // Fermer automatiquement le Popover après sélection
+        setAreasOpen(false);
     };
 
     const getAreaName = (id: string) => {
@@ -264,7 +266,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                                 ))}
                                             </div>
                                             <Separator className="my-2" />
-                                            <div className="flex items-center justify-end gap-2">
+                                            <div className="flex items-center justify-end">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -274,9 +276,6 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                                     }}
                                                 >
                                                     Effacer
-                                                </Button>
-                                                <Button size="sm" onClick={() => setAreasOpen(false)}>
-                                                    Terminer
                                                 </Button>
                                             </div>
                                         </PopoverContent>
