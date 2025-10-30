@@ -94,12 +94,6 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
 
     // Déterminer le label du bouton selon le statut utilisateur
     const getPublishButtonLabel = () => {
-        if (!isAuthenticated) {
-            return "Devenir annonceur";
-        }
-        if (user?.account?.account_type !== "advertiser") {
-            return "Devenir annonceur";
-        }
         return "Publier";
     };
 

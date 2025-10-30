@@ -46,8 +46,6 @@ const HomeHeader = () => {
     };
 
     const getPublishButtonLabel = () => {
-        if (!isAuthenticated) return "Devenir annonceur";
-        if (user?.account?.account_type !== "advertiser") return "Devenir annonceur";
         return "Publier";
     };
 

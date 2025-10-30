@@ -118,7 +118,13 @@ const HomePage = ({ seoData }: HomePageProps) => {
     }, [router.query]);
 
     const toggleArea = (id: string) => {
-        setAreas((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+        // Sélection unique: remplace toujours par l'ID cliqué
+        setAreas([id]);
+    };
+
+    const getAreaName = (id: string) => {
+        const source = zone === "grand-abidjan" ? ABIDJAN_COMMUNES : DEPARTEMENTS_FAKE;
+        return source.find((o) => o.id === id)?.name || "";
     };
 
     const handleCommuneSearch = (communes: string[]) => {
@@ -205,7 +211,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                     <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border hover:bg-muted cursor-pointer">
                                         <RadioGroupItem id="rent" value="rent" />
                                         <Label htmlFor="rent" className="cursor-pointer">
-                                            Louer
+                                            Location
                                         </Label>
                                     </div>
                                 </RadioGroup>
@@ -239,7 +245,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                     <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
-                                                {areas.length > 0 ? `${areas.length} sélectionné(s)` : "Choisir..."}
+                                                {areas.length === 1 ? getAreaName(areas[0]) : "Choisir..."}
                                                 <Search className="h-4 w-4 opacity-60" />
                                             </Button>
                                         </PopoverTrigger>
@@ -253,7 +259,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                                         className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
                                                     >
                                                         <span>{o.name}</span>
-                                                        <Checkbox checked={areas.includes(o.id)} onCheckedChange={() => toggleArea(o.id)} />
+                                                        <Checkbox checked={areas[0] === o.id} onCheckedChange={() => toggleArea(o.id)} />
                                                     </button>
                                                 ))}
                                             </div>
@@ -305,19 +311,11 @@ const HomePage = ({ seoData }: HomePageProps) => {
                     <main className="lg:col-span-3 order-1 lg:order-2">
                         <Card className="border-2 border-primary/30 bg-white shadow-lg">
                             <CardContent className="p-6">
-                                {/* Header VIP */}
+                                {/* Header annonces */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                            <Award className="h-6 w-6 text-primary" />
-                                            Annonces VIP
-                                        </h2>
-                                        <p className="text-sm text-muted-foreground mt-1">Découvrez une sélection premium d'annonces mises en avant</p>
+                                        <h2 className="text-2xl font-bold text-foreground">Les annonces</h2>
                                     </div>
-                                    <Badge className="bg-primary text-primary-foreground shadow-sm px-3 py-1">
-                                        <Award className="h-3 w-3 mr-1" />
-                                        Premium
-                                    </Badge>
                                 </div>
 
                                 {/* Grille des annonces VIP */}
