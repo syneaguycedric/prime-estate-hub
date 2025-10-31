@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import BecomeAdvertiser from "@/components/dashboard/BecomeAdvertiser";
 import { toast } from "@/lib/toast-helpers";
 
@@ -75,8 +74,6 @@ export default function AdvertiserPage() {
                         <BecomeAdvertiser />
                     </div>
                 </main>
-
-                <Footer />
             </div>
         </>
     );
