@@ -17,8 +17,8 @@ export default function AdvertiserPage() {
             return;
         }
 
-        // Rediriger vers Mon espace si déjà annonceur avec agence
-        if (user?.account?.account_type === "advertiser" && user?.account?.agency) {
+        // Rediriger vers Mon espace si déjà annonceur
+        if (user?.role?.name === "Advertiser") {
             toast.info("Accès annonceur", {
                 description: "Vous êtes déjà annonceur ! Accédez à votre espace pour publier des annonces.",
                 duration: 5000,
@@ -32,8 +32,8 @@ export default function AdvertiserPage() {
         return null;
     }
 
-    // Ne pas afficher si déjà annonceur avec agence (en cours de redirection)
-    if (user?.account?.account_type === "advertiser" && user?.account?.agency) {
+    // Ne pas afficher si déjà annonceur (en cours de redirection)
+    if (user?.role?.name === "Advertiser") {
         return null;
     }
 

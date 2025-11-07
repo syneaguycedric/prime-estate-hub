@@ -26,7 +26,7 @@ export default function BecomeAdvertiser() {
 
     // Utiliser useMemo pour recalculer quand user change
     const isAlreadyAdvertiser = React.useMemo(() => {
-        return user?.account?.account_type === "advertiser";
+        return user?.role?.name === "Advertiser";
     }, [user]);
 
     const hasAgency = React.useMemo(() => {
@@ -105,7 +105,7 @@ export default function BecomeAdvertiser() {
             console.log("[BECOME ADVERTISER] Refreshing user data...");
             await refreshUser();
 
-            console.log("[BECOME ADVERTISER] User data refreshed. New account type:", user?.account?.account_type);
+            console.log("[BECOME ADVERTISER] User data refreshed. New role name:", user?.role?.name);
 
             // Fermer le dialog
             setShowConfirmDialog(false);

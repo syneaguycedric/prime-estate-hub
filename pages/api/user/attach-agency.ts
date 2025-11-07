@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('[ATTACH AGENCY API] Attaching user to agency:', agencyId);
 
         // Étape 1 : Récupérer l'utilisateur pour obtenir son account.id
-        const getUserResponse = await fetch(`${directusUrl}/users/me?fields=*,account.id,account.account_type,account.phoneNumber,account.agency,role.id,role.name`, {
+        const getUserResponse = await fetch(`${directusUrl}/users/me?fields=*,account.*,role.*`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('[ATTACH AGENCY API] Payload:', JSON.stringify(payload, null, 2));
 
-        const response = await fetch(`${directusUrl}/users/${userId}?fields=*,account.*,role.*`, {
+        const response = await fetch(`${directusUrl}/users/${userId}?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,role.*`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',

@@ -6,9 +6,9 @@ import { motion } from "framer-motion";
 import { Bed, Bath, Square, MapPin, Phone, Mail, User, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Property } from "@/data/properties";
+import { Property, UserCreated } from "@/data/properties";
 import { fetchPropertyById } from "@/lib/directus-api";
-import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
+import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
 import PageNavbar from "@/components/layout/PageNavbar";
 import ImageLightbox from "@/components/ui/image-lightbox";
 // Import dynamique temporairement désactivé
@@ -29,13 +29,46 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
+    // Fonction helper pour extraire les informations de l'utilisateur créateur
+    const getUserInfo = (userCreated: UserCreated | string | undefined) => {
+        if (!userCreated || typeof userCreated === 'string') {
+            return null; // Pas de données disponibles
+        }
+        return {
+            name: `${userCreated.first_name} ${userCreated.last_name}`,
+            email: userCreated.email,
+            phone: userCreated.account?.phoneNumber || null,
+        };
+    };
+
+    // Fonction helper pour extraire la zone et la commune/département
+    const getTownInfo = (town: any) => {
+        if (!town) return null;
+        
+        if (typeof town === 'string') {
+            return null; // Pas de données disponibles si c'est juste un ID
+        }
+        
+        if (typeof town === 'object') {
+            return {
+                name: town.name || null,
+                zoneName: town.zone?.name || null,
+            };
+        }
+        
+        return null;
+    };
+
+    const townInfo = property ? getTownInfo((property as any).town) : null;
+
     // Formater les données pour l'affichage
-    const formattedPrice = property ? formatPrice(property.price, property.billingCycle) : "";
+    const formattedPrice = property ? formatPriceOnly(property.price) : "";
     const formattedSurface = property ? formatSurface(property.surfaceArea, property.surfaceAreaUnit) : "";
     const propertyTypeLabel = property ? getPropertyTypeLabel(property.type) : "";
     const contractTypeLabel = property ? getContractTypeLabel(property.contractType) : "";
     const imageUrls = property ? getAllImageUrls(property) : [];
     const characteristicsList = property ? formatCharacteristics(property.characteristics) : [];
+    const userInfo = property ? getUserInfo(property.user_created) : null;
 
     if (!property) {
         return (
@@ -152,15 +185,25 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                         >
                             {property.title}
                         </motion.h1>
-                        <motion.p
-                            className="text-lg text-muted-foreground mb-6 flex items-center"
+                        <motion.div
+                            className="text-lg text-muted-foreground mb-6 space-y-1"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
                         >
-                            <MapPin className="h-4 w-4 mr-2" />
-                            {property.location}
-                        </motion.p>
+                            {townInfo && (townInfo.name || townInfo.zoneName) && (
+                                <p className="flex items-center">
+                                    <MapPin className="h-4 w-4 mr-2" />
+                                    {townInfo.name && townInfo.zoneName ? `${townInfo.name}, ${townInfo.zoneName}` : townInfo.name || townInfo.zoneName}
+                                </p>
+                            )}
+                            {property.location && (
+                                <p className="flex items-center text-sm">
+                                    <MapPin className="h-4 w-4 mr-2" />
+                                    {property.location}
+                                </p>
+                            )}
+                        </motion.div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2">
@@ -238,21 +281,29 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         {/* Informations de contact - Mobile uniquement */}
                                         <div className="pt-4 border-t border-border space-y-3">
                                             <h3 className="text-lg font-semibold">Informations de contact</h3>
-                                            <div className="flex items-center text-sm">
-                                                <User className="h-4 w-4 mr-3 text-primary" />
-                                                <div>
-                                                    <p className="font-medium">Marie Dubois</p>
-                                                    <p className="text-muted-foreground">Agent immobilier</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center text-sm">
-                                                <Phone className="h-4 w-4 mr-3 text-primary" />
-                                                <span>01 23 45 67 89</span>
-                                            </div>
-                                            <div className="flex items-center text-sm">
-                                                <Mail className="h-4 w-4 mr-3 text-primary" />
-                                                <span>marie.dubois@immobilier.fr</span>
-                                            </div>
+                                            {userInfo ? (
+                                                <>
+                                                    <div className="flex items-center text-sm">
+                                                        <User className="h-4 w-4 mr-3 text-primary" />
+                                                        <div>
+                                                            <p className="font-medium">{userInfo.name}</p>
+                                                            <p className="text-muted-foreground">Annonceur</p>
+                                                        </div>
+                                                    </div>
+                                                    {userInfo.phone && (
+                                                        <div className="flex items-center text-sm">
+                                                            <Phone className="h-4 w-4 mr-3 text-primary" />
+                                                            <span>{userInfo.phone}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center text-sm">
+                                                        <Mail className="h-4 w-4 mr-3 text-primary" />
+                                                        <span>{userInfo.email}</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">Informations de contact non disponibles</p>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -329,21 +380,29 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         <CardTitle className="text-lg">Informations de contact</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        <div className="flex items-center text-sm">
-                                            <User className="h-4 w-4 mr-3 text-primary" />
-                                            <div>
-                                                <p className="font-medium">Marie Dubois</p>
-                                                <p className="text-muted-foreground">Agent immobilier</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center text-sm">
-                                            <Phone className="h-4 w-4 mr-3 text-primary" />
-                                            <span>01 23 45 67 89</span>
-                                        </div>
-                                        <div className="flex items-center text-sm">
-                                            <Mail className="h-4 w-4 mr-3 text-primary" />
-                                            <span>marie.dubois@immobilier.fr</span>
-                                        </div>
+                                        {userInfo ? (
+                                            <>
+                                                <div className="flex items-center text-sm">
+                                                    <User className="h-4 w-4 mr-3 text-primary" />
+                                                    <div>
+                                                        <p className="font-medium">{userInfo.name}</p>
+                                                        <p className="text-muted-foreground">Annonceur</p>
+                                                    </div>
+                                                </div>
+                                                {userInfo.phone && (
+                                                    <div className="flex items-center text-sm">
+                                                        <Phone className="h-4 w-4 mr-3 text-primary" />
+                                                        <span>{userInfo.phone}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center text-sm">
+                                                    <Mail className="h-4 w-4 mr-3 text-primary" />
+                                                    <span>{userInfo.email}</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">Informations de contact non disponibles</p>
+                                        )}
                                     </CardContent>
                                 </Card>
                             </aside>
@@ -367,30 +426,35 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     {/* Emplacement - Mobile uniquement dans la card Description */}
                                     <div className="lg:hidden">
                                         <h3 className="text-lg font-semibold mb-3 pt-6 border-t border-border">Emplacement</h3>
-                                        <p className="text-muted-foreground mb-4">
-                                            Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles :
-                                            commerces, écoles, transports en commun et espaces verts.
-                                        </p>
-                                        <div className="grid grid-cols-1 gap-3 text-sm mb-4">
-                                            <div className="flex items-center text-muted-foreground">
-                                                <MapPin className="h-4 w-4 mr-2 text-primary" />
-                                                Centre-ville : 5 min
-                                            </div>
-                                            <div className="flex items-center text-muted-foreground">
-                                                <MapPin className="h-4 w-4 mr-2 text-primary" />
-                                                Métro : 3 min à pied
-                                            </div>
-                                            <div className="flex items-center text-muted-foreground">
-                                                <MapPin className="h-4 w-4 mr-2 text-primary" />
-                                                Écoles : 2 min à pied
-                                            </div>
+                                        <div className="space-y-3">
+                                            {townInfo && (townInfo.name || townInfo.zoneName) && (
+                                                <div className="flex items-start text-muted-foreground">
+                                                    <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
+                                                    <div className="text-sm leading-relaxed">
+                                                        {townInfo.zoneName && <span className="font-medium">Zone: {townInfo.zoneName}</span>}
+                                                        {townInfo.zoneName && townInfo.name && <span className="mx-2">•</span>}
+                                                        {townInfo.name && <span>Commune: {townInfo.name}</span>}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {property.location && (
+                                                <div className="flex items-start text-muted-foreground">
+                                                    <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
+                                                    <p className="text-sm leading-relaxed">{property.location}</p>
+                                                </div>
+                                            )}
+                                            {!townInfo && !property.location && (
+                                                <p className="text-muted-foreground text-sm">Localisation non disponible</p>
+                                            )}
                                         </div>
                                         <div className="mt-4">
                                             <h4 className="text-base font-medium mb-3 lg:hidden">Localisation</h4>
                                             <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
                                                 <div className="text-center">
                                                     <p className="text-muted-foreground">Carte temporairement indisponible</p>
-                                                    <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
+                                                    {property.location && (
+                                                        <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -426,23 +490,26 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         {/* Emplacement */}
                                         <div>
-                                            <p className="text-muted-foreground mb-4">
-                                                Situé dans un quartier recherché, ce bien bénéficie d'un environnement calme tout en restant proche des commodités essentielles :
-                                                commerces, écoles, transports en commun et espaces verts.
-                                            </p>
-                                            <div className="grid grid-cols-1 gap-3 text-sm">
-                                                <div className="flex items-center text-muted-foreground">
-                                                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                                                    Centre-ville : 5 min
-                                                </div>
-                                                <div className="flex items-center text-muted-foreground">
-                                                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                                                    Métro : 3 min à pied
-                                                </div>
-                                                <div className="flex items-center text-muted-foreground">
-                                                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                                                    Écoles : 2 min à pied
-                                                </div>
+                                            <div className="space-y-3">
+                                                {townInfo && (townInfo.name || townInfo.zoneName) && (
+                                                    <div className="flex items-start text-muted-foreground">
+                                                        <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
+                                                        <div className="text-sm leading-relaxed">
+                                                            {townInfo.zoneName && <span className="font-medium">Zone: {townInfo.zoneName}</span>}
+                                                            {townInfo.zoneName && townInfo.name && <span className="mx-2">•</span>}
+                                                            {townInfo.name && <span>Commune: {townInfo.name}</span>}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {property.location && (
+                                                    <div className="flex items-start text-muted-foreground">
+                                                        <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
+                                                        <p className="text-sm leading-relaxed">{property.location}</p>
+                                                    </div>
+                                                )}
+                                                {!townInfo && !property.location && (
+                                                    <p className="text-muted-foreground text-sm">Localisation non disponible</p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -451,7 +518,9 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                             <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
                                                 <div className="text-center">
                                                     <p className="text-muted-foreground">Carte temporairement indisponible</p>
-                                                    <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
+                                                    {property.location && (
+                                                        <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

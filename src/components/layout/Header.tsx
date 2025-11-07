@@ -40,7 +40,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
             userId: user?.id,
             accountType: user?.account?.account_type,
             agency: user?.account?.agency,
-            isAdvertiser: user?.account?.account_type === "advertiser",
+            isAdvertiser: user?.role?.name === "Advertiser",
             buttonLabel: getPublishButtonLabel(),
             timestamp: new Date().toISOString(),
             source: user ? "user_loaded" : "no_user",
@@ -80,8 +80,8 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
             // Rediriger vers la page de connexion
             navigateWithTransition("/login");
         } else {
-            // Vérifier si l'utilisateur est un annonceur ET rattaché à une agence
-            if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+            // Vérifier si l'utilisateur est un annonceur
+            if (user?.role?.name !== "Advertiser") {
                 // Rediriger vers la page "Devenir annonceur"
                 navigateWithTransition("/advertiser");
                 return;
@@ -193,7 +193,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                                     <User className="mr-2 h-4 w-4" />
                                     Mon profil
                                 </DropdownMenuItem>
-                                {user?.account?.account_type === "advertiser" && (
+                                {user?.role?.name === "Advertiser" && (
                                     <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
                                         <Building2 className="mr-2 h-4 w-4" />
                                         Mon espace

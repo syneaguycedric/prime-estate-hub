@@ -5,7 +5,7 @@ import { Bed, Bath, Square, MapPin } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import ImageWithLoading from "@/components/ui/image-with-loading";
 import { Property } from "@/data/properties";
-import { formatPrice, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl } from "@/lib/property-helpers";
+import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl } from "@/lib/property-helpers";
 
 interface PropertyListCardAnimatedProps extends Property {
     index: number;
@@ -33,7 +33,7 @@ const PropertyListCardAnimated = ({
     };
 
     // Formater les données pour l'affichage
-    const formattedPrice = formatPrice(price, billingCycle);
+    const formattedPrice = formatPriceOnly(price);
     const formattedSurface = formatSurface(surfaceArea, surfaceAreaUnit);
     const propertyTypeLabel = getPropertyTypeLabel(type);
     const contractTypeLabel = getContractTypeLabel(contractType);

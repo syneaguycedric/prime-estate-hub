@@ -37,7 +37,7 @@ const HomeHeader = () => {
             });
             navigateWithTransition("/login");
         } else {
-            if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+            if (user?.role?.name !== "Advertiser") {
                 navigateWithTransition("/advertiser");
                 return;
             }
@@ -104,7 +104,7 @@ const HomeHeader = () => {
                                     <User className="mr-2 h-4 w-4" />
                                     Mon profil
                                 </DropdownMenuItem>
-                                {user?.account?.account_type === "advertiser" && (
+                                {user?.role?.name === "Advertiser" && (
                                     <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
                                         <Building2 className="mr-2 h-4 w-4" />
                                         Mon espace

@@ -3,16 +3,19 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { Upload, X, Plus, Loader2, ArrowRight, Save } from "lucide-react";
+import { Upload, X, Plus, Loader2, ArrowRight, Save, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import PageNavbar from "@/components/layout/PageNavbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { uploadFile, createListing, CreateListingData } from "@/lib/directus-api";
+import { uploadFile, createListing, CreateListingData, fetchGeoZones, GeoZone } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import Image from "next/image";
 
@@ -25,7 +28,11 @@ interface UploadedImage {
     error?: string;
 }
 
-const CreateListingPage = () => {
+interface CreateListingPageProps {
+    geoZones: GeoZone[];
+}
+
+const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
     const router = useRouter();
     const { isAuthenticated, authData, user } = useAuth();
 
@@ -40,15 +47,71 @@ const CreateListingPage = () => {
             return;
         }
 
-        if (user?.account?.account_type !== "advertiser" || !user?.account?.agency) {
+        if (user?.role?.name !== "Advertiser") {
             router.push("/advertiser");
             toast.info("Devenez annonceur", {
-                description: "Vous devez être annonceur avec une agence pour publier des annonces.",
+                description: "Vous devez être annonceur pour publier des annonces.",
                 duration: 7000,
             });
             return;
         }
     }, [isAuthenticated, user, router]);
+
+    // États pour la sélection de zone et commune
+    const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
+    const [areas, setAreas] = useState<string[]>([]);
+    const [areasOpen, setAreasOpen] = useState(false);
+
+    // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
+    const getZoneMapping = () => {
+        const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
+        
+        // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
+        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
+        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
+        
+        mapping["grand-abidjan"] = {
+            id: grandAbidjan?.id || "",
+            zone: grandAbidjan || null,
+        };
+        
+        mapping["hors-abidjan"] = {
+            id: horsAbidjan?.id || "",
+            zone: horsAbidjan || null,
+        };
+        
+        return mapping;
+    };
+
+    const zoneMapping = getZoneMapping();
+
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée
+    const getZoneByValue = (zoneValue: string): GeoZone | null => {
+        return zoneMapping[zoneValue]?.zone || null;
+    };
+
+    // Obtenir la zone actuellement sélectionnée
+    const selectedZone = zone ? getZoneByValue(zone) : null;
+
+    // Obtenir les towns de la zone sélectionnée
+    const getTownsForSelectedZone = () => {
+        if (!selectedZone) return [];
+        return selectedZone.towns || [];
+    };
+
+    // Obtenir le nom d'une commune/département par son ID
+    const getAreaName = (id: string) => {
+        if (!selectedZone) return "";
+        const town = selectedZone.towns.find((t) => t.id === id);
+        return town?.name || "";
+    };
+
+    const toggleArea = (id: string) => {
+        // Sélection unique: remplace toujours par l'ID cliqué
+        setAreas([id]);
+        // Fermer automatiquement le Popover après sélection
+        setAreasOpen(false);
+    };
 
     // États du formulaire
     const [formData, setFormData] = useState({
@@ -63,11 +126,7 @@ const CreateListingPage = () => {
         bathrooms: "1",
         kitchens: "1",
         floors: "1",
-        // Adresse
-        country: "civ",
-        city: "",
-        state: "",
-        street: "",
+        location: "", // Géolocalisation
     });
 
     const [images, setImages] = useState<UploadedImage[]>([]);
@@ -184,16 +243,12 @@ const CreateListingPage = () => {
             errors.surfaceArea = "La surface doit être supérieure à 0";
         }
 
-        if (!formData.city.trim()) {
-            errors.city = "La ville est requise";
+        if (areas.length === 0 || !areas[0]) {
+            errors.town = "Veuillez sélectionner une commune ou un département";
         }
 
-        if (!formData.state.trim()) {
-            errors.state = "La région est requise";
-        }
-
-        if (!formData.street.trim()) {
-            errors.street = "La rue/quartier est requis";
+        if (!formData.location.trim()) {
+            errors.location = "La localisation est requise";
         }
 
         if (images.length === 0) {
@@ -247,12 +302,8 @@ const CreateListingPage = () => {
                 bathrooms: parseInt(formData.bathrooms),
                 kitchens: parseInt(formData.kitchens),
                 floors: parseInt(formData.floors),
-                address: {
-                    country: formData.country,
-                    city: formData.city.trim(),
-                    state: formData.state.trim(),
-                    street: formData.street.trim(),
-                },
+                town: areas[0] || "", // ID de la commune/département sélectionné
+                location: formData.location.trim(), // Géolocalisation
                 agency: "ca1ab408-69e9-41f6-86ec-18ba0e41147f", // Agence par défaut Kylimmo
                 characteristics: characteristics.filter((char) => char.name.trim() && char.value.trim()),
                 type: formData.type,
@@ -289,7 +340,19 @@ const CreateListingPage = () => {
 
     // Gestion des changements de champs
     const handleInputChange = (field: string, value: string) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        // Pour les champs numériques entiers, supprimer les virgules et points
+        const integerFields = ['price', 'rooms', 'bathrooms', 'kitchens', 'floors'];
+        if (integerFields.includes(field)) {
+            // Supprimer toutes les virgules et points (on veut juste des entiers)
+            const cleanedValue = value.replace(/[^\d]/g, '');
+            setFormData((prev) => ({ ...prev, [field]: cleanedValue }));
+        } else if (field === 'surfaceArea') {
+            // Pour la surface, supprimer toutes les virgules et points (entiers uniquement)
+            const cleanedValue = value.replace(/[^\d]/g, '');
+            setFormData((prev) => ({ ...prev, [field]: cleanedValue }));
+        } else {
+            setFormData((prev) => ({ ...prev, [field]: value }));
+        }
 
         // Effacer l'erreur de validation
         if (validationErrors[field]) {
@@ -318,6 +381,93 @@ const CreateListingPage = () => {
                             <h1 className="text-3xl font-bold">Créer une annonce</h1>
                             <p className="text-muted-foreground mt-2">Remplissez les informations de votre bien immobilier</p>
                         </div>
+
+                        {/* Sélection de zone et commune/département */}
+                        <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
+                            <CardContent className="p-4 md:p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                    {/* Zone */}
+                                    <div className="md:col-span-4">
+                                        <Label className="text-xs text-muted-foreground">Zone</Label>
+                                        <Select
+                                            value={zone}
+                                            onValueChange={(v: any) => {
+                                                setZone(v);
+                                                setAreas([]);
+                                            }}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="Choisir une zone" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {geoZones.map((geoZone) => {
+                                                    // Mapper le nom de zone vers la valeur simplifiée
+                                                    const zoneValue = geoZone.name === "Grand Abidjan" 
+                                                        ? "grand-abidjan" 
+                                                        : geoZone.name === "Hors Abidjan" 
+                                                        ? "hors-abidjan" 
+                                                        : null;
+                                                    
+                                                    if (!zoneValue) return null;
+                                                    
+                                                    return (
+                                                        <SelectItem key={geoZone.id} value={zoneValue}>
+                                                            {geoZone.name}
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Communes / Départements */}
+                                    <div className="md:col-span-8">
+                                        <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                        <Popover open={areasOpen} onOpenChange={setAreasOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
+                                                    {areas.length === 1 ? getAreaName(areas[0]) : "Choisir..."}
+                                                    <Search className="h-4 w-4 opacity-60" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[320px] p-3">
+                                                <div className="max-h-64 overflow-auto pr-1">
+                                                    {getTownsForSelectedZone().map((town) => (
+                                                        <button
+                                                            type="button"
+                                                            key={town.id}
+                                                            onClick={() => toggleArea(town.id)}
+                                                            className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
+                                                        >
+                                                            <span>{town.name}</span>
+                                                            <Checkbox checked={areas[0] === town.id} onCheckedChange={() => toggleArea(town.id)} />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {areas.length > 0 && (
+                                                    <>
+                                                        <Separator className="my-2" />
+                                                        <div className="flex items-center justify-end">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setAreas([]);
+                                                                    setAreasOpen(false);
+                                                                }}
+                                                            >
+                                                                Effacer
+                                                            </Button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </PopoverContent>
+                                        </Popover>
+                                        {validationErrors.town && <p className="text-sm text-destructive mt-1">{validationErrors.town}</p>}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
 
                         <form
                             onSubmit={(e) => {
@@ -398,7 +548,7 @@ const CreateListingPage = () => {
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="price">Prix (FCFA) *</Label>
+                                            <Label htmlFor="price">{formData.contractType === "leasing" ? "Loyer (FCFA)" : "Prix (FCFA)"} *</Label>
                                             <Input
                                                 id="price"
                                                 type="number"
@@ -445,12 +595,12 @@ const CreateListingPage = () => {
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="rooms">Nombre de pièces</Label>
+                                            <Label htmlFor="rooms">Nombre de pièces *</Label>
                                             <Input id="rooms" type="number" min="0" value={formData.rooms} onChange={(e) => handleInputChange("rooms", e.target.value)} />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="bathrooms">Salles de bain</Label>
+                                            <Label htmlFor="bathrooms">Salles d'eau *</Label>
                                             <Input
                                                 id="bathrooms"
                                                 type="number"
@@ -461,60 +611,36 @@ const CreateListingPage = () => {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="kitchens">Cuisines</Label>
+                                            <Label htmlFor="kitchens">Cuisines *</Label>
                                             <Input id="kitchens" type="number" min="0" value={formData.kitchens} onChange={(e) => handleInputChange("kitchens", e.target.value)} />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="floors">Étages</Label>
+                                            <Label htmlFor="floors">Nombre de niveau *</Label>
                                             <Input id="floors" type="number" min="0" value={formData.floors} onChange={(e) => handleInputChange("floors", e.target.value)} />
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {/* Adresse */}
+                            {/* Localisation */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Localisation</CardTitle>
+                                    <CardDescription>Précisez l'emplacement exact de votre bien</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="city">Ville *</Label>
-                                            <Input
-                                                id="city"
-                                                placeholder="Abidjan"
-                                                value={formData.city}
-                                                onChange={(e) => handleInputChange("city", e.target.value)}
-                                                className={validationErrors.city ? "border-destructive" : ""}
-                                            />
-                                            {validationErrors.city && <p className="text-sm text-destructive">{validationErrors.city}</p>}
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="state">Région/État *</Label>
-                                            <Input
-                                                id="state"
-                                                placeholder="Lagunes"
-                                                value={formData.state}
-                                                onChange={(e) => handleInputChange("state", e.target.value)}
-                                                className={validationErrors.state ? "border-destructive" : ""}
-                                            />
-                                            {validationErrors.state && <p className="text-sm text-destructive">{validationErrors.state}</p>}
-                                        </div>
-                                    </div>
-
                                     <div className="space-y-2">
-                                        <Label htmlFor="street">Rue/Quartier *</Label>
+                                        <Label htmlFor="location">Localisation *</Label>
                                         <Input
-                                            id="street"
-                                            placeholder="Cocody"
-                                            value={formData.street}
-                                            onChange={(e) => handleInputChange("street", e.target.value)}
-                                            className={validationErrors.street ? "border-destructive" : ""}
+                                            id="location"
+                                            placeholder="Ex: Place de la République, Avenue 12, Cocody"
+                                            value={formData.location}
+                                            onChange={(e) => handleInputChange("location", e.target.value)}
+                                            className={validationErrors.location ? "border-destructive" : ""}
                                         />
-                                        {validationErrors.street && <p className="text-sm text-destructive">{validationErrors.street}</p>}
+                                        {validationErrors.location && <p className="text-sm text-destructive">{validationErrors.location}</p>}
+                                        <p className="text-xs text-muted-foreground">Indiquez l'adresse complète ou un point de repère précis</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -628,19 +754,100 @@ const CreateListingPage = () => {
                         </form>
                     </motion.div>
                 </main>
+
+                {/* Loader avec overlay pendant le chargement */}
+                {isSubmitting && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-card border border-border rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4"
+                        >
+                            <div className="text-center space-y-4">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-16 h-16 mx-auto"
+                                >
+                                    <Loader2 className="w-16 h-16 text-primary" />
+                                </motion.div>
+
+                                <div className="space-y-2">
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="text-lg font-semibold text-foreground"
+                                    >
+                                        Publication en cours...
+                                    </motion.p>
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="text-sm text-muted-foreground"
+                                    >
+                                        Veuillez patienter pendant le chargement des photos et la création de l'annonce
+                                    </motion.p>
+                                </div>
+
+                                {/* Points de progression animés */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="flex justify-center space-x-2 pt-2"
+                                >
+                                    {[0, 1, 2].map((index) => (
+                                        <motion.div
+                                            key={index}
+                                            animate={{
+                                                scale: [1, 1.3, 1],
+                                                opacity: [0.4, 1, 0.4],
+                                            }}
+                                            transition={{
+                                                duration: 1.2,
+                                                repeat: Infinity,
+                                                delay: index * 0.2,
+                                                ease: "easeInOut",
+                                            }}
+                                            className="w-2 h-2 bg-primary rounded-full"
+                                        />
+                                    ))}
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
             </div>
         </>
     );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-    // Protection de la route : vérifier l'authentification
-    // Pour simplifier, on laisse la vérification côté client
-    // En production, vérifier le token dans les cookies
+export const getServerSideProps: GetServerSideProps<CreateListingPageProps> = async (context) => {
+    try {
+        // Récupérer les zones géographiques depuis l'API
+        const geoZones = await fetchGeoZones();
 
-    return {
-        props: {},
-    };
+        return {
+            props: {
+                geoZones: geoZones || [],
+            },
+        };
+    } catch (error) {
+        console.error("Error in getServerSideProps for create-listing:", error);
+
+        return {
+            props: {
+                geoZones: [],
+            },
+        };
+    }
 };
 
 export default CreateListingPage;

@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // D'abord, récupérer toutes les annonces pour voir la structure
         console.log('[USER PROPERTIES API] Step 1: Fetching all properties to check structure...');
-        const allPropertiesUrl = `${directusUrl}/items/real_estates?fields=*,images.directus_files_id.*&sort=-date_created&limit=5`;
+        const allPropertiesUrl = `${directusUrl}/items/real_estates?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*&sort=-date_created&limit=5`;
         console.log('[USER PROPERTIES API] All properties URL:', allPropertiesUrl);
 
         const allResponse = await fetch(allPropertiesUrl, {
@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Maintenant essayer le filtre
         console.log('[USER PROPERTIES API] Step 2: Trying filter...');
-        const apiUrl = `${directusUrl}/items/real_estates?filter[user_created][_eq]=${userId}&fields=*,images.directus_files_id.*&sort=-date_created`;
+        const apiUrl = `${directusUrl}/items/real_estates?filter[user_created][_eq]=${userId}&fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*&sort=-date_created`;
         console.log('[USER PROPERTIES API] Filter URL:', apiUrl);
 
         const response = await fetch(apiUrl, {

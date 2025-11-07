@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { loginUser, getCurrentUser, logoutUser as apiLogoutUser, registerUser, User, RegisterData } from "@/lib/directus-api";
+import { loginUser, getCurrentUser, logoutUser as apiLogoutUser, registerUser, User, RegisterData, isUserAdvertiser } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
+import { handleUnauthorized } from "@/lib/auth-helpers";
 
 // Interface pour les données d'authentification
 interface AuthData {
@@ -69,8 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     if (authData.expiresAt > now) {
                         console.log("[AUTH CONTEXT] Loading from localStorage:", {
                             userId: user.id,
-                            accountType: user.account?.account_type,
-                            isAdvertiser: user.account?.account_type === "advertiser",
+                            roleName: user.role?.name,
+                            isAdvertiser: isUserAdvertiser(user),
                         });
 
                         // Rafraîchir les données utilisateur pour s'assurer qu'elles sont à jour
@@ -80,8 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                             if (freshUser) {
                                 console.log("[AUTH CONTEXT] Fresh user data:", {
                                     userId: freshUser.id,
-                                    accountType: freshUser.account?.account_type,
-                                    isAdvertiser: freshUser.account?.account_type === "advertiser",
+                                    roleName: freshUser.role?.name,
+                                    isAdvertiser: isUserAdvertiser(freshUser),
                                 });
 
                                 // Mettre à jour avec les données fraîches
@@ -181,9 +182,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (user) {
                     console.log("[AUTH CONTEXT] Login successful, user data:", {
                         id: user.id,
-                        accountType: user.account?.account_type,
+                        roleName: user.role?.name,
                         agency: user.account?.agency,
-                        isAdvertiser: user.account?.account_type === "advertiser",
+                        isAdvertiser: isUserAdvertiser(user),
                     });
 
                     // Sauvegarder les données
@@ -374,8 +375,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const refreshAuthIfNeeded = async (): Promise<boolean> => {
         const success = await refreshAuth();
         if (!success) {
-            console.log("[AUTH CONTEXT] Refresh failed, logging out");
-            logout();
+            console.log("[AUTH CONTEXT] Refresh token expired or invalid, redirecting to login");
+            // Utiliser handleUnauthorized() qui nettoie le localStorage, affiche un toast et redirige vers /login
+            handleUnauthorized();
         }
         return success;
     };

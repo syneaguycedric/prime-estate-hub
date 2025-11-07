@@ -30,7 +30,7 @@ export default function MyListingsPage() {
         }
 
         // Vérifier si l'utilisateur est annonceur
-        if (user && user.account?.account_type !== "advertiser") {
+        if (user && user.role?.name !== "Advertiser") {
             toast.info("Accès restreint", {
                 description: "Cette page est réservée aux annonceurs. Devenez annonceur pour y accéder.",
                 duration: 5000,

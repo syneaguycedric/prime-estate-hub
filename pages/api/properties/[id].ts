@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // Récupérer une propriété par ID
             console.log('[PROPERTY API] Fetching property:', id);
 
-            const response = await fetch(`${directusUrl}/items/real_estates/${id}?fields=*.*,images.directus_files_id.*,address.*`, {
+            const response = await fetch(`${directusUrl}/items/real_estates/${id}?fields=*.*,images.directus_files_id.*,address.*,user_created.*,user_created.account.*,town.*.*`, {
                 method: 'GET',
                 headers: {
                     'Authorization': authHeader,

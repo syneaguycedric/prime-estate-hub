@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUserPropertyById, updateProperty, uploadFile } from "@/lib/directus-api";
+import { fetchUserPropertyById, updateProperty, uploadFile, fetchGeoZones, GeoZone } from "@/lib/directus-api";
 import { buildImageUrl } from "@/lib/property-helpers";
 import { Property } from "@/data/properties";
 import { toast } from "@/lib/toast-helpers";
@@ -15,9 +17,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Loader2, Upload, X, Plus } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Upload, X, Plus, Search } from "lucide-react";
 
 interface UploadedImage {
     fileId: string;
@@ -28,7 +32,11 @@ interface UploadedImage {
     error?: string;
 }
 
-export default function EditListingPage() {
+interface EditListingPageProps {
+    geoZones: GeoZone[];
+}
+
+export default function EditListingPage({ geoZones }: EditListingPageProps) {
     const router = useRouter();
     const { id } = router.query;
     const { isAuthenticated, user, authData, isLoading: authLoading } = useAuth();
@@ -37,23 +45,77 @@ export default function EditListingPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    // États pour la sélection de zone et commune
+    const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
+    const [areas, setAreas] = useState<string[]>([]);
+    const [areasOpen, setAreasOpen] = useState(false);
+
+    // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
+    const getZoneMapping = () => {
+        const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
+        
+        // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
+        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
+        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
+        
+        mapping["grand-abidjan"] = {
+            id: grandAbidjan?.id || "",
+            zone: grandAbidjan || null,
+        };
+        
+        mapping["hors-abidjan"] = {
+            id: horsAbidjan?.id || "",
+            zone: horsAbidjan || null,
+        };
+        
+        return mapping;
+    };
+
+    const zoneMapping = getZoneMapping();
+
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée
+    const getZoneByValue = (zoneValue: string): GeoZone | null => {
+        return zoneMapping[zoneValue]?.zone || null;
+    };
+
+    // Obtenir la zone actuellement sélectionnée
+    const selectedZone = zone ? getZoneByValue(zone) : null;
+
+    // Obtenir les towns de la zone sélectionnée
+    const getTownsForSelectedZone = () => {
+        if (!selectedZone) return [];
+        return selectedZone.towns || [];
+    };
+
+    // Obtenir le nom d'une commune/département par son ID
+    const getAreaName = (id: string) => {
+        if (!selectedZone) return "";
+        const town = selectedZone.towns.find((t) => t.id === id);
+        return town?.name || "";
+    };
+
+    const toggleArea = (id: string) => {
+        // Sélection unique: remplace toujours par l'ID cliqué
+        setAreas([id]);
+        // Fermer automatiquement le Popover après sélection
+        setAreasOpen(false);
+    };
+
     // Form data
     const [formData, setFormData] = useState({
         title: "",
         description: "",
         price: "",
-        surface: "",
+        surfaceArea: "",
+        surfaceAreaUnit: "m2",
         rooms: "",
         bathrooms: "",
+        kitchens: "",
+        floors: "",
         propertyType: "",
         contractType: "",
         status: "",
-        address: {
-            street: "",
-            city: "",
-            state: "",
-            country: "Côte d'Ivoire",
-        },
+        location: "", // Géolocalisation
     });
 
     // Images et caractéristiques
@@ -67,7 +129,7 @@ export default function EditListingPage() {
             return;
         }
 
-        if (!authLoading && user && user.account?.account_type !== "advertiser") {
+        if (!authLoading && user && user.role?.name !== "Advertiser") {
             toast.info("Accès restreint", {
                 description: "Cette page est réservée aux annonceurs.",
                 duration: 5000,
@@ -76,10 +138,10 @@ export default function EditListingPage() {
             return;
         }
 
-        if (id && typeof id === "string") {
+        if (id && typeof id === "string" && geoZones.length > 0) {
             loadProperty(id);
         }
-    }, [id, isAuthenticated, user, authLoading, router]);
+    }, [id, isAuthenticated, user, authLoading, router, geoZones]);
 
     const loadProperty = async (propertyId: string) => {
         setLoading(true);
@@ -92,28 +154,91 @@ export default function EditListingPage() {
 
                 // Logging pour déboguer
                 console.log("[EDIT LISTING] Property loaded:", JSON.stringify(prop, null, 2));
-                console.log("[EDIT LISTING] Address:", prop.address);
-                console.log("[EDIT LISTING] Type:", prop.type);
-                console.log("[EDIT LISTING] SurfaceArea:", prop.surfaceArea);
+                console.log("[EDIT LISTING] Town field:", (prop as any).town);
+                console.log("[EDIT LISTING] Location field:", (prop as any).location || prop.location);
 
                 // Préremplir le formulaire
+                // Formater les nombres sans virgules ni décimales
+                const formatNumberForInput = (value: any): string => {
+                    if (!value && value !== 0) return "";
+                    const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : parseFloat(value);
+                    if (isNaN(numValue)) return "";
+                    // Retourner le nombre entier sans décimales ni virgules
+                    return Math.floor(numValue).toString();
+                };
+
                 setFormData({
                     title: prop.title || "",
                     description: prop.description || "",
-                    price: prop.price?.toString() || "",
-                    surface: prop.surfaceArea?.toString() || "",
-                    rooms: prop.rooms?.toString() || "",
-                    bathrooms: prop.bathrooms?.toString() || "",
+                    price: formatNumberForInput(prop.price),
+                    surfaceArea: formatNumberForInput(prop.surfaceArea),
+                    surfaceAreaUnit: prop.surfaceAreaUnit || "m2",
+                    rooms: formatNumberForInput(prop.rooms),
+                    bathrooms: formatNumberForInput(prop.bathrooms),
+                    kitchens: formatNumberForInput(prop.kitchens) || "1",
+                    floors: formatNumberForInput(prop.floors) || "1",
                     propertyType: prop.type || "",
                     contractType: prop.contractType || "",
                     status: prop.status || "draft",
-                    address: {
-                        street: "",
-                        city: "",
-                        state: "",
-                        country: "Côte d'Ivoire",
-                    },
+                    location: (prop as any).location || prop.location || "",
                 });
+
+                // Préremplir zone et commune/département si la propriété a un champ town avec zone
+                const propertyTown = (prop as any).town;
+                let townId: string | null = null;
+                let zoneName: string | null = null;
+
+                // Gérer le cas où town est un ID (string) ou un objet (relation)
+                if (propertyTown) {
+                    if (typeof propertyTown === 'string') {
+                        townId = propertyTown;
+                    } else if (typeof propertyTown === 'object') {
+                        townId = propertyTown.id;
+                        // Si town a une zone avec un nom, l'utiliser directement
+                        if (propertyTown.zone && propertyTown.zone.name) {
+                            zoneName = propertyTown.zone.name;
+                        }
+                    }
+                }
+
+                console.log("[EDIT LISTING] Town ID extracted:", townId);
+                console.log("[EDIT LISTING] Zone name from town.zone:", zoneName);
+
+                if (townId && zoneName) {
+                    // Utiliser directement le nom de la zone depuis town.zone.name
+                    const zoneValue = zoneName === "Grand Abidjan" ? "grand-abidjan" : zoneName === "Hors Abidjan" ? "hors-abidjan" : null;
+                    if (zoneValue) {
+                        console.log("[EDIT LISTING] Setting zone to:", zoneValue, "and area to:", townId);
+                        setZone(zoneValue);
+                        setAreas([townId]);
+                    } else {
+                        console.warn("[EDIT LISTING] Zone name not recognized:", zoneName);
+                    }
+                } else if (townId) {
+                    // Fallback : chercher dans les geoZones si zone n'est pas disponible
+                    console.log("[EDIT LISTING] Zone not available in town, searching in geoZones...");
+                    let found = false;
+                    for (const geoZone of geoZones) {
+                        const town = geoZone.towns?.find((t) => t.id === townId);
+                        if (town) {
+                            console.log("[EDIT LISTING] Found town in zone:", geoZone.name, "Town:", town.name);
+                            // Déterminer la valeur simplifiée de la zone
+                            const zoneValue = geoZone.name === "Grand Abidjan" ? "grand-abidjan" : geoZone.name === "Hors Abidjan" ? "hors-abidjan" : null;
+                            if (zoneValue) {
+                                console.log("[EDIT LISTING] Setting zone to:", zoneValue, "and area to:", townId);
+                                setZone(zoneValue);
+                                setAreas([townId]);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        console.warn("[EDIT LISTING] Town ID not found in any geoZone:", townId);
+                    }
+                } else {
+                    console.log("[EDIT LISTING] No town ID found in property");
+                }
 
                 // Préremplir les images existantes
                 if (prop.images && prop.images.length > 0) {
@@ -148,14 +273,21 @@ export default function EditListingPage() {
     };
 
     const handleInputChange = (field: string, value: string) => {
-        if (field.includes(".")) {
-            const [parent, child] = field.split(".");
+        // Pour les champs numériques entiers, supprimer les virgules et points
+        const integerFields = ['price', 'rooms', 'bathrooms', 'kitchens', 'floors'];
+        if (integerFields.includes(field)) {
+            // Supprimer toutes les virgules et points (on veut juste des entiers)
+            const cleanedValue = value.replace(/[^\d]/g, '');
             setFormData((prev) => ({
                 ...prev,
-                [parent]: {
-                    ...(prev[parent as keyof typeof prev] as any),
-                    [child]: value,
-                },
+                [field]: cleanedValue,
+            }));
+        } else if (field === 'surfaceArea') {
+            // Pour la surface, supprimer toutes les virgules et points (entiers uniquement)
+            const cleanedValue = value.replace(/[^\d]/g, '');
+            setFormData((prev) => ({
+                ...prev,
+                [field]: cleanedValue,
             }));
         } else {
             setFormData((prev) => ({
@@ -306,16 +438,17 @@ export default function EditListingPage() {
                 title: formData.title,
                 description: formData.description,
                 price: formData.price || "",
-                surfaceArea: formData.surface,
-                surfaceAreaUnit: "m2",
+                surfaceArea: formData.surfaceArea,
+                surfaceAreaUnit: formData.surfaceAreaUnit || "m2",
                 rooms: formData.rooms ? parseInt(formData.rooms) : undefined,
                 bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : undefined,
-                kitchens: 1,
-                floors: 1,
+                kitchens: formData.kitchens ? parseInt(formData.kitchens) : undefined,
+                floors: formData.floors ? parseInt(formData.floors) : undefined,
                 type: formData.propertyType as "appartment" | "house" | "villa" | "land" | "commercial",
                 contractType: formData.contractType as "leasing" | "sale" | "rent",
                 status: formData.status,
-                address: `${formData.address.street}, ${formData.address.city}, ${formData.address.state}`,
+                town: areas[0] || "", // ID de la commune/département sélectionné
+                location: formData.location.trim(), // Géolocalisation
                 characteristics: characteristics.filter((char) => char.name.trim() && char.value.trim()),
                 images: allImages.map((img) => ({ directus_files_id: img.fileId })),
             };
@@ -385,266 +518,354 @@ export default function EditListingPage() {
             <div className="min-h-screen bg-background">
                 <PageNavbar breadcrumbs={[{ label: "Mes annonces", href: "/my-listings?tab=listings" }, { label: "Modifier l'annonce" }]} />
 
-                <div className="container mx-auto px-4 py-8">
+                <div className="container mx-auto px-4 py-8 pt-24">
                     <div className="max-w-4xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-0 h-auto">
-                                        <ArrowLeft className="h-4 w-4 mr-2" />
-                                    </Button>
-                                    Modifier l'annonce
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
+                            <h1 className="text-3xl font-bold flex items-center gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-0 h-auto">
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                </Button>
+                                Modifier l'annonce
+                            </h1>
+                            <p className="text-muted-foreground mt-2">Modifiez les informations de votre bien immobilier</p>
+                        </motion.div>
+
+                        {/* Sélection de zone et commune/département */}
+                        <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
+                                    <CardContent className="p-4 md:p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                            {/* Zone */}
+                                            <div className="md:col-span-4">
+                                                <Label className="text-xs text-muted-foreground">Zone</Label>
+                                                <Select
+                                                    value={zone}
+                                                    onValueChange={(v: any) => {
+                                                        setZone(v);
+                                                        setAreas([]);
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="mt-1">
+                                                        <SelectValue placeholder="Choisir une zone" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {geoZones.map((geoZone) => {
+                                                            // Mapper le nom de zone vers la valeur simplifiée
+                                                            const zoneValue = geoZone.name === "Grand Abidjan" 
+                                                                ? "grand-abidjan" 
+                                                                : geoZone.name === "Hors Abidjan" 
+                                                                ? "hors-abidjan" 
+                                                                : null;
+                                                            
+                                                            if (!zoneValue) return null;
+                                                            
+                                                            return (
+                                                                <SelectItem key={geoZone.id} value={zoneValue}>
+                                                                    {geoZone.name}
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Communes / Départements */}
+                                            <div className="md:col-span-8">
+                                                <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                                <Popover open={areasOpen} onOpenChange={setAreasOpen}>
+                                                    <PopoverTrigger asChild>
+                                                        <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
+                                                            {areas.length === 1 ? getAreaName(areas[0]) : "Choisir..."}
+                                                            <Search className="h-4 w-4 opacity-60" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[320px] p-3">
+                                                        <div className="max-h-64 overflow-auto pr-1">
+                                                            {getTownsForSelectedZone().map((town) => (
+                                                                <button
+                                                                    type="button"
+                                                                    key={town.id}
+                                                                    onClick={() => toggleArea(town.id)}
+                                                                    className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
+                                                                >
+                                                                    <span>{town.name}</span>
+                                                                    <Checkbox checked={areas[0] === town.id} onCheckedChange={() => toggleArea(town.id)} />
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        {areas.length > 0 && (
+                                                            <>
+                                                                <Separator className="my-2" />
+                                                                <div className="flex items-center justify-end">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            setAreas([]);
+                                                                            setAreasOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        Effacer
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     {/* Informations de base */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Informations de base</h3>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="title">Titre de l'annonce *</Label>
-                                            <Input
-                                                id="title"
-                                                value={formData.title}
-                                                onChange={(e) => handleInputChange("title", e.target.value)}
-                                                placeholder="Ex: Appartement 3 pièces à Cocody"
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="description">Description *</Label>
-                                            <Textarea
-                                                id="description"
-                                                value={formData.description}
-                                                onChange={(e) => handleInputChange("description", e.target.value)}
-                                                placeholder="Décrivez votre bien en détail..."
-                                                rows={4}
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Informations de base</CardTitle>
+                                            <CardDescription>Les informations essentielles de votre bien</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            {/* Titre */}
                                             <div className="space-y-2">
-                                                <Label htmlFor="price">Prix (FCFA) *</Label>
+                                                <Label htmlFor="title">Titre de l'annonce *</Label>
                                                 <Input
-                                                    id="price"
-                                                    type="number"
-                                                    value={formData.price}
-                                                    onChange={(e) => handleInputChange("price", e.target.value)}
-                                                    placeholder="Ex: 150000"
+                                                    id="title"
+                                                    placeholder="Ex: Appartement 3 pièces à Cocody"
+                                                    value={formData.title}
+                                                    onChange={(e) => handleInputChange("title", e.target.value)}
                                                     required
                                                 />
                                             </div>
+
+                                            {/* Description */}
                                             <div className="space-y-2">
-                                                <Label htmlFor="surface">Surface (m²) *</Label>
-                                                <Input
-                                                    id="surface"
-                                                    type="number"
-                                                    value={formData.surface}
-                                                    onChange={(e) => handleInputChange("surface", e.target.value)}
-                                                    placeholder="Ex: 120"
-                                                    required
+                                                <Label htmlFor="description">Description</Label>
+                                                <Textarea
+                                                    id="description"
+                                                    placeholder="Décrivez votre bien en détail..."
+                                                    rows={5}
+                                                    value={formData.description}
+                                                    onChange={(e) => handleInputChange("description", e.target.value)}
                                                 />
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <Separator />
+                                            {/* Type de bien et contrat */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="propertyType">Type de bien *</Label>
+                                                    <Select value={formData.propertyType} onValueChange={(value) => handleInputChange("propertyType", value)}>
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="appartment">Appartement</SelectItem>
+                                                            <SelectItem value="villa">Villa</SelectItem>
+                                                            <SelectItem value="land">Terrain</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="contractType">Type de contrat *</Label>
+                                                    <Select value={formData.contractType} onValueChange={(value) => handleInputChange("contractType", value)}>
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="selling">Vente</SelectItem>
+                                                            <SelectItem value="leasing">Location</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Prix et surface */}
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Prix et surface</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="price">{formData.contractType === "leasing" ? "Loyer (FCFA)" : "Prix (FCFA)"} *</Label>
+                                                    <Input
+                                                        id="price"
+                                                        type="number"
+                                                        placeholder="10000000"
+                                                        value={formData.price}
+                                                        onChange={(e) => handleInputChange("price", e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="surfaceArea">Surface *</Label>
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            id="surfaceArea"
+                                                            type="number"
+                                                            placeholder="400"
+                                                            value={formData.surfaceArea}
+                                                            onChange={(e) => handleInputChange("surfaceArea", e.target.value)}
+                                                            className="flex-1"
+                                                            required
+                                                        />
+                                                        <Select value={formData.surfaceAreaUnit} onValueChange={(value) => handleInputChange("surfaceAreaUnit", value)}>
+                                                            <SelectTrigger className="w-24">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="m2">m²</SelectItem>
+                                                                <SelectItem value="ha">ha</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Détails du bien */}
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Détails du bien</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="rooms">Nombre de pièces *</Label>
+                                                    <Input id="rooms" type="number" min="0" value={formData.rooms} onChange={(e) => handleInputChange("rooms", e.target.value)} />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="bathrooms">Salles d'eau *</Label>
+                                                    <Input
+                                                        id="bathrooms"
+                                                        type="number"
+                                                        min="0"
+                                                        value={formData.bathrooms}
+                                                        onChange={(e) => handleInputChange("bathrooms", e.target.value)}
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="kitchens">Cuisines *</Label>
+                                                    <Input id="kitchens" type="number" min="0" value={formData.kitchens} onChange={(e) => handleInputChange("kitchens", e.target.value)} />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="floors">Nombre de niveau *</Label>
+                                                    <Input id="floors" type="number" min="0" value={formData.floors} onChange={(e) => handleInputChange("floors", e.target.value)} />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Localisation */}
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Localisation</CardTitle>
+                                            <CardDescription>Précisez l'emplacement exact de votre bien</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="location">Localisation *</Label>
+                                                <Input
+                                                    id="location"
+                                                    placeholder="Ex: Place de la République, Avenue 12, Cocody"
+                                                    value={formData.location}
+                                                    onChange={(e) => handleInputChange("location", e.target.value)}
+                                                    required
+                                                />
+                                                <p className="text-xs text-muted-foreground">Indiquez l'adresse complète ou un point de repère précis</p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Images */}
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Photos du bien *</CardTitle>
+                                            <CardDescription>Ajoutez au moins une photo de votre bien</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            {/* Zone de drop */}
+                                            <div
+                                                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                                                    isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary"
+                                                }`}
+                                                onDragEnter={handleDragEnter}
+                                                onDragLeave={handleDragLeave}
+                                                onDragOver={handleDragOver}
+                                                onDrop={handleDrop}
+                                            >
+                                                <input type="file" id="image-upload" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
+                                                <label htmlFor="image-upload" className="cursor-pointer">
+                                                    <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                                    <p className="text-sm font-medium">{isDragging ? "Déposez vos images ici" : "Cliquez ou glissez-déposez vos images"}</p>
+                                                    <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (max. 10MB par image)</p>
+                                                </label>
+                                            </div>
+
+                                            {/* Prévisualisation des images */}
+                                            {images.length > 0 && (
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                    {images.map((image) => (
+                                                        <div key={image.fileId} className="relative group">
+                                                            <div className="aspect-video relative rounded-lg overflow-hidden border border-border">
+                                                                <Image src={image.preview} alt="Preview" fill className="object-cover" />
+                                                                {image.uploaded && <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">✓</div>}
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="icon"
+                                                                className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                onClick={() => handleRemoveImage(image.fileId)}
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
 
                                     {/* Caractéristiques */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Caractéristiques</h3>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Caractéristiques supplémentaires</CardTitle>
+                                            <CardDescription>Ajoutez des caractéristiques spécifiques à votre bien (optionnel)</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            {characteristics.map((char, index) => (
+                                                <div key={index} className="flex gap-2">
+                                                    <Input
+                                                        placeholder="Nom (ex: Piscine)"
+                                                        value={char.name}
+                                                        onChange={(e) => handleCharacteristicChange(index, "name", e.target.value)}
+                                                        className="flex-1"
+                                                    />
+                                                    <Input
+                                                        placeholder="Valeur (ex: Oui)"
+                                                        value={char.value}
+                                                        onChange={(e) => handleCharacteristicChange(index, "value", e.target.value)}
+                                                        className="flex-1"
+                                                    />
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveCharacteristic(index)}>
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="rooms">Nombre de pièces</Label>
-                                                <Input
-                                                    id="rooms"
-                                                    type="number"
-                                                    value={formData.rooms}
-                                                    onChange={(e) => handleInputChange("rooms", e.target.value)}
-                                                    placeholder="Ex: 3"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="bathrooms">Salles de bain</Label>
-                                                <Input
-                                                    id="bathrooms"
-                                                    type="number"
-                                                    value={formData.bathrooms}
-                                                    onChange={(e) => handleInputChange("bathrooms", e.target.value)}
-                                                    placeholder="Ex: 2"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="status">Statut</Label>
-                                                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Sélectionner le statut" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="draft">Brouillon</SelectItem>
-                                                        <SelectItem value="published">Publié</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Separator />
-
-                                    {/* Type de bien et contrat */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Type et contrat</h3>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="propertyType">Type de bien *</Label>
-                                                <Select value={formData.propertyType} onValueChange={(value) => handleInputChange("propertyType", value)}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Sélectionner le type" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="appartment">Appartement</SelectItem>
-                                                        <SelectItem value="villa">Villa</SelectItem>
-                                                        <SelectItem value="land">Terrain</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="contractType">Type de contrat *</Label>
-                                                <Select value={formData.contractType} onValueChange={(value) => handleInputChange("contractType", value)}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Sélectionner le contrat" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="selling">Vente</SelectItem>
-                                                        <SelectItem value="leasing">Location</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Separator />
-
-                                    {/* Adresse */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Adresse</h3>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="street">Rue/Quartier *</Label>
-                                            <Input
-                                                id="street"
-                                                value={formData.address.street}
-                                                onChange={(e) => handleInputChange("address.street", e.target.value)}
-                                                placeholder="Ex: Rue des Jardins, Cocody"
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="city">Ville *</Label>
-                                                <Input
-                                                    id="city"
-                                                    value={formData.address.city}
-                                                    onChange={(e) => handleInputChange("address.city", e.target.value)}
-                                                    placeholder="Ex: Abidjan"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="state">Région *</Label>
-                                                <Input
-                                                    id="state"
-                                                    value={formData.address.state}
-                                                    onChange={(e) => handleInputChange("address.state", e.target.value)}
-                                                    placeholder="Ex: Abidjan"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section Images */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Photos du bien</h3>
-
-                                        {/* Zone de drop */}
-                                        <div
-                                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                                                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary"
-                                            }`}
-                                            onDragEnter={handleDragEnter}
-                                            onDragLeave={handleDragLeave}
-                                            onDragOver={handleDragOver}
-                                            onDrop={handleDrop}
-                                        >
-                                            <input type="file" id="image-upload" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
-                                            <label htmlFor="image-upload" className="cursor-pointer">
-                                                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                                <p className="text-sm font-medium">{isDragging ? "Déposez vos images ici" : "Cliquez ou glissez-déposez vos images"}</p>
-                                                <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (max. 10MB par image)</p>
-                                            </label>
-                                        </div>
-
-                                        {/* Prévisualisation des images */}
-                                        {images.length > 0 && (
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                {images.map((image) => (
-                                                    <div key={image.fileId} className="relative group">
-                                                        <div className="aspect-video relative rounded-lg overflow-hidden border border-border">
-                                                            <Image src={image.preview} alt="Preview" fill className="object-cover" />
-                                                            {image.uploaded && <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">✓</div>}
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="icon"
-                                                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                            onClick={() => handleRemoveImage(image.fileId)}
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Section Caractéristiques */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold">Caractéristiques supplémentaires</h3>
-                                        <p className="text-sm text-gray-600">Ajoutez des caractéristiques spécifiques à votre bien (optionnel)</p>
-
-                                        {characteristics.map((char, index) => (
-                                            <div key={index} className="flex gap-2">
-                                                <Input
-                                                    placeholder="Nom (ex: Piscine)"
-                                                    value={char.name}
-                                                    onChange={(e) => handleCharacteristicChange(index, "name", e.target.value)}
-                                                    className="flex-1"
-                                                />
-                                                <Input
-                                                    placeholder="Valeur (ex: Oui)"
-                                                    value={char.value}
-                                                    onChange={(e) => handleCharacteristicChange(index, "value", e.target.value)}
-                                                    className="flex-1"
-                                                />
-                                                <Button type="button" variant="outline" size="sm" onClick={() => handleRemoveCharacteristic(index)} className="px-3">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-
-                                        <Button type="button" variant="outline" onClick={handleAddCharacteristic} className="w-full">
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Ajouter une caractéristique
-                                        </Button>
-                                    </div>
+                                            <Button type="button" variant="outline" onClick={handleAddCharacteristic} className="w-full">
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Ajouter une caractéristique
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
 
                                     {/* Boutons d'action */}
                                     <div className="flex justify-end gap-4 pt-6">
@@ -666,8 +887,75 @@ export default function EditListingPage() {
                                         </Button>
                                     </div>
                                 </form>
-                            </CardContent>
-                        </Card>
+
+                {/* Loader avec overlay pendant le chargement */}
+                {saving && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-card border border-border rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4"
+                        >
+                            <div className="text-center space-y-4">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-16 h-16 mx-auto"
+                                >
+                                    <Loader2 className="w-16 h-16 text-primary" />
+                                </motion.div>
+
+                                <div className="space-y-2">
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="text-lg font-semibold text-foreground"
+                                    >
+                                        Mise à jour en cours...
+                                    </motion.p>
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="text-sm text-muted-foreground"
+                                    >
+                                        Veuillez patienter pendant le chargement des photos et la mise à jour de l'annonce
+                                    </motion.p>
+                                </div>
+
+                                {/* Points de progression animés */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="flex justify-center gap-2 pt-4"
+                                >
+                                    {[0, 1, 2].map((i) => (
+                                        <motion.div
+                                            key={i}
+                                            className="w-2 h-2 rounded-full bg-primary"
+                                            animate={{
+                                                scale: [1, 1.2, 1],
+                                                opacity: [0.5, 1, 0.5],
+                                            }}
+                                            transition={{
+                                                duration: 1.5,
+                                                repeat: Infinity,
+                                                delay: i * 0.2,
+                                            }}
+                                        />
+                                    ))}
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
                     </div>
                 </div>
             </div>
@@ -676,3 +964,22 @@ export default function EditListingPage() {
         </>
     );
 }
+
+export const getServerSideProps: GetServerSideProps<EditListingPageProps> = async (context) => {
+    try {
+        // Récupérer les zones géographiques depuis l'API
+        const geoZones = await fetchGeoZones();
+        return {
+            props: {
+                geoZones: geoZones || [],
+            },
+        };
+    } catch (error) {
+        console.error("Error in getServerSideProps for edit-listing:", error);
+        return {
+            props: {
+                geoZones: [],
+            },
+        };
+    }
+};

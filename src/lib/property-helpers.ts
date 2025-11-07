@@ -27,6 +27,22 @@ export function formatPrice(price: string, billingCycle: string): string {
 }
 
 /**
+ * Formate le prix sans le cycle de facturation (juste le prix avec FCFA)
+ */
+export function formatPriceOnly(price: string): string {
+    const numericPrice = parseFloat(price);
+
+    if (isNaN(numericPrice)) {
+        return price; // Retourner tel quel si ce n'est pas un nombre
+    }
+
+    // Formater le prix avec des espaces pour la lisibilité
+    const formattedPrice = new Intl.NumberFormat('fr-FR').format(numericPrice);
+
+    return `${formattedPrice} FCFA`;
+}
+
+/**
  * Détermine si un bien est nouveau (créé il y a moins de 7 jours)
  */
 export function calculateIsNew(dateCreated: string): boolean {

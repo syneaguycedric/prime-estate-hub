@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
-import { motion } from "framer-motion";
 import { useRouter } from "next/router";
 // Removed progressive cards flow; using top search banner instead
 import HomeHeader from "@/components/layout/HomeHeader";
@@ -18,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Search, Award } from "lucide-react";
+import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan } from "@/lib/directus-api";
 
 interface HomePageProps {
     seoData: {
@@ -26,89 +26,58 @@ interface HomePageProps {
         keywords: string;
         canonicalUrl: string;
     };
+    geoZones: GeoZone[];
 }
 
 type ContractType = "sale" | "rent";
-type PropertyType = "house" | "appartment" | "land";
 
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.2,
-            delayChildren: 0.1,
-        },
-    },
-};
-
-const cardVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        transition: {
-            type: "spring" as const,
-            stiffness: 100,
-            damping: 15,
-        },
-    },
-};
-
-const hoverVariants = {
-    hover: {
-        scale: 1.02,
-        transition: {
-            type: "spring" as const,
-            stiffness: 300,
-            damping: 20,
-        },
-    },
-    tap: {
-        scale: 0.98,
-        transition: {
-            type: "spring" as const,
-            stiffness: 400,
-            damping: 25,
-        },
-    },
-};
-
-const HomePage = ({ seoData }: HomePageProps) => {
+const HomePage = ({ seoData, geoZones }: HomePageProps) => {
     const router = useRouter();
     const [selectedContract, setSelectedContract] = useState<ContractType>("sale");
     const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
     const [areas, setAreas] = useState<string[]>([]);
     const [areasOpen, setAreasOpen] = useState(false);
+    const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
 
-    // Refs pour scroll automatique
-    const propertyTypeRef = useRef<HTMLDivElement>(null);
-    const zoneRef = useRef<HTMLDivElement>(null);
-    const communesRef = useRef<HTMLDivElement>(null);
+    // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
+    // Les IDs sont conservés pour utilisation future dans les filtres
+    const getZoneMapping = () => {
+        const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
+        
+        // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
+        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
+        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
+        
+        mapping["grand-abidjan"] = {
+            id: grandAbidjan?.id || "",
+            zone: grandAbidjan || null,
+        };
+        
+        mapping["hors-abidjan"] = {
+            id: horsAbidjan?.id || "",
+            zone: horsAbidjan || null,
+        };
+        
+        return mapping;
+    };
 
-    const ABIDJAN_COMMUNES = [
-        { id: "abobo", name: "Abobo" },
-        { id: "adjame", name: "Adjamé" },
-        { id: "attecoube", name: "Attécoubé" },
-        { id: "cocody", name: "Cocody" },
-        { id: "koumassi", name: "Koumassi" },
-        { id: "marcory", name: "Marcory" },
-        { id: "plateau", name: "Plateau" },
-        { id: "port-bouet", name: "Port-Bouët" },
-        { id: "treichville", name: "Treichville" },
-        { id: "yopougon", name: "Yopougon" },
-        { id: "bingerville", name: "Bingerville" },
-        { id: "songon", name: "Songon" },
-    ];
-    const DEPARTEMENTS_FAKE = [
-        { id: "bouake", name: "Bouaké" },
-        { id: "yamoussoukro", name: "Yamoussoukro" },
-        { id: "san-pedro", name: "San-Pédro" },
-        { id: "daloa", name: "Daloa" },
-        { id: "man", name: "Man" },
-        { id: "korhogo", name: "Korhogo" },
-    ];
+    const zoneMapping = getZoneMapping();
+
+    // Helper pour obtenir l'ID de zone à partir de la valeur simplifiée
+    const getZoneIdByValue = (zoneValue: string): string | null => {
+        return zoneMapping[zoneValue]?.id || null;
+    };
+
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée
+    const getZoneByValue = (zoneValue: string): GeoZone | null => {
+        return zoneMapping[zoneValue]?.zone || null;
+    };
+
+    // Obtenir la zone actuellement sélectionnée
+    const selectedZone = zone ? getZoneByValue(zone) : null;
+    
+    // Obtenir l'ID de la zone sélectionnée (pour utilisation future dans les filtres)
+    const selectedZoneId = zone ? getZoneIdByValue(zone) : null;
 
     useEffect(() => {
         const { contractType, zone: qZone, areas: qAreas } = router.query as Record<string, string>;
@@ -116,6 +85,23 @@ const HomePage = ({ seoData }: HomePageProps) => {
         if (qZone === "grand-abidjan" || qZone === "hors-abidjan") setZone(qZone);
         if (typeof qAreas === "string" && qAreas.length > 0) setAreas(qAreas.split(","));
     }, [router.query]);
+
+    // Charger les plans d'abonnement et trouver celui avec code="kylimmo"
+    useEffect(() => {
+        const loadSubscriptionPlans = async () => {
+            try {
+                const plans = await fetchSubscriptionPlans();
+                const kylimmoPlan = plans.find(plan => plan.code === "kylimmo");
+                if (kylimmoPlan) {
+                    setSubscriptionPlan(kylimmoPlan);
+                }
+            } catch (error) {
+                console.error('[HOMEPAGE] Error loading subscription plans:', error);
+            }
+        };
+
+        loadSubscriptionPlans();
+    }, []);
 
     const toggleArea = (id: string) => {
         // Sélection unique: remplace toujours par l'ID cliqué
@@ -125,8 +111,16 @@ const HomePage = ({ seoData }: HomePageProps) => {
     };
 
     const getAreaName = (id: string) => {
-        const source = zone === "grand-abidjan" ? ABIDJAN_COMMUNES : DEPARTEMENTS_FAKE;
-        return source.find((o) => o.id === id)?.name || "";
+        if (!selectedZone) return "";
+        // Chercher dans les towns de la zone sélectionnée
+        const town = selectedZone.towns.find((t) => t.id === id);
+        return town?.name || "";
+    };
+
+    // Obtenir les towns de la zone sélectionnée
+    const getTownsForSelectedZone = () => {
+        if (!selectedZone) return [];
+        return selectedZone.towns || [];
     };
 
     const handleCommuneSearch = (communes: string[]) => {
@@ -235,8 +229,22 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                             <SelectValue placeholder="Choisir une zone" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="grand-abidjan">Grand Abidjan</SelectItem>
-                                            <SelectItem value="hors-abidjan">Hors d'Abidjan</SelectItem>
+                                            {geoZones.map((geoZone) => {
+                                                // Mapper le nom de zone vers la valeur simplifiée
+                                                const zoneValue = geoZone.name === "Grand Abidjan" 
+                                                    ? "grand-abidjan" 
+                                                    : geoZone.name === "Hors Abidjan" 
+                                                    ? "hors-abidjan" 
+                                                    : null;
+                                                
+                                                if (!zoneValue) return null;
+                                                
+                                                return (
+                                                    <SelectItem key={geoZone.id} value={zoneValue}>
+                                                        {geoZone.name}
+                                                    </SelectItem>
+                                                );
+                                            })}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -253,15 +261,15 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[320px] p-3">
                                             <div className="max-h-64 overflow-auto pr-1">
-                                                {(zone === "grand-abidjan" ? ABIDJAN_COMMUNES : DEPARTEMENTS_FAKE).map((o) => (
+                                                {getTownsForSelectedZone().map((town) => (
                                                     <button
                                                         type="button"
-                                                        key={o.id}
-                                                        onClick={() => toggleArea(o.id)}
+                                                        key={town.id}
+                                                        onClick={() => toggleArea(town.id)}
                                                         className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
                                                     >
-                                                        <span>{o.name}</span>
-                                                        <Checkbox checked={areas[0] === o.id} onCheckedChange={() => toggleArea(o.id)} />
+                                                        <span>{town.name}</span>
+                                                        <Checkbox checked={areas[0] === town.id} onCheckedChange={() => toggleArea(town.id)} />
                                                     </button>
                                                 ))}
                                             </div>
@@ -313,7 +321,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                 {/* Header annonces */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-foreground">Les annonces</h2>
+                                        <h2 className="text-2xl font-bold text-foreground">{subscriptionPlan?.title || "Les annonces"}</h2>
                                     </div>
                                 </div>
 
@@ -323,7 +331,7 @@ const HomePage = ({ seoData }: HomePageProps) => {
                                         <div key={`vip-${property.id}`} className="group relative">
                                             {/* Badge VIP simple en coin */}
                                             <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
-                                                VIP
+                                                {subscriptionPlan?.code || "VIP"}
                                             </span>
 
                                             {/* Carte premium */}
@@ -379,12 +387,16 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         // Génération des données SEO
         const seoData = generateSeoData(baseUrl);
 
+        // Récupérer les zones géographiques depuis l'API
+        const geoZones = await fetchGeoZones();
+
         // Headers pour la mise en cache - longue durée pour la page d'accueil
         context.res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
 
         return {
             props: {
                 seoData,
+                geoZones: geoZones || [],
             },
         };
     } catch (error) {
@@ -397,6 +409,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         return {
             props: {
                 seoData,
+                geoZones: [],
             },
         };
     }

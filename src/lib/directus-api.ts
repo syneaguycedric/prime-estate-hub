@@ -162,6 +162,55 @@ export interface PaginatedResponse {
     totalPages: number;
 }
 
+// Interface pour une ville/commune/département
+export interface Town {
+    id: string;
+    name: string;
+    zone: string;
+    status?: string;
+    sort?: number | null;
+    date_created?: string;
+    date_updated?: string | null;
+    user_created?: string;
+    user_updated?: string | null;
+}
+
+// Interface pour une zone géographique
+export interface GeoZone {
+    id: string;
+    name: string;
+    description?: string | null;
+    status?: string;
+    sort?: number | null;
+    date_created?: string;
+    date_updated?: string | null;
+    user_created?: string | null;
+    user_updated?: string | null;
+    towns: Town[];
+}
+
+// Interface pour un plan d'abonnement
+export interface SubscriptionPlan {
+    id: string;
+    status?: string;
+    sort?: number | null;
+    user_created?: string;
+    date_created?: string;
+    user_updated?: string;
+    date_updated?: string;
+    title: string;
+    description?: string | null;
+    code: string;
+    agencies?: string[];
+}
+
+/**
+ * Vérifie si un utilisateur a le rôle "Advertiser"
+ */
+export function isUserAdvertiser(user: User | null | undefined): boolean {
+    return user?.role?.name === "Advertiser";
+}
+
 // Configuration
 const DIRECTUS_DOMAIN = 'ki-backoffice.eyoboue.dev:8143';
 const USE_MOCK_DATA = false; // Forcer l'utilisation de l'API uniquement
@@ -181,7 +230,7 @@ export async function fetchProperties(): Promise<Property[]> {
 
         const response = await apiClient.get<DirectusResponse<Property[]>>(
             DIRECTUS_DOMAIN,
-            'items/real_estates?fields=*,images.directus_files_id.*',
+            'items/real_estates?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
             {
                 cacheKey: 'real-estates-list',
                 cacheTtl: 300000, // 5 minutes
@@ -404,7 +453,7 @@ export async function fetchPropertiesWithFilters(
         // Construire l'URL avec paramètres
         const offset = (page - 1) * limit;
         const params: Record<string, string> = {
-            fields: '*,images.directus_files_id.*',
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
             limit: limit.toString(),
             offset: offset.toString(),
             meta: 'filter_count'
@@ -483,7 +532,7 @@ export async function fetchPropertyById(id: string, forceRefresh: boolean = fals
         // Appel direct à l'API pour récupérer les détails d'une propriété spécifique
         const response = await apiClient.get<DirectusResponse<Property>>(
             DIRECTUS_DOMAIN,
-            `items/real_estates/${id}?fields=*,images.directus_files_id.*`,
+            `items/real_estates/${id}?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*`,
             {
                 cacheKey: forceRefresh ? `real-estate-${id}-${Date.now()}` : `real-estate-${id}`,
                 cacheTtl: forceRefresh ? 0 : 300000, // Pas de cache si forceRefresh
@@ -608,6 +657,60 @@ export async function invalidatePropertyCache(propertyId: string): Promise<void>
         console.log(`[DIRECTUS API] Property ${propertyId} cache invalidated`);
     } catch (error) {
         console.error(`[DIRECTUS API] Error invalidating property cache:`, error);
+    }
+}
+
+/**
+ * Récupère la liste des zones géographiques depuis l'API Directus
+ */
+export async function fetchGeoZones(): Promise<GeoZone[]> {
+    try {
+        console.log('[DIRECTUS API] Fetching geo zones from API');
+
+        const response = await apiClient.get<DirectusResponse<GeoZone[]>>(
+            DIRECTUS_DOMAIN,
+            'items/geo_zones?fields=*.*',
+            {
+                cacheKey: 'geo-zones-list',
+                cacheTtl: 3600000, // 1 heure - les zones changent rarement
+            }
+        );
+
+        console.log(`[DIRECTUS API] Fetched ${response.data.length} geo zones`);
+
+        return response.data;
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching geo zones:', error);
+
+        // Retourner un tableau vide en cas d'erreur
+        return [];
+    }
+}
+
+/**
+ * Récupère la liste des plans d'abonnement depuis l'API Directus
+ */
+export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    try {
+        console.log('[DIRECTUS API] Fetching subscription plans from API');
+
+        const response = await apiClient.get<DirectusResponse<SubscriptionPlan[]>>(
+            DIRECTUS_DOMAIN,
+            'items/subscription_plans',
+            {
+                cacheKey: 'subscription-plans-list',
+                cacheTtl: 3600000, // 1 heure - les plans changent rarement
+            }
+        );
+
+        console.log(`[DIRECTUS API] Fetched ${response.data.length} subscription plans`);
+
+        return response.data;
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching subscription plans:', error);
+
+        // Retourner un tableau vide en cas d'erreur
+        return [];
     }
 }
 
@@ -919,12 +1022,8 @@ export interface CreateListingData {
     bathrooms: number;
     kitchens: number;
     floors: number;
-    address: {
-        country: string;
-        city: string;
-        state: string;
-        street: string;
-    };
+    town: string; // ID de la commune/département sélectionné
+    location: string; // Géolocalisation ex: "place de la pigale avenu 12"
     agency: string;
     characteristics: Array<{ name: string; value: string }>;
     type: 'appartment' | 'villa' | 'land';

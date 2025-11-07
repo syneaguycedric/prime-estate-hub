@@ -23,11 +23,36 @@ export interface PropertyImage {
   directus_files_id: DirectusFile;
 }
 
+export interface Account {
+  id: string;
+  user_created: string;
+  date_created: string;
+  user_updated: string | null;
+  date_updated: string | null;
+  agency: string | null;
+  phoneNumber: string | null;
+  agencies: any[];
+  users: string[];
+}
+
+export interface UserCreated {
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar: string | null;
+  title: string | null;
+  description: string | null;
+  tags: string | null;
+  id: string;
+  role: string;
+  account: Account | null;
+}
+
 export interface Property {
   id: string;
   status: string;
   sort: number | null;
-  user_created: string;
+  user_created: UserCreated | string; // Modifier pour accepter l'objet ou l'ID
   date_created: string;
   user_updated: string | null;
   date_updated: string | null;

@@ -54,7 +54,7 @@ export default function DashboardSidebar({ isOpen, onToggle, activeTab, onTabCha
     };
 
     // Vérifier si l'utilisateur est annonceur
-    const isAdvertiser = user?.account?.account_type === "advertiser";
+    const isAdvertiser = user?.role?.name === "Advertiser";
 
     return (
         <>

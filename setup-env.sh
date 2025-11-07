@@ -17,7 +17,6 @@ NEXT_PUBLIC_USE_MOCK_DATA=false
 
 # Configuration d'authentification
 NEXT_PUBLIC_DEFAULT_TOKEN=CEhywAJPwoUeLQfro7EsBFj4pVCk4Rji
-NEXT_PUBLIC_ROLE_ADVERTISER_ID=ab921e8f-3da5-4de9-8cb7-cd928e09a63c
 
 # Configuration de performance
 NEXT_TELEMETRY_DISABLED=1

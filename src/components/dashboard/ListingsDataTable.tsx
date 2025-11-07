@@ -2,9 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Search, Filter, Eye, Pencil, Trash2, MoreHorizontal, Plus, Calendar, MapPin, DollarSign } from "lucide-react";
+import { Search, Filter, Eye, Pencil, Trash2, MoreHorizontal, Plus, Calendar, MapPin } from "lucide-react";
 import { Property } from "@/data/properties";
-import { getFirstImageUrl, formatPrice } from "@/lib/property-helpers";
+import { getFirstImageUrl, formatPriceOnly } from "@/lib/property-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -307,10 +307,7 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                                                 <Badge variant="outline">{getTypeLabel(property.type)}</Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center space-x-1">
-                                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="font-medium">{formatPrice(property.price, property.billingCycle)}</span>
-                                                </div>
+                                                <span className="font-medium">{formatPriceOnly(property.price)}</span>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center space-x-1 text-sm text-muted-foreground">
