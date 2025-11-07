@@ -67,9 +67,9 @@ export default function DashboardLayout({ children, activeTab }: DashboardLayout
     const sidebarWidth = isCollapsed ? 80 : 280;
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="h-screen bg-background flex flex-col overflow-hidden">
             {/* Header avec bouton retour */}
-            <div className="sticky top-0 z-40 bg-background border-b border-border">
+            <div className="flex-shrink-0 z-40 bg-background border-b border-border">
                 <div className="flex h-14 items-center justify-between px-4">
                     {/* Titre à gauche */}
                     <div className="hidden lg:block">
@@ -93,7 +93,7 @@ export default function DashboardLayout({ children, activeTab }: DashboardLayout
                 </div>
             </div>
 
-            <div className="flex">
+            <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
                 <DashboardSidebar
                     isOpen={sidebarOpen}
@@ -106,9 +106,9 @@ export default function DashboardLayout({ children, activeTab }: DashboardLayout
                 />
 
                 {/* Main content */}
-                <div className="flex-1 transition-all duration-300">
+                <div className="flex-1 transition-all duration-300 overflow-y-auto">
                     {/* Content */}
-                    <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="container mx-auto px-4 py-6">
+                    <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="container mx-auto px-3 md:px-4 py-3 md:py-4">
                         {children}
                     </motion.main>
                 </div>

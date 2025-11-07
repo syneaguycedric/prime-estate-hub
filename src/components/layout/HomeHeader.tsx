@@ -1,15 +1,17 @@
 import { Button } from "@/components/ui/button";
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { User, LogOut, PlusCircle, Building2 } from "lucide-react";
+import { User, LogOut, PlusCircle, Building2, Menu } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const HomeHeader = () => {
     const { navigateWithTransition } = useNavigationTransition();
     const { isAuthenticated, user, logout } = useAuth();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleHomeClick = () => {
         navigateWithTransition("/");
@@ -74,7 +76,7 @@ const HomeHeader = () => {
                 </motion.div>
 
                 {/* Navigation */}
-                <nav className="flex items-center space-x-3">
+                <nav className="flex items-center space-x-2 md:space-x-3">
                     {isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -113,18 +115,143 @@ const HomeHeader = () => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <Button variant="ghost" size="sm" onClick={() => navigateWithTransition("/login")}>
+                        <Button variant="ghost" size="sm" className="hidden md:flex" onClick={() => navigateWithTransition("/login")}>
                             <User className="h-4 w-4 mr-2" />
                             Connexion
                         </Button>
                     )}
 
-                    <Button variant="hero" size="sm" onClick={handlePublishClick}>
+                    {/* Bouton Publier - visible sur mobile et desktop */}
+                    <Button variant="hero" size="sm" onClick={handlePublishClick} className="flex items-center">
                         <PlusCircle className="h-4 w-4 mr-2" />
-                        {getPublishButtonLabel()}
+                        <span>{getPublishButtonLabel()}</span>
+                    </Button>
+
+                    {/* Menu hamburger - visible uniquement sur mobile */}
+                    <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
+                        <Menu className="h-4 w-4" />
                     </Button>
                 </nav>
             </div>
+
+            {/* Menu Mobile */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetContent side="right" className="w-full sm:w-80">
+                    <SheetHeader>
+                        <SheetTitle>Menu</SheetTitle>
+                    </SheetHeader>
+
+                    <div className="mt-6 space-y-6">
+                        {/* Navigation */}
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-medium text-muted-foreground">Navigation</h3>
+                            <div className="space-y-2">
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start h-12"
+                                    onClick={() => {
+                                        navigateWithTransition("/");
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                >
+                                    Accueil
+                                </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start h-12"
+                                    onClick={() => {
+                                        navigateWithTransition("/properties");
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                >
+                                    Toutes les annonces
+                                </Button>
+
+                                {isAuthenticated ? (
+                                    <>
+                                        {user?.role?.name === "Advertiser" && (
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start h-12"
+                                                onClick={() => {
+                                                    navigateWithTransition("/my-listings");
+                                                    setIsMobileMenuOpen(false);
+                                                }}
+                                            >
+                                                <Building2 className="h-4 w-4 mr-3" />
+                                                Mon espace
+                                            </Button>
+                                        )}
+
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start h-12"
+                                            onClick={() => {
+                                                navigateWithTransition("/profile");
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                        >
+                                            <User className="h-4 w-4 mr-3" />
+                                            Mon profil
+                                        </Button>
+
+                                        <Button
+                                            variant="hero"
+                                            className="w-full justify-start h-12"
+                                            onClick={() => {
+                                                handlePublishClick();
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                        >
+                                            <PlusCircle className="h-4 w-4 mr-3" />
+                                            {getPublishButtonLabel()}
+                                        </Button>
+
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start h-12 text-destructive"
+                                            onClick={() => {
+                                                handleLogout();
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                        >
+                                            <LogOut className="h-4 w-4 mr-3" />
+                                            Se déconnecter
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start h-12"
+                                            onClick={() => {
+                                                navigateWithTransition("/login");
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                        >
+                                            <User className="h-4 w-4 mr-3" />
+                                            Connexion
+                                        </Button>
+
+                                        <Button
+                                            variant="hero"
+                                            className="w-full justify-start h-12"
+                                            onClick={() => {
+                                                handlePublishClick();
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                        >
+                                            <PlusCircle className="h-4 w-4 mr-3" />
+                                            {getPublishButtonLabel()}
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </motion.header>
     );
 };

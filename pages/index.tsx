@@ -364,7 +364,7 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                             className="shadow-md hover:shadow-lg transition-shadow"
                                         >
                                             <Award className="h-4 w-4 mr-2" />
-                                            Voir plus d'annonces {subscriptionPlan?.title || "VIP"}
+                                            Voir plus
                                         </Button>
                                     </div>
                                 </div>

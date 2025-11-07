@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 2. Récupérer l'utilisateur avec ses agences
         const userResponse = await fetch(
-            `${directusUrl}/users/${userId}?fields=*.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*`,
+            `${directusUrl}/users/${userId}?fields=*.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,account.agency.*,account.agency.address.*`,
             {
                 headers: { 'Authorization': authHeader },
             }
@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // 4. Mettre à jour l'utilisateur
         const updateResponse = await fetch(
-            `${directusUrl}/users/${userId}?fields=*.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*`,
+            `${directusUrl}/users/${userId}?fields=*.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,account.agency.*,account.agency.address.*`,
             {
                 method: 'PATCH',
                 headers: {

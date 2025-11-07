@@ -51,6 +51,12 @@ export default function DashboardSidebar({ isOpen, onToggle, activeTab, onTabCha
     const handleItemClick = (item: (typeof menuItems)[0]) => {
         onTabChange(item.id);
         router.push(item.href);
+        
+        // Fermer le menu mobile après avoir cliqué sur un onglet
+        // Vérifier si on est sur mobile (largeur < 1024px)
+        if (window.innerWidth < 1024) {
+            onToggle();
+        }
     };
 
     // Vérifier si l'utilisateur est annonceur
@@ -73,10 +79,13 @@ export default function DashboardSidebar({ isOpen, onToggle, activeTab, onTabCha
                     x: isOpen ? 0 : -280,
                 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className={cn("fixed left-0 top-0 z-50 h-full bg-card border-r border-border flex flex-col", "lg:translate-x-0 lg:static lg:z-auto")}
+                className={cn(
+                    "fixed left-0 top-0 z-50 h-full bg-card border-r border-border flex flex-col",
+                    "lg:translate-x-0 lg:sticky lg:top-16 lg:z-auto"
+                )}
                 style={{
                     height: "calc(100vh - 60px)", // Ajuster pour le header
-                    top: "60px", // Positionner sous le header
+                    top: "60px", // Positionner sous le header sur mobile
                 }}
             >
                 {/* Header */}

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { TrendingUp, Eye, Plus, Building2, Users, Calendar, DollarSign } from "lucide-react";
+import { TrendingUp, Eye, Plus, Building2, Users, Calendar, DollarSign, MapPin, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchUserProperties } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast-helpers";
+import { formatPriceOnly, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrlForCard } from "@/lib/property-helpers";
+import ImageWithLoading from "@/components/ui/image-with-loading";
+import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 
 // Composant réutilisable pour les cards de statistiques
 interface StatCardProps {
@@ -25,22 +28,24 @@ interface StatCardProps {
 function StatCard({ title, value, loading, subtitle, icon, iconBgColor, suffix = "" }: StatCardProps) {
     return (
         <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                        <p className="text-xs font-medium text-muted-foreground">{title}</p>
                         {loading || value === null ? (
-                            <Skeleton className="h-8 w-16 mt-1" />
+                            <Skeleton className="h-5 md:h-6 w-12 md:w-16 mt-1" />
                         ) : (
-                            <p className="text-2xl font-bold">
+                            <p className="text-lg md:text-xl font-bold">
                                 {value}
                                 {suffix}
                             </p>
                         )}
                     </div>
-                    <div className={`w-12 h-12 ${iconBgColor} rounded-full flex items-center justify-center`}>{icon}</div>
+                    <div className={`w-8 h-8 md:w-10 md:h-10 ${iconBgColor} rounded-full flex items-center justify-center flex-shrink-0`}>
+                        <div className="scale-75 md:scale-90">{icon}</div>
+                    </div>
                 </div>
-                {loading || value === null ? <Skeleton className="h-4 w-32 mt-2" /> : <p className="text-xs text-muted-foreground mt-2">{subtitle}</p>}
+                {loading || value === null ? <Skeleton className="h-3 w-20 md:w-24 mt-1.5" /> : <p className="text-xs text-muted-foreground mt-1.5">{subtitle}</p>}
             </CardContent>
         </Card>
     );
@@ -152,22 +157,52 @@ export default function DashboardOverview() {
         router.push("/my-listings?tab=agencies");
     };
 
+    // Récupérer les 3 dernières annonces publiées (réduit pour éviter le scroll)
+    const recentPublishedProperties = useMemo(() => {
+        if (!properties || properties.length === 0) return [];
+        
+        return properties
+            .filter((p) => p.status === "published")
+            .sort((a, b) => {
+                const dateA = new Date(a.date_created || 0).getTime();
+                const dateB = new Date(b.date_created || 0).getTime();
+                return dateB - dateA; // Plus récent en premier
+            })
+            .slice(0, 3);
+    }, [properties]);
+
+    const { navigateWithTransition } = useNavigationTransition();
+
+    const handlePropertyClick = (propertyId: string) => {
+        navigateWithTransition(`/biens/${propertyId}`);
+    };
+
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-3 md:space-y-4">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 md:gap-3">
                 <div>
-                    <h2 className="text-2xl font-bold">Dashboard</h2>
-                    <p className="text-muted-foreground">Bienvenue dans votre espace personnel, {user?.first_name || "Utilisateur"}</p>
+                    <h2 className="text-lg md:text-xl font-bold">Dashboard</h2>
+                    <p className="text-xs md:text-sm text-muted-foreground">Bienvenue dans votre espace personnel, {user?.first_name || "Utilisateur"}</p>
                 </div>
-                <Button onClick={handleCreateListing} variant="hero">
-                    <Plus className="h-4 w-4 mr-2" />
+                <Button onClick={handleCreateListing} variant="hero" className="w-full sm:w-auto text-xs md:text-sm h-9 md:h-10">
+                    <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                     Nouvelle annonce
                 </Button>
             </div>
 
             {/* Statistiques - 3 cards seulement (sans Favoris) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 <StatCard
                     title="Total annonces"
                     value={stats.totalListings}
@@ -198,26 +233,26 @@ export default function DashboardOverview() {
             </div>
 
             {/* Actions rapides */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Building2 className="h-5 w-5" />
+                    <CardHeader className="p-3 md:p-4">
+                        <CardTitle className="flex items-center space-x-2 text-sm md:text-base">
+                            <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                             <span>Mes annonces</span>
                         </CardTitle>
-                        <CardDescription>Gérez toutes vos annonces immobilières</CardDescription>
+                        <CardDescription className="text-xs">Gérez toutes vos annonces immobilières</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
+                    <CardContent className="p-3 md:p-4 pt-0">
+                        <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Annonces actives</span>
-                                {loadingStats ? <Skeleton className="h-5 w-8" /> : <Badge variant="secondary">{stats.activeListings}</Badge>}
+                                <span className="text-xs text-muted-foreground">Annonces actives</span>
+                                {loadingStats ? <Skeleton className="h-4 w-6" /> : <Badge variant="secondary" className="text-xs">{stats.activeListings}</Badge>}
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">En brouillon</span>
-                                {loadingStats ? <Skeleton className="h-5 w-8" /> : <Badge variant="outline">{stats.draftListings}</Badge>}
+                                <span className="text-xs text-muted-foreground">En brouillon</span>
+                                {loadingStats ? <Skeleton className="h-4 w-6" /> : <Badge variant="outline" className="text-xs">{stats.draftListings}</Badge>}
                             </div>
-                            <Button onClick={handleViewListings} variant="outline" className="w-full">
+                            <Button onClick={handleViewListings} variant="outline" className="w-full h-8 text-xs">
                                 Voir toutes mes annonces
                             </Button>
                         </div>
@@ -225,32 +260,32 @@ export default function DashboardOverview() {
                 </Card>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Users className="h-5 w-5" />
+                    <CardHeader className="p-3 md:p-4">
+                        <CardTitle className="flex items-center space-x-2 text-sm md:text-base">
+                            <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
                             <span>Agences</span>
                         </CardTitle>
-                        <CardDescription>Gérez vos agences et partenaires</CardDescription>
+                        <CardDescription className="text-xs">Gérez vos agences et partenaires</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
+                    <CardContent className="p-3 md:p-4 pt-0">
+                        <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Mes agences</span>
-                                {loadingStats ? <Skeleton className="h-5 w-8" /> : <Badge variant="secondary">{stats.totalAgencies}</Badge>}
+                                <span className="text-xs text-muted-foreground">Mes agences</span>
+                                {loadingStats ? <Skeleton className="h-4 w-6" /> : <Badge variant="secondary" className="text-xs">{stats.totalAgencies}</Badge>}
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Agence actuelle</span>
+                                <span className="text-xs text-muted-foreground">Agence actuelle</span>
                                 {loadingStats ? (
-                                    <Skeleton className="h-5 w-20" />
+                                    <Skeleton className="h-4 w-16" />
                                 ) : user?.account?.agency ? (
-                                    <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                                    <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 text-xs">
                                         Définie
                                     </Badge>
                                 ) : (
-                                    <Badge variant="outline">Non définie</Badge>
+                                    <Badge variant="outline" className="text-xs">Non définie</Badge>
                                 )}
                             </div>
-                            <Button onClick={handleViewAgencies} variant="outline" className="w-full">
+                            <Button onClick={handleViewAgencies} variant="outline" className="w-full h-8 text-xs">
                                 Gérer les agences
                             </Button>
                         </div>
@@ -260,46 +295,94 @@ export default function DashboardOverview() {
 
             {/* Activité récente */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                        <Calendar className="h-5 w-5" />
+                <CardHeader className="p-3 md:p-4">
+                    <CardTitle className="flex items-center space-x-2 text-sm md:text-base">
+                        <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
                         <span>Activité récente</span>
                     </CardTitle>
-                    <CardDescription>Vos dernières actions et mises à jour</CardDescription>
+                    <CardDescription className="text-xs">Vos 3 dernières annonces publiées</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 md:p-4 pt-0">
                     {loadingStats ? (
-                        <div className="text-center py-8">
-                            <Skeleton className="w-16 h-16 rounded-full mx-auto mb-4" />
-                            <Skeleton className="h-6 w-32 mx-auto mb-2" />
-                            <Skeleton className="h-4 w-64 mx-auto mb-6" />
-                            <Skeleton className="h-10 w-48 mx-auto" />
+                        <div className="space-y-2">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <Skeleton className="h-12 w-12 rounded-lg" />
+                                    <div className="flex-1 space-y-1.5">
+                                        <Skeleton className="h-3 w-32" />
+                                        <Skeleton className="h-2.5 w-24" />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    ) : stats.totalListings === 0 ? (
-                        <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Calendar className="h-8 w-8 text-muted-foreground" />
+                    ) : recentPublishedProperties.length === 0 ? (
+                        <div className="text-center py-4">
+                            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                                <Calendar className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <h3 className="text-lg font-semibold mb-2">Aucune activité</h3>
-                            <p className="text-muted-foreground mb-6">Commencez par créer votre première annonce pour voir votre activité ici.</p>
-                            <Button onClick={handleCreateListing} variant="hero">
-                                <Plus className="h-4 w-4 mr-2" />
+                            <h3 className="text-sm font-semibold mb-1">Aucune annonce publiée</h3>
+                            <p className="text-xs text-muted-foreground mb-4">Commencez par publier votre première annonce.</p>
+                            <Button onClick={handleCreateListing} variant="hero" size="sm" className="h-8 text-xs">
+                                <Plus className="h-3 w-3 mr-1.5" />
                                 Créer ma première annonce
                             </Button>
                         </div>
                     ) : (
-                        <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <TrendingUp className="h-8 w-8 text-blue-600" />
-                            </div>
-                            <h3 className="text-lg font-semibold mb-2">
-                                Vous avez {stats.totalListings} annonce{stats.totalListings! > 1 ? "s" : ""}
-                            </h3>
-                            <p className="text-muted-foreground mb-6">Continuez à publier pour augmenter votre visibilité.</p>
-                            <Button onClick={handleCreateListing} variant="hero">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Créer une nouvelle annonce
-                            </Button>
+                        <div className="space-y-2">
+                            {recentPublishedProperties.map((property) => (
+                                <motion.div
+                                    key={property.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="flex items-center gap-2.5 p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer group"
+                                    onClick={() => handlePropertyClick(property.id)}
+                                >
+                                    {/* Image */}
+                                    <div className="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+                                        <ImageWithLoading
+                                            src={getFirstImageUrlForCard(property)}
+                                            alt={property.title}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    </div>
+
+                                    {/* Informations */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-medium text-xs truncate group-hover:text-primary transition-colors">
+                                                    {property.title}
+                                                </h4>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                                        {getPropertyTypeLabel(property.type)}
+                                                    </Badge>
+                                                    <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                                        {getContractTypeLabel(property.contractType)}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                                            <span className="font-semibold text-foreground">{formatPriceOnly(property.price)}</span>
+                                            {property.location && (
+                                                <span className="flex items-center gap-0.5 truncate">
+                                                    <MapPin className="h-2.5 w-2.5" />
+                                                    <span className="truncate">{property.location}</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                            {recentPublishedProperties.length > 0 && (
+                                <div className="pt-2 border-t border-border">
+                                    <Button onClick={handleViewListings} variant="outline" className="w-full h-8 text-xs">
+                                        Voir toutes mes annonces
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </CardContent>

@@ -47,7 +47,7 @@ export interface User {
         id: string;
         account_type: string;
         phoneNumber?: string;
-        agency?: string | null; // Agence actuelle
+        agency?: Agency | null; // Agence actuelle (objet complet)
         agencies?: Array<{
             estate_agencies_id: Agency;
         }>; // Toutes les agences de l'utilisateur

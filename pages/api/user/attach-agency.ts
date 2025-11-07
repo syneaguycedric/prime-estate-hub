@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('[ATTACH AGENCY API] Payload:', JSON.stringify(payload, null, 2));
 
-        const response = await fetch(`${directusUrl}/users/${userId}?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,role.*`, {
+        const response = await fetch(`${directusUrl}/users/${userId}?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,account.agency.*,account.agency.address.*,role.*`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',

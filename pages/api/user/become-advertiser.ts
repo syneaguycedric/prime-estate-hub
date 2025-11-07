@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('[BECOME ADVERTISER API] Role ID:', advertiserRole.id);
         console.log('[BECOME ADVERTISER API] Actual User ID:', actualUserId);
 
-        const response = await fetch(`${directusUrl}/users/${actualUserId}?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,role.*`, {
+        const response = await fetch(`${directusUrl}/users/${actualUserId}?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,account.agency.*,account.agency.address.*,role.*`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
