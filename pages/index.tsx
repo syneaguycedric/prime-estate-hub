@@ -6,7 +6,6 @@ import { useRouter } from "next/router";
 import HomeHeader from "@/components/layout/HomeHeader";
 import PropertyListCardAnimated from "@/components/ui/property-list-card-animated";
 import PropertyCardAnimated from "@/components/ui/property-card-animated";
-import { properties as mockProperties } from "@/data/properties";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,7 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Search, Award } from "lucide-react";
-import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan } from "@/lib/directus-api";
+import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan, fetchFeaturedProperties, fetchVipProperties } from "@/lib/directus-api";
+import { Property } from "@/data/properties";
 
 interface HomePageProps {
     seoData: {
@@ -27,11 +27,13 @@ interface HomePageProps {
         canonicalUrl: string;
     };
     geoZones: GeoZone[];
+    featuredProperties: Property[];
+    vipProperties: Property[];
 }
 
 type ContractType = "sale" | "rent";
 
-const HomePage = ({ seoData, geoZones }: HomePageProps) => {
+const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: HomePageProps) => {
     const router = useRouter();
     const [selectedContract, setSelectedContract] = useState<ContractType>("sale");
     const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
@@ -307,9 +309,13 @@ const HomePage = ({ seoData, geoZones }: HomePageProps) => {
                         <div className="sticky top-24">
                             <h3 className="text-sm font-semibold text-muted-foreground mb-3">En vedette</h3>
                             <div>
-                                {mockProperties.slice(0, 5).map((p, idx) => (
-                                    <PropertyListCardAnimated key={p.id} {...p} index={idx} />
-                                ))}
+                                {featuredProperties.length > 0 ? (
+                                    featuredProperties.slice(0, 4).map((p, idx) => (
+                                        <PropertyListCardAnimated key={p.id} {...p} index={idx} />
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour le moment.</p>
+                                )}
                             </div>
                         </div>
                     </aside>
@@ -326,33 +332,39 @@ const HomePage = ({ seoData, geoZones }: HomePageProps) => {
                                 </div>
 
                                 {/* Grille des annonces VIP */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {mockProperties.slice(0, 6).map((property, index) => (
-                                        <div key={`vip-${property.id}`} className="group relative">
-                                            {/* Badge VIP simple en coin */}
-                                            <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
-                                                {subscriptionPlan?.code || "VIP"}
-                                            </span>
+                                {vipProperties.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {vipProperties.slice(0, 6).map((property, index) => (
+                                            <div key={`vip-${property.id}`} className="group relative">
+                                                {/* Badge VIP simple en coin */}
+                                                <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                                    {subscriptionPlan?.code || "VIP"}
+                                                </span>
 
-                                            {/* Carte premium */}
-                                            <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
-                                                <PropertyCardAnimated {...property} index={index} />
+                                                {/* Carte premium */}
+                                                <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                    <PropertyCardAnimated {...property} index={index} />
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <p className="text-muted-foreground">Aucune annonce VIP pour le moment.</p>
+                                    </div>
+                                )}
 
                                 {/* Footer avec séparateur et bouton */}
                                 <div className="mt-8 pt-6 border-t-2 border-primary/20">
                                     <div className="flex justify-center">
                                         <Button
-                                            onClick={() => router.push("/properties?vip=1")}
+                                            onClick={() => router.push(`/properties?plan=kylimmo`)}
                                             variant="default"
                                             size="lg"
                                             className="shadow-md hover:shadow-lg transition-shadow"
                                         >
                                             <Award className="h-4 w-4 mr-2" />
-                                            Voir plus d'annonces VIP
+                                            Voir plus d'annonces {subscriptionPlan?.title || "VIP"}
                                         </Button>
                                     </div>
                                 </div>
@@ -390,6 +402,12 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         // Récupérer les zones géographiques depuis l'API
         const geoZones = await fetchGeoZones();
 
+        // Récupérer les annonces en vedette (premium) et VIP (kylimmo)
+        const [featuredProperties, vipProperties] = await Promise.all([
+            fetchFeaturedProperties(),
+            fetchVipProperties()
+        ]);
+
         // Headers pour la mise en cache - longue durée pour la page d'accueil
         context.res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
 
@@ -397,6 +415,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
             props: {
                 seoData,
                 geoZones: geoZones || [],
+                featuredProperties: featuredProperties || [],
+                vipProperties: vipProperties || [],
             },
         };
     } catch (error) {
@@ -410,6 +430,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
             props: {
                 seoData,
                 geoZones: [],
+                featuredProperties: [],
+                vipProperties: [],
             },
         };
     }

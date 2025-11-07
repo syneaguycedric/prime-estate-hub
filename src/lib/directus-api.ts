@@ -152,6 +152,7 @@ export interface PropertyFilters {
     bathrooms?: number;           // Nombre de salles de bain
     page?: number;                // Numéro de page (défaut: 1)
     limit?: number;               // Éléments par page (défaut: 12)
+    planCode?: string;           // Code du plan d'abonnement (ex: "kylimmo", "premium")
 }
 
 // Interface pour la réponse paginée
@@ -398,8 +399,10 @@ export async function fetchPropertiesWithFilters(
         // const cleanLocation = location?.trim(); // Plus utilisé - champ location inexistant dans Directus
 
         // Recherche globale (OR sur plusieurs champs)
+        // On stocke temporairement le filtre de recherche pour éviter les conflits avec le filtre premium
+        let searchOrFilter: any = null;
         if (cleanSearch && cleanSearch.length > 0) {
-            directusFilters['_or'] = [
+            searchOrFilter = [
                 { title: { _contains: cleanSearch } },
                 { description: { _contains: cleanSearch } }
                 // Retiré: { location: { _contains: cleanSearch } } - champ inexistant dans Directus
@@ -448,6 +451,34 @@ export async function fetchPropertiesWithFilters(
 
         if (bathrooms !== undefined) {
             directusFilters['bathrooms'] = { _eq: bathrooms };
+        }
+
+        // Filtre par plan d'abonnement (VIP/Kylimmo)
+        if (filters.planCode) {
+            // Pour kylimmo, filtrer par agence avec plan kylimmo
+            if (filters.planCode === 'kylimmo') {
+                directusFilters['agency'] = { 'plan': { 'code': { '_eq': 'kylimmo' } } };
+            }
+            // Pour premium, filtrer par utilisateur OU agence avec plan premium
+            else if (filters.planCode === 'premium') {
+                const premiumOrFilter = [
+                    { 'user_created': { 'plan': { 'code': { '_eq': 'premium' } } } },
+                    { 'agency': { 'plan': { 'code': { '_eq': 'premium' } } } }
+                ];
+                
+                // Si on a aussi un filtre de recherche, combiner avec _and
+                if (searchOrFilter) {
+                    directusFilters['_and'] = [
+                        { '_or': searchOrFilter },
+                        { '_or': premiumOrFilter }
+                    ];
+                } else {
+                    directusFilters['_or'] = premiumOrFilter;
+                }
+            }
+        } else if (searchOrFilter) {
+            // Si pas de filtre premium mais qu'on a une recherche, utiliser le filtre de recherche
+            directusFilters['_or'] = searchOrFilter;
         }
 
         // Construire l'URL avec paramètres
@@ -512,6 +543,103 @@ export async function fetchPropertiesWithFilters(
             page: 1,
             totalPages: 0
         };
+    }
+}
+
+/**
+ * Récupère les annonces en vedette (premium) depuis l'API Directus
+ * Filtre : utilisateur ou agence avec plan premium
+ */
+export async function fetchFeaturedProperties(): Promise<Property[]> {
+    // Si on utilise les données mockées, fallback vers données locales
+    if (USE_MOCK_DATA) {
+        console.log('[DIRECTUS API] Using mock data for featured properties');
+        return properties.slice(0, 4).map(formatProperty);
+    }
+
+    try {
+        console.log('[DIRECTUS API] Fetching featured properties (premium) from API');
+
+        // Construire le filtre premium : user_created.plan.code='premium' OU agency.plan.code='premium'
+        const premiumFilter = {
+            "_or": [
+                { "user_created": { "plan": { "code": { "_eq": "premium" } } } },
+                { "agency": { "plan": { "code": { "_eq": "premium" } } } }
+            ]
+        };
+
+        // Construire l'URL avec paramètres
+        const params: Record<string, string> = {
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
+            limit: '4',
+            filter: JSON.stringify(premiumFilter)
+        };
+
+        const queryString = new URLSearchParams(params).toString();
+
+        const response = await apiClient.get<DirectusResponse<Property[]>>(
+            DIRECTUS_DOMAIN,
+            `items/real_estates?${queryString}`
+        );
+
+        const formattedProperties = response.data.map(formatProperty);
+
+        console.log(`[DIRECTUS API] Fetched ${formattedProperties.length} featured properties`);
+
+        return formattedProperties;
+
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching featured properties:', error);
+
+        // Retourner un tableau vide en cas d'erreur
+        return [];
+    }
+}
+
+/**
+ * Récupère les annonces VIP (kylimmo) depuis l'API Directus
+ * Filtre : agence avec plan kylimmo
+ */
+export async function fetchVipProperties(): Promise<Property[]> {
+    // Si on utilise les données mockées, fallback vers données locales
+    if (USE_MOCK_DATA) {
+        console.log('[DIRECTUS API] Using mock data for VIP properties');
+        return properties.slice(0, 6).map(formatProperty);
+    }
+
+    try {
+        console.log('[DIRECTUS API] Fetching VIP properties (kylimmo) from API');
+
+        // Construire le filtre kylimmo : agency.plan.code='kylimmo'
+        const kylimmoFilter = {
+            "agency": { "plan": { "code": { "_eq": "kylimmo" } } }
+        };
+
+        // Construire l'URL avec paramètres
+        const params: Record<string, string> = {
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
+            limit: '6',
+            filter: JSON.stringify(kylimmoFilter)
+        };
+
+        const queryString = new URLSearchParams(params).toString();
+
+        const response = await apiClient.get<DirectusResponse<Property[]>>(
+            DIRECTUS_DOMAIN,
+            `items/real_estates?${queryString}`
+        );
+
+        const formattedProperties = response.data.map(formatProperty);
+
+        console.log(`[DIRECTUS API] Fetched ${formattedProperties.length} VIP properties`);
+
+        return formattedProperties;
+
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching VIP properties:', error);
+
+        // Retourner un tableau vide en cas d'erreur
+        return [];
     }
 }
 

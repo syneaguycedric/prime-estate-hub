@@ -43,30 +43,6 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
     const [view, setView] = useState<"grid" | "list">("grid");
     const [mounted, setMounted] = useState(false);
 
-    // Gestion des query params pour les communes
-    useEffect(() => {
-        if (router.isReady) {
-            const { communes, zone } = router.query;
-
-            if (communes && typeof communes === "string") {
-                const communeList = communes.split(",").filter(Boolean);
-                if (communeList.length > 0) {
-                    setFilters((prev) => ({
-                        ...prev,
-                        communes: communeList,
-                    }));
-                }
-            }
-
-            if (zone && typeof zone === "string") {
-                setFilters((prev) => ({
-                    ...prev,
-                    zone: zone,
-                }));
-            }
-        }
-    }, [router.isReady, router.query]);
-
     // Gestion de l'hydratation côté client pour éviter les erreurs SSR
     useEffect(() => {
         setMounted(true);
@@ -140,6 +116,46 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
         }
     }, []);
 
+    // Ref pour éviter les problèmes de closure dans le debounce
+    const loadPropertiesRef = useRef(loadProperties);
+    loadPropertiesRef.current = loadProperties;
+
+    // Gestion des query params pour les communes et le plan
+    useEffect(() => {
+        if (router.isReady) {
+            const { communes, zone, plan } = router.query;
+            const updatedFilters: PropertyFilters = {};
+
+            if (communes && typeof communes === "string") {
+                const communeList = communes.split(",").filter(Boolean);
+                if (communeList.length > 0) {
+                    updatedFilters.communes = communeList;
+                }
+            }
+
+            if (zone && typeof zone === "string") {
+                updatedFilters.zone = zone;
+            }
+
+            // Détecter le paramètre plan (VIP/Kylimmo)
+            if (plan && typeof plan === "string") {
+                updatedFilters.planCode = plan;
+                updatedFilters.limit = 10; // Limite à 10 pour la pagination
+                updatedFilters.page = 1; // Réinitialiser à la page 1
+            }
+
+            // Appliquer les filtres si des paramètres ont été détectés
+            if (Object.keys(updatedFilters).length > 0) {
+                setFilters((prev) => {
+                    const mergedFilters = { ...prev, ...updatedFilters };
+                    // Charger les propriétés avec les nouveaux filtres
+                    loadPropertiesRef.current(mergedFilters);
+                    return mergedFilters;
+                });
+            }
+        }
+    }, [router.isReady, router.query]);
+
     // Initialiser une seule fois au montage
     useEffect(() => {
         if (!hasInitialized) {
@@ -148,10 +164,6 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
             // Pas besoin de charger les propriétés, on utilise déjà initialProperties
         }
     }, [hasInitialized]);
-
-    // Ref pour éviter les problèmes de closure dans le debounce
-    const loadPropertiesRef = useRef(loadProperties);
-    loadPropertiesRef.current = loadProperties;
 
     // Gérer l'application des filtres
     const handleApplyFilters = (newFilters: PropertyFilters) => {

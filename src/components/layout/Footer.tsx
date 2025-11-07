@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Home, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 
 const Footer = () => {
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
           {/* Logo et description */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -33,23 +32,11 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Services */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Services</h3>
-            <ul className="space-y-2 text-background/80">
-              <li><a href="#" className="hover:text-primary transition-colors">Achat immobilier</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Vente immobilier</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Location</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Gestion locative</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Estimation gratuite</a></li>
-            </ul>
-          </div>
-
           {/* Informations */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Informations</h3>
             <ul className="space-y-2 text-background/80">
-              <li><a href="#" className="hover:text-primary transition-colors">À propos</a></li>
+              <li><a href="https://kylimmo.net/qui-sommes-nous/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">À propos</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Notre équipe</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Témoignages</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Blog immobilier</a></li>
@@ -75,22 +62,22 @@ const Footer = () => {
               </div>
             </div>
             
-            {/* Newsletter */}
-            <div className="space-y-2 pt-4">
-              <h4 className="font-medium">Newsletter</h4>
-              <div className="flex space-x-2">
-                <Input 
-                  placeholder="Votre email" 
-                  className="bg-background/10 border-background/20 text-background placeholder:text-background/60"
-                />
-                <Button variant="secondary" size="sm">S'abonner</Button>
-              </div>
+            {/* Lien Nous contacter */}
+            <div className="pt-4">
+              <a 
+                href="https://kylimmo.net/contactez-nous/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-background/80 hover:text-primary transition-colors underline"
+              >
+                Nous contacter
+              </a>
             </div>
           </div>
         </div>
 
         <div className="border-t border-background/20 pt-8 mt-8 text-center text-background/60">
-          <p>&copy; 2024 ImmobilierPro. Tous droits réservés.</p>
+          <p>&copy; 2025 ImmobilierPro. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
