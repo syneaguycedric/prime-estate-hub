@@ -55,9 +55,16 @@ class SecureApiClient {
 
     constructor() {
         // En production, utiliser l'URL complète du site
-        this.baseUrl = process.env.NODE_ENV === 'production'
-            ? process.env.NEXT_PUBLIC_SITE_URL || ''
-            : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
+        // Côté client, utiliser window.location.origin pour avoir l'URL correcte
+        if (typeof window !== 'undefined') {
+            // Côté client : utiliser l'URL actuelle de la page
+            this.baseUrl = window.location.origin;
+        } else {
+            // Côté serveur : utiliser la variable d'environnement ou localhost par défaut
+            this.baseUrl = process.env.NODE_ENV === 'production'
+                ? process.env.NEXT_PUBLIC_SITE_URL || ''
+                : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
+        }
 
         if (process.env.NODE_ENV === 'development') {
             console.log('[API CLIENT] Base URL:', this.baseUrl);

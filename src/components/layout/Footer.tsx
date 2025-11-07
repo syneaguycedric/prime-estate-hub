@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { Home, Mail, Phone, Smartphone, MapPin, Facebook, Twitter, Instagram, Linkedin, Clock } from "lucide-react";
 import { fetchGlobals, Globals } from "@/lib/directus-api";
 
 const Footer = () => {
@@ -48,33 +48,41 @@ const Footer = () => {
             <h3 className="text-lg font-semibold">Informations</h3>
             <ul className="space-y-2 text-background/80">
               <li><a href="https://kylimmo.net/qui-sommes-nous/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Qui sommes nous</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Notre équipe</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Témoignages</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Blog immobilier</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Mentions légales</a></li>
+              <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Notre équipe</a></li>
+              <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Témoignages</a></li>
+              <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Blog immobilier</a></li>
+              <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Mentions légales</a></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Contact</h3>
-            <div className="space-y-3 text-background/80">
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4" />
-                <span>01 23 45 67 89</span>
+            <div className="bg-background/10 rounded-lg p-6 space-y-4 border border-background/20">
+              <div className="flex items-start space-x-3 text-background/90">
+                <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <span>Abidjan Riviera Après barrage</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <span>contact@immobilierpro.fr</span>
+              <div className="flex items-start space-x-3 text-background/90">
+                <Smartphone className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <span>(+225) 07 14 59 54 80</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>Cocody, Riviera Palmeraie</span>
+              <div className="flex items-start space-x-3 text-background/90">
+                <Phone className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <span>(+225) 27 22 50 93 54</span>
+              </div>
+              <div className="flex items-start space-x-3 text-background/90">
+                <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <span>kylimmo@gmail.com</span>
+              </div>
+              <div className="flex items-start space-x-3 text-background/90">
+                <Clock className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <span>Lundi - Vendredi : 08h00 - 17h00</span>
               </div>
             </div>
             
             {/* Lien Nous contacter */}
-            <div className="pt-4">
+            <div className="pt-2">
               <a 
                 href="https://kylimmo.net/contactez-nous/" 
                 target="_blank" 
