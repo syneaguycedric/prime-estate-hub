@@ -2,7 +2,7 @@
 
 ## 🔍 **Problème Identifié**
 
-### **Conflit entre Systèmes de Skeleton**
+### **Gestion Conflit entre Systèmes de Skeleton**
 
 -   **Page d'accueil** : Utilise `usePageLoading` → affiche `PropertySkeleton` (skeleton de liste)
 -   **Page de détail** : Utilise `isNavigating` → affiche skeleton de détail spécialisé
