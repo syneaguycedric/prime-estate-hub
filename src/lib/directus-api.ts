@@ -153,6 +153,7 @@ export interface PropertyFilters {
     page?: number;                // Numéro de page (défaut: 1)
     limit?: number;               // Éléments par page (défaut: 12)
     planCode?: string;           // Code du plan d'abonnement (ex: "kylimmo", "premium")
+    town?: string;                // ID de la commune/département (townId)
 }
 
 // Interface pour la réponse paginée
@@ -203,6 +204,38 @@ export interface SubscriptionPlan {
     description?: string | null;
     code: string;
     agencies?: string[];
+}
+
+// Interface pour les données globales
+export interface Globals {
+    id: string;
+    date_created?: string;
+    date_updated?: string;
+    title: string;
+    url?: string;
+    short_description?: string | null;
+    description?: string | null;
+    social_links?: any;
+    user_created?: string | null;
+    user_updated?: string | null;
+    logo?: {
+        id: string;
+        title?: string;
+        filename_download?: string;
+        [key: string]: any;
+    };
+    logo_dark_mode?: {
+        id: string;
+        title?: string;
+        filename_download?: string;
+        [key: string]: any;
+    };
+    favicon?: {
+        id: string;
+        title?: string;
+        filename_download?: string;
+        [key: string]: any;
+    };
 }
 
 /**
@@ -415,43 +448,62 @@ export async function fetchPropertiesWithFilters(
         //     directusFilters['location'] = { _contains: cleanLocation };
         // }
 
-        if (contractType) {
-            directusFilters['contractType'] = { _eq: contractType };
-        }
+        // Construire les filtres de base (town et contractType seront gérés séparément)
+        const baseFilters: Record<string, any> = {};
 
         if (propertyType) {
-            directusFilters['type'] = { _eq: propertyType };
+            baseFilters['type'] = { _eq: propertyType };
         }
 
         // Filtres de prix (range)
         if (minPrice !== undefined || maxPrice !== undefined) {
-            directusFilters['price'] = {};
+            baseFilters['price'] = {};
             if (minPrice !== undefined) {
-                directusFilters['price']['_gte'] = minPrice;
+                baseFilters['price']['_gte'] = minPrice;
             }
             if (maxPrice !== undefined) {
-                directusFilters['price']['_lte'] = maxPrice;
+                baseFilters['price']['_lte'] = maxPrice;
             }
         }
 
         // Filtres de surface (range)
         if (minSurface !== undefined || maxSurface !== undefined) {
-            directusFilters['surfaceArea'] = {};
+            baseFilters['surfaceArea'] = {};
             if (minSurface !== undefined) {
-                directusFilters['surfaceArea']['_gte'] = minSurface;
+                baseFilters['surfaceArea']['_gte'] = minSurface;
             }
             if (maxSurface !== undefined) {
-                directusFilters['surfaceArea']['_lte'] = maxSurface;
+                baseFilters['surfaceArea']['_lte'] = maxSurface;
             }
         }
 
         if (rooms !== undefined) {
-            directusFilters['rooms'] = { _eq: rooms };
+            baseFilters['rooms'] = { _eq: rooms };
         }
 
         if (bathrooms !== undefined) {
-            directusFilters['bathrooms'] = { _eq: bathrooms };
+            baseFilters['bathrooms'] = { _eq: bathrooms };
         }
+
+        // Gérer town et contractType dans un _AND si les deux sont présents
+        const andFilters: any[] = [];
+        
+        if (filters.town && contractType) {
+            // Si on a les deux, les combiner dans un _AND
+            andFilters.push({ town: { _eq: filters.town } });
+            andFilters.push({ contractType: { _eq: contractType } });
+        } else {
+            // Sinon, les ajouter individuellement
+            if (filters.town) {
+                baseFilters['town'] = { _eq: filters.town };
+            }
+            if (contractType) {
+                baseFilters['contractType'] = { _eq: contractType };
+            }
+        }
+
+        // Ajouter les filtres de base
+        Object.assign(directusFilters, baseFilters);
 
         // Filtre par plan d'abonnement (VIP/Kylimmo)
         if (filters.planCode) {
@@ -468,17 +520,38 @@ export async function fetchPropertiesWithFilters(
                 
                 // Si on a aussi un filtre de recherche, combiner avec _and
                 if (searchOrFilter) {
-                    directusFilters['_and'] = [
-                        { '_or': searchOrFilter },
-                        { '_or': premiumOrFilter }
-                    ];
+                    // Si on a déjà un _AND avec town et contractType, l'ajouter
+                    if (andFilters.length > 0) {
+                        andFilters.push({ '_or': searchOrFilter });
+                        andFilters.push({ '_or': premiumOrFilter });
+                        directusFilters['_and'] = andFilters;
+                    } else {
+                        directusFilters['_and'] = [
+                            { '_or': searchOrFilter },
+                            { '_or': premiumOrFilter }
+                        ];
+                    }
+                } else if (andFilters.length > 0) {
+                    // Si on a town et contractType dans _AND, ajouter le filtre premium
+                    andFilters.push({ '_or': premiumOrFilter });
+                    directusFilters['_and'] = andFilters;
                 } else {
                     directusFilters['_or'] = premiumOrFilter;
                 }
             }
         } else if (searchOrFilter) {
-            // Si pas de filtre premium mais qu'on a une recherche, utiliser le filtre de recherche
-            directusFilters['_or'] = searchOrFilter;
+            // Si pas de filtre premium mais qu'on a une recherche
+            if (andFilters.length > 0) {
+                // Si on a town et contractType dans _AND, ajouter la recherche
+                andFilters.push({ '_or': searchOrFilter });
+                directusFilters['_and'] = andFilters;
+            } else {
+                // Sinon, utiliser le filtre de recherche normalement
+                directusFilters['_or'] = searchOrFilter;
+            }
+        } else if (andFilters.length > 0) {
+            // Si on a seulement town et contractType, créer le _AND
+            directusFilters['_and'] = andFilters;
         }
 
         // Construire l'URL avec paramètres
@@ -839,6 +912,33 @@ export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
 
         // Retourner un tableau vide en cas d'erreur
         return [];
+    }
+}
+
+/**
+ * Récupère les données globales depuis l'API Directus
+ */
+export async function fetchGlobals(): Promise<Globals | null> {
+    try {
+        console.log('[DIRECTUS API] Fetching globals from API');
+
+        const response = await apiClient.get<DirectusResponse<Globals>>(
+            DIRECTUS_DOMAIN,
+            'items/globals?fields=*.*',
+            {
+                cacheKey: 'globals-data',
+                cacheTtl: 3600000, // 1 heure - les données globales changent rarement
+            }
+        );
+
+        console.log('[DIRECTUS API] Fetched globals data');
+
+        return response.data;
+    } catch (error) {
+        console.error('[DIRECTUS API] Error fetching globals:', error);
+
+        // Retourner null en cas d'erreur
+        return null;
     }
 }
 

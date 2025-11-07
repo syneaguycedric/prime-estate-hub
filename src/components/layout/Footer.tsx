@@ -1,7 +1,19 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Home, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { fetchGlobals, Globals } from "@/lib/directus-api";
 
 const Footer = () => {
+  const [globals, setGlobals] = useState<Globals | null>(null);
+
+  useEffect(() => {
+    const loadGlobals = async () => {
+      const data = await fetchGlobals();
+      setGlobals(data);
+    };
+    loadGlobals();
+  }, []);
+
   return (
     <footer className="bg-foreground text-background">
       <div className="container py-12">
@@ -10,11 +22,10 @@ const Footer = () => {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Home className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold">ImmobilierPro</span>
+              <span className="text-xl font-bold">Kylimmo</span>
             </div>
             <p className="text-background/80 leading-relaxed">
-              Votre partenaire de confiance pour tous vos projets immobiliers. 
-              Expertise, sérieux et proximité depuis plus de 15 ans.
+              {globals?.short_description || "Votre partenaire de confiance pour tous vos projets immobiliers."}
             </p>
             <div className="flex space-x-4">
               <Button variant="ghost" size="icon" className="text-background hover:text-primary">
@@ -77,7 +88,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-background/20 pt-8 mt-8 text-center text-background/60">
-          <p>&copy; 2025 ImmobilierPro. Tous droits réservés.</p>
+          <p>&copy; 2025 Kylimmo. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

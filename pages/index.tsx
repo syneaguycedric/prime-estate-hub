@@ -35,7 +35,7 @@ type ContractType = "sale" | "rent";
 
 const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: HomePageProps) => {
     const router = useRouter();
-    const [selectedContract, setSelectedContract] = useState<ContractType>("sale");
+    const [selectedContract, setSelectedContract] = useState<ContractType>("rent");
     const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
     const [areas, setAreas] = useState<string[]>([]);
     const [areasOpen, setAreasOpen] = useState(false);
@@ -201,15 +201,15 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                 <Label className="text-sm text-muted-foreground">Type d'annonce</Label>
                                 <RadioGroup value={selectedContract} onValueChange={(v) => setSelectedContract(v as ContractType)} className="flex gap-2">
                                     <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border hover:bg-muted cursor-pointer">
-                                        <RadioGroupItem id="sale" value="sale" />
-                                        <Label htmlFor="sale" className="cursor-pointer">
-                                            Vente
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border hover:bg-muted cursor-pointer">
                                         <RadioGroupItem id="rent" value="rent" />
                                         <Label htmlFor="rent" className="cursor-pointer">
                                             Location
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full border hover:bg-muted cursor-pointer">
+                                        <RadioGroupItem id="sale" value="sale" />
+                                        <Label htmlFor="sale" className="cursor-pointer">
+                                            Vente
                                         </Label>
                                     </div>
                                 </RadioGroup>

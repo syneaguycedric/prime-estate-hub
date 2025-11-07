@@ -120,21 +120,38 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
     const loadPropertiesRef = useRef(loadProperties);
     loadPropertiesRef.current = loadProperties;
 
-    // Gestion des query params pour les communes et le plan
+    // Gestion des query params pour les communes, zone, contractType et le plan
     useEffect(() => {
         if (router.isReady) {
-            const { communes, zone, plan } = router.query;
+            const { communes, areas, zone, contractType, plan } = router.query;
             const updatedFilters: PropertyFilters = {};
 
-            if (communes && typeof communes === "string") {
-                const communeList = communes.split(",").filter(Boolean);
-                if (communeList.length > 0) {
-                    updatedFilters.communes = communeList;
+            // Gérer les communes (ancien format) ou areas (nouveau format depuis index.tsx)
+            const areasParam = areas || communes;
+            if (areasParam && typeof areasParam === "string") {
+                const areaList = areasParam.split(",").filter(Boolean);
+                if (areaList.length > 0) {
+                    // Prendre le premier élément (townId unique)
+                    updatedFilters.town = areaList[0];
+                }
+            }
+
+            // Gérer le contractType depuis index.tsx
+            // Conversion : vente = "selling", location = "leasing"
+            if (contractType && typeof contractType === "string") {
+                // Convertir les valeurs de l'interface ("sale"/"rent") vers les valeurs de l'API ("selling"/"leasing")
+                if (contractType === "sale") {
+                    updatedFilters.contractType = "selling"; // vente → selling
+                } else if (contractType === "rent") {
+                    updatedFilters.contractType = "leasing"; // location → leasing
+                } else {
+                    updatedFilters.contractType = contractType;
                 }
             }
 
             if (zone && typeof zone === "string") {
-                updatedFilters.zone = zone;
+                // Zone est conservé pour référence mais n'est pas utilisé dans les filtres Directus
+                // (on utilise town à la place)
             }
 
             // Détecter le paramètre plan (VIP/Kylimmo)
