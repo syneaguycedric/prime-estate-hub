@@ -32,7 +32,7 @@ const menuItems = [
     },
     {
         id: "agencies",
-        label: "Agences",
+        label: "Mon agence",
         icon: Building2,
         href: "/my-listings?tab=agencies",
     },

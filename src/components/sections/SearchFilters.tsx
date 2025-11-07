@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, MapPin, Home, Euro, Bed, Bath, Ruler } from "lucide-react";
-import { PropertyFilters } from "@/lib/directus-api";
+import { X, MapPin, Home, Euro, Bed, Bath, Ruler, Search } from "lucide-react";
+import { PropertyFilters, GeoZone } from "@/lib/directus-api";
 
 interface SearchFiltersProps {
     isOpen: boolean;
@@ -15,11 +17,13 @@ interface SearchFiltersProps {
     onReset?: () => void;
     onApplyFilters?: (filters: PropertyFilters) => void;
     currentFilters?: PropertyFilters; // Ajouter les filtres actuels
+    geoZones: GeoZone[]; // Zones géographiques
 }
 
-const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilters, currentFilters }: SearchFiltersProps) => {
+const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilters, currentFilters, geoZones }: SearchFiltersProps) => {
     const [filters, setFilters] = useState({
-        location: "",
+        zone: "",
+        areas: [] as string[],
         transaction: "",
         propertyType: "",
         minPrice: "",
@@ -29,23 +33,110 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
         rooms: "",
         bathrooms: "",
     });
+    const [areasOpen, setAreasOpen] = useState(false);
+
+    // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
+    const getZoneMapping = () => {
+        const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
+        
+        // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
+        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
+        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
+        
+        mapping["grand-abidjan"] = {
+            id: grandAbidjan?.id || "",
+            zone: grandAbidjan || null,
+        };
+        
+        mapping["hors-abidjan"] = {
+            id: horsAbidjan?.id || "",
+            zone: horsAbidjan || null,
+        };
+        
+        return mapping;
+    };
+
+    const zoneMapping = getZoneMapping();
+
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée
+    const getZoneByValue = (zoneValue: string): GeoZone | null => {
+        return zoneMapping[zoneValue]?.zone || null;
+    };
+
+    // Obtenir la zone actuellement sélectionnée
+    const selectedZone = filters.zone ? getZoneByValue(filters.zone) : null;
+
+    // Obtenir les towns de la zone sélectionnée
+    const getTownsForSelectedZone = () => {
+        if (!selectedZone) return [];
+        return selectedZone.towns || [];
+    };
+
+    const getAreaName = (id: string) => {
+        if (!selectedZone) return "";
+        // Chercher dans les towns de la zone sélectionnée
+        const town = selectedZone.towns.find((t) => t.id === id);
+        return town?.name || "";
+    };
+
+    const toggleArea = (id: string) => {
+        // Sélection unique: remplace toujours par l'ID cliqué
+        setFilters((prev) => ({ ...prev, areas: [id] }));
+        // Fermer automatiquement le Popover après sélection
+        setAreasOpen(false);
+    };
 
     // Synchroniser l'état local avec les filtres actuels
     useEffect(() => {
         if (currentFilters) {
-            setFilters({
-                location: currentFilters.location || "",
-                transaction: currentFilters.contractType || "",
-                propertyType: currentFilters.propertyType || "",
-                minPrice: currentFilters.minPrice?.toString() || "",
-                maxPrice: currentFilters.maxPrice?.toString() || "",
-                minSurface: currentFilters.minSurface?.toString() || "",
-                maxSurface: currentFilters.maxSurface?.toString() || "",
-                rooms: currentFilters.rooms?.toString() || "",
-                bathrooms: currentFilters.bathrooms?.toString() || "",
-            });
+            // Gérer town pour préremplir zone et areas
+            let zoneValue = "";
+            let areasValue: string[] = [];
+
+            if (currentFilters.town) {
+                // Chercher dans quelle zone se trouve ce town
+                for (const geoZone of geoZones) {
+                    const town = geoZone.towns?.find((t) => t.id === currentFilters.town);
+                    if (town) {
+                        // Déterminer la valeur simplifiée de la zone
+                        if (geoZone.name === "Grand Abidjan") {
+                            zoneValue = "grand-abidjan";
+                        } else if (geoZone.name === "Hors Abidjan") {
+                            zoneValue = "hors-abidjan";
+                        }
+                        areasValue = [currentFilters.town];
+                        break;
+                    }
+                }
+            }
+
+            // Mapper contractType vers transaction (mapping inverse)
+            let transactionValue = "";
+            if (currentFilters.contractType) {
+                const reverseTransactionMap: Record<string, string> = {
+                    selling: "achat",
+                    leasing: "location",
+                    sale: "achat",
+                    rent: "location",
+                };
+                transactionValue = reverseTransactionMap[currentFilters.contractType] || currentFilters.contractType;
+            }
+
+            setFilters((prev) => ({
+                ...prev,
+                zone: zoneValue,
+                areas: areasValue,
+                transaction: transactionValue || prev.transaction, // Garder la valeur précédente si pas de contractType
+                propertyType: currentFilters.propertyType || prev.propertyType,
+                minPrice: currentFilters.minPrice?.toString() || prev.minPrice,
+                maxPrice: currentFilters.maxPrice?.toString() || prev.maxPrice,
+                minSurface: currentFilters.minSurface?.toString() || prev.minSurface,
+                maxSurface: currentFilters.maxSurface?.toString() || prev.maxSurface,
+                rooms: currentFilters.rooms?.toString() || prev.rooms,
+                bathrooms: currentFilters.bathrooms?.toString() || prev.bathrooms,
+            }));
         }
-    }, [currentFilters]);
+    }, [currentFilters, geoZones]);
 
     // Gérer l'overlay et le scroll selon la taille d'écran
     useEffect(() => {
@@ -122,7 +213,16 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
     }, [isOpen]);
 
     const countActiveFilters = () => {
-        return Object.values(filters).filter((value) => value && value.trim() !== "").length;
+        let count = 0;
+        if (filters.zone) count++;
+        if (filters.areas.length > 0) count++;
+        if (filters.transaction) count++;
+        if (filters.propertyType) count++;
+        if (filters.minPrice || filters.maxPrice) count++;
+        if (filters.minSurface || filters.maxSurface) count++;
+        if (filters.rooms) count++;
+        if (filters.bathrooms) count++;
+        return count;
     };
 
     useEffect(() => {
@@ -138,7 +238,23 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
         // Convertir les filtres string vers PropertyFilters
         const propertyFilters: PropertyFilters = {};
 
-        if (filters.location) propertyFilters.location = filters.location;
+        // Ajouter le filtre zone si une zone est sélectionnée
+        if (filters.zone) {
+            // Convertir la valeur simplifiée (grand-abidjan, hors-abidjan) en ID de zone
+            const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
+            const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
+            
+            if (filters.zone === "grand-abidjan" && grandAbidjan) {
+                propertyFilters.zone = grandAbidjan.id;
+            } else if (filters.zone === "hors-abidjan" && horsAbidjan) {
+                propertyFilters.zone = horsAbidjan.id;
+            }
+        }
+
+        // Ajouter le filtre town si une commune/département est sélectionnée
+        if (filters.areas.length > 0) {
+            propertyFilters.town = filters.areas[0];
+        }
 
         // Mapper les valeurs de transaction
         if (filters.transaction) {
@@ -202,7 +318,8 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
 
     const resetFilters = () => {
         setFilters({
-            location: "",
+            zone: "",
+            areas: [],
             transaction: "",
             propertyType: "",
             minPrice: "",
@@ -212,6 +329,7 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
             rooms: "",
             bathrooms: "",
         });
+        setAreasOpen(false);
         // Appeler la fonction de réinitialisation du parent
         if (onReset) {
             onReset();
@@ -235,13 +353,83 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                 </div>
 
                 <div className="p-4 space-y-6">
-                    {/* Localisation */}
+                    {/* Zone et Commune/Département */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium text-foreground flex items-center">
                             <MapPin className="h-4 w-4 mr-2" />
                             Localisation
                         </label>
-                        <Input placeholder="Ville, département, code postal..." value={filters.location} onChange={(e) => updateFilter("location", e.target.value)} />
+                        {/* Zone */}
+                        <Select
+                            value={filters.zone}
+                            onValueChange={(value) => {
+                                setFilters((prev) => ({ ...prev, zone: value, areas: [] }));
+                                setAreasOpen(false);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir une zone" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {geoZones.map((geoZone) => {
+                                    // Mapper le nom de zone vers la valeur simplifiée
+                                    const zoneValue = geoZone.name === "Grand Abidjan" 
+                                        ? "grand-abidjan" 
+                                        : geoZone.name === "Hors Abidjan" 
+                                        ? "hors-abidjan" 
+                                        : null;
+                                    
+                                    if (!zoneValue) return null;
+                                    
+                                    return (
+                                        <SelectItem key={geoZone.id} value={zoneValue}>
+                                            {geoZone.name}
+                                        </SelectItem>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
+                        {/* Commune ou Département */}
+                        <Popover open={areasOpen} onOpenChange={setAreasOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between" disabled={!filters.zone}>
+                                    {filters.areas.length === 1 ? getAreaName(filters.areas[0]) : "Choisir une commune ou département"}
+                                    <Search className="h-4 w-4 opacity-60" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[320px] p-3">
+                                <div className="max-h-64 overflow-auto pr-1">
+                                    {getTownsForSelectedZone().map((town) => (
+                                        <button
+                                            type="button"
+                                            key={town.id}
+                                            onClick={() => toggleArea(town.id)}
+                                            className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
+                                        >
+                                            <span>{town.name}</span>
+                                            <Checkbox checked={filters.areas[0] === town.id} onCheckedChange={() => toggleArea(town.id)} />
+                                        </button>
+                                    ))}
+                                </div>
+                                {filters.areas.length > 0 && (
+                                    <>
+                                        <Separator className="my-2" />
+                                        <div className="flex items-center justify-end">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setFilters((prev) => ({ ...prev, areas: [] }));
+                                                    setAreasOpen(false);
+                                                }}
+                                            >
+                                                Effacer
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <Separator />

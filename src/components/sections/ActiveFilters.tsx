@@ -1,18 +1,47 @@
 import { Badge } from "@/components/ui/badge";
 import { X, MapPin, Home, Euro, Bed, Bath, Ruler } from "lucide-react";
-import { PropertyFilters } from "@/lib/directus-api";
+import { PropertyFilters, GeoZone } from "@/lib/directus-api";
 
 interface ActiveFiltersProps {
     filters: PropertyFilters;
     onRemoveFilter: (filterKey: string) => void;
     onClearAll: () => void;
+    geoZones?: GeoZone[];
 }
 
-const ActiveFilters = ({ filters, onRemoveFilter, onClearAll }: ActiveFiltersProps) => {
+const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: ActiveFiltersProps) => {
+    // Fonction pour obtenir le nom de la zone depuis son ID
+    const getZoneName = (zoneId: string): string => {
+        const zone = geoZones.find(z => z.id === zoneId);
+        return zone?.name || zoneId;
+    };
+
+    // Fonction pour obtenir le nom de la commune depuis son ID
+    const getTownName = (townId: string): string => {
+        for (const zone of geoZones) {
+            const town = zone.towns?.find(t => t.id === townId);
+            if (town) return town.name;
+        }
+        return townId;
+    };
+
+    // Fonction pour déterminer si on doit afficher "Commune" ou "Département" selon la zone
+    const getTownLabel = (): string => {
+        if (!filters.zone) return "Commune/Département";
+        
+        const zone = geoZones.find(z => z.id === filters.zone);
+        if (zone?.name === "Grand Abidjan") {
+            return "Commune";
+        } else if (zone?.name === "Hors Abidjan") {
+            return "Département";
+        }
+        return "Commune/Département";
+    };
     // Fonction pour obtenir l'icône selon le type de filtre
     const getFilterIcon = (key: string) => {
         switch (key) {
-            case "location":
+            case "zone":
+            case "town":
                 return <MapPin className="h-3 w-3" />;
             case "contractType":
                 return <Euro className="h-3 w-3" />;
@@ -76,7 +105,8 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll }: ActiveFiltersPro
     // Fonction pour obtenir le label du filtre
     const getFilterLabel = (key: string) => {
         const labels: Record<string, string> = {
-            location: "Localisation",
+            zone: "Zone",
+            town: "Commune/Département",
             contractType: "Transaction",
             type: "Type",
             rooms: "Pièces",
@@ -100,12 +130,19 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll }: ActiveFiltersPro
                     value: `"${value}"`,
                     icon: null,
                 });
-            } else if (key === "location") {
+            } else if (key === "zone") {
                 activeFilters.push({
-                    key: "location",
-                    label: getFilterLabel("location"),
-                    value: value,
-                    icon: getFilterIcon("location"),
+                    key: "zone",
+                    label: getFilterLabel("zone"),
+                    value: getZoneName(value as string),
+                    icon: getFilterIcon("zone"),
+                });
+            } else if (key === "town") {
+                activeFilters.push({
+                    key: "town",
+                    label: getTownLabel(),
+                    value: getTownName(value as string),
+                    icon: getFilterIcon("town"),
                 });
             } else if (key === "contractType") {
                 activeFilters.push({
@@ -173,6 +210,18 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll }: ActiveFiltersPro
             icon: getFilterIcon("surfaceArea"),
         });
     }
+
+    // Trier les filtres pour que zone soit toujours avant town
+    activeFilters.sort((a, b) => {
+        // Ordre de priorité : zone (0), town (1), autres (2)
+        const getPriority = (key: string): number => {
+            if (key === "zone") return 0;
+            if (key === "town") return 1;
+            return 2;
+        };
+        
+        return getPriority(a.key) - getPriority(b.key);
+    });
 
     if (activeFilters.length === 0) {
         return null;

@@ -274,28 +274,10 @@ export default function AgenciesManager() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold">Gestion des agences</h2>
+                    <h2 className="text-2xl font-bold">Gestion de mon agence</h2>
                     <p className="text-muted-foreground">Gérez vos agences partenaires et leurs informations</p>
                 </div>
-                <Button onClick={handleAddAgency} variant="hero">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ajouter une agence
-                </Button>
             </div>
-
-            {/* Recherche */}
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Rechercher par nom ou localisation..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
 
             {/* Liste des agences */}
             {loading ? (

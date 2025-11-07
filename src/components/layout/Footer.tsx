@@ -47,7 +47,7 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Informations</h3>
             <ul className="space-y-2 text-background/80">
-              <li><a href="https://kylimmo.net/qui-sommes-nous/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">À propos</a></li>
+              <li><a href="https://kylimmo.net/qui-sommes-nous/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Qui sommes nous</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Notre équipe</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Témoignages</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Blog immobilier</a></li>
@@ -69,7 +69,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
-                <span>123 Avenue des Champs, 75008 Paris</span>
+                <span>Cocody, Riviera Palmeraie</span>
               </div>
             </div>
             

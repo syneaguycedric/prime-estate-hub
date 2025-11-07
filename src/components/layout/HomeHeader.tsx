@@ -75,11 +75,6 @@ const HomeHeader = () => {
 
                 {/* Navigation */}
                 <nav className="flex items-center space-x-3">
-                    {/* Link to Properties */}
-                    <Button variant="ghost" onClick={() => navigateWithTransition("/properties")} className="hidden sm:flex">
-                        Annonces
-                    </Button>
-
                     {isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

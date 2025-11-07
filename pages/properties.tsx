@@ -8,7 +8,7 @@ import SearchFilters from "@/components/sections/SearchFilters";
 import ActiveFilters from "@/components/sections/ActiveFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
 import { Property } from "@/data/properties";
-import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse } from "@/lib/directus-api";
+import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse, fetchGeoZones, GeoZone } from "@/lib/directus-api";
 import { getFirstImageUrl } from "@/lib/property-helpers";
 import { usePageLoading } from "@/hooks/use-page-loading";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast-helpers";
 
 interface HomePageProps {
     initialProperties: Property[];
+    geoZones: GeoZone[];
     seoData: {
         title: string;
         description: string;
@@ -24,7 +25,7 @@ interface HomePageProps {
     };
 }
 
-const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
+const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
     const router = useRouter();
     const [showFilters, setShowFilters] = useState(false);
     const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
@@ -149,9 +150,17 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                 }
             }
 
+            // Gérer la zone : convertir la valeur simplifiée (grand-abidjan, hors-abidjan) en ID de zone
             if (zone && typeof zone === "string") {
-                // Zone est conservé pour référence mais n'est pas utilisé dans les filtres Directus
-                // (on utilise town à la place)
+                // Mapping entre les valeurs simplifiées et les IDs réels des zones
+                const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
+                const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
+                
+                if (zone === "grand-abidjan" && grandAbidjan) {
+                    updatedFilters.zone = grandAbidjan.id;
+                } else if (zone === "hors-abidjan" && horsAbidjan) {
+                    updatedFilters.zone = horsAbidjan.id;
+                }
             }
 
             // Détecter le paramètre plan (VIP/Kylimmo)
@@ -196,7 +205,8 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
 
         // Filtres simples
         if (filters.search) count++;
-        if (filters.location) count++;
+        // Zone et town comptent comme un seul filtre (liés)
+        if (filters.zone || filters.town) count++;
         if (filters.contractType) count++;
         if (filters.propertyType) count++;
         if (filters.rooms) count++;
@@ -222,6 +232,10 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
         } else if (filterKey === "surfaceArea") {
             delete updatedFilters.minSurface;
             delete updatedFilters.maxSurface;
+        } else if (filterKey === "zone" || filterKey === "town") {
+            // Supprimer zone et town ensemble (liés)
+            delete updatedFilters.zone;
+            delete updatedFilters.town;
         } else {
             delete updatedFilters[filterKey as keyof PropertyFilters];
         }
@@ -384,7 +398,7 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                 />
 
                 {/* Filtres actifs avec badges supprimables */}
-                <ActiveFilters filters={filters} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} />
+                <ActiveFilters filters={filters} onRemoveFilter={handleRemoveFilter} onClearAll={handleClearAllFilters} geoZones={geoZones} />
 
                 <div className="relative">
                     <SearchFilters
@@ -394,6 +408,7 @@ const HomePage = ({ initialProperties, seoData }: HomePageProps) => {
                         onReset={handleReset}
                         onApplyFilters={handleApplyFilters}
                         currentFilters={filters}
+                        geoZones={geoZones}
                     />
                     <div className={`transition-all duration-300 ${showFilters ? "ml-80" : "ml-0"}`}>
                         <FeaturedProperties properties={properties} pagination={pagination} onPageChange={handlePageChange} view={view} isLoading={isLoading || showLoading} />
@@ -425,6 +440,9 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         // Récupérer les propriétés depuis l'API Directus
         const initialProperties = await fetchProperties();
 
+        // Récupérer les zones géographiques depuis l'API
+        const geoZones = await fetchGeoZones();
+
         // Génération des données SEO
         const seoData = generateSeoData(baseUrl);
 
@@ -439,6 +457,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         return {
             props: {
                 initialProperties,
+                geoZones: geoZones || [],
                 seoData,
             },
         };
@@ -459,6 +478,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         return {
             props: {
                 initialProperties: fallbackProperties,
+                geoZones: [],
                 seoData: generateSeoData(baseUrl),
             },
         };

@@ -154,6 +154,7 @@ export interface PropertyFilters {
     limit?: number;               // Éléments par page (défaut: 12)
     planCode?: string;           // Code du plan d'abonnement (ex: "kylimmo", "premium")
     town?: string;                // ID de la commune/département (townId)
+    zone?: string;                // ID de la zone géographique (zoneId)
 }
 
 // Interface pour la réponse paginée
