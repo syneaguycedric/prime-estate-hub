@@ -53,6 +53,24 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
         }
     }, []);
 
+    // Surveiller l'état du dialog et nettoyer pointer-events quand il est fermé
+    useEffect(() => {
+        if (!deleteDialogOpen) {
+            // Nettoyage immédiat quand le dialog est fermé
+            const body = document.body;
+            body.style.pointerEvents = "";
+            body.style.removeProperty("pointer-events");
+
+            // Nettoyage supplémentaire avec délai pour être sûr
+            const timeout = setTimeout(() => {
+                body.style.pointerEvents = "";
+                body.style.removeProperty("pointer-events");
+            }, 100);
+
+            return () => clearTimeout(timeout);
+        }
+    }, [deleteDialogOpen]);
+
     // Filtrage des propriétés
     const filteredProperties = useMemo(() => {
         return properties.filter((property) => {
@@ -365,12 +383,17 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                         body.style.pointerEvents = "";
                         body.style.removeProperty("pointer-events");
 
-                        // Nettoyage supplémentaire avec délai pour être sûr
+                        // Nettoyage supplémentaire avec délais multiples pour être sûr
                         setTimeout(() => {
                             body.style.pointerEvents = "";
                             body.style.removeProperty("pointer-events");
-                            console.log("[LISTINGS] Pointer-events cleaned:", body.style.pointerEvents);
-                        }, 100);
+                        }, 50);
+
+                        setTimeout(() => {
+                            body.style.pointerEvents = "";
+                            body.style.removeProperty("pointer-events");
+                            console.log("[LISTINGS] Pointer-events cleaned after dialog close");
+                        }, 200);
                     }
                 }}
             >
@@ -380,7 +403,18 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                         <AlertDialogDescription>Êtes-vous sûr de vouloir supprimer l'annonce "{propertyToDelete?.title}" ? Cette action est irréversible.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogCancel
+                            onClick={() => {
+                                // Nettoyage immédiat quand on clique sur Annuler
+                                const body = document.body;
+                                body.style.pointerEvents = "";
+                                body.style.removeProperty("pointer-events");
+                                setDeleteDialogOpen(false);
+                                setPropertyToDelete(null);
+                            }}
+                        >
+                            Annuler
+                        </AlertDialogCancel>
                         <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             {isDeleting ? "Suppression..." : "Supprimer"}
                         </AlertDialogAction>

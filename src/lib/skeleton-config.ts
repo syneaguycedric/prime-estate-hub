@@ -3,6 +3,8 @@ import PropertySkeleton from '@/components/ui/property-skeleton';
 import ProfileSkeleton from '@/components/ui/profile-skeleton';
 import DetailSkeleton from '@/components/ui/detail-skeleton';
 import LoginSkeleton from '@/components/ui/login-skeleton';
+import HomeSkeleton from '@/components/ui/home-skeleton';
+import ListingFormSkeleton from '@/components/ui/listing-form-skeleton';
 
 export type SkeletonType = 'list' | 'detail' | 'profile' | 'login' | 'none';
 
@@ -18,7 +20,7 @@ export interface SkeletonConfig {
 export const SKELETON_ROUTES: Record<string, SkeletonConfig> = {
     '/': {
         type: 'list',
-        component: PropertySkeleton,
+        component: HomeSkeleton,
     },
     '/profile': {
         type: 'profile',
@@ -32,7 +34,8 @@ export const SKELETON_ROUTES: Record<string, SkeletonConfig> = {
         type: 'none', // Pas de skeleton pour la page d'inscription
     },
     '/create-listing': {
-        type: 'none', // Pas de skeleton pour la page de création d'annonce
+        type: 'list',
+        component: ListingFormSkeleton,
     },
     '/my-listings': {
         type: 'list',
@@ -57,6 +60,14 @@ export function getSkeletonForRoute(path: string): SkeletonConfig {
         return {
             type: 'detail',
             component: DetailSkeleton,
+        };
+    }
+
+    // Routes dynamiques - pages d'édition d'annonce
+    if (path.startsWith('/edit-listing/') || path.match(/^\/edit-listing\/[^/]+$/)) {
+        return {
+            type: 'list',
+            component: ListingFormSkeleton,
         };
     }
 

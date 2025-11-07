@@ -12,7 +12,6 @@ import { toast } from "@/lib/toast-helpers";
 import Footer from "@/components/layout/Footer";
 import PageNavbar from "@/components/layout/PageNavbar";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -476,37 +475,7 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
         }
     };
 
-    if (authLoading || loading) {
-        return (
-            <>
-                <Head>
-                    <title>Modifier l'annonce - Kylimmo</title>
-                    <meta name="description" content="Modifiez votre annonce immobilière" />
-                </Head>
-                <div className="min-h-screen bg-background">
-                    <PageNavbar breadcrumbs={[{ label: "Mes annonces", href: "/my-listings?tab=listings" }, { label: "Modifier l'annonce" }]} />
-                    <div className="container mx-auto px-4 py-8">
-                        <div className="max-w-4xl mx-auto">
-                            <Card>
-                                <CardHeader>
-                                    <Skeleton className="h-8 w-64" />
-                                    <Skeleton className="h-4 w-96" />
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <Skeleton className="h-10 w-full" />
-                                    <Skeleton className="h-32 w-full" />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Skeleton className="h-10 w-full" />
-                                        <Skeleton className="h-10 w-full" />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                </div>
-            </>
-        );
-    }
+    // Le skeleton est géré par PageSkeletonManager, pas besoin de skeleton local
 
     return (
         <>
