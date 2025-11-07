@@ -50,7 +50,6 @@ const Footer = () => {
               <li><a href="https://kylimmo.net/qui-sommes-nous/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Qui sommes nous</a></li>
               <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Notre équipe</a></li>
               <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Témoignages</a></li>
-              <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Blog immobilier</a></li>
               <li><a href="https://kylimmo.net" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Mentions légales</a></li>
             </ul>
           </div>
