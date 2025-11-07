@@ -45,21 +45,21 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
     // Les IDs sont conservés pour utilisation future dans les filtres
     const getZoneMapping = () => {
         const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
-        
+
         // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
-        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
-        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
-        
+        const grandAbidjan = geoZones.find((z) => z.name === "Grand Abidjan");
+        const horsAbidjan = geoZones.find((z) => z.name === "Hors Abidjan");
+
         mapping["grand-abidjan"] = {
             id: grandAbidjan?.id || "",
             zone: grandAbidjan || null,
         };
-        
+
         mapping["hors-abidjan"] = {
             id: horsAbidjan?.id || "",
             zone: horsAbidjan || null,
         };
-        
+
         return mapping;
     };
 
@@ -77,7 +77,7 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
 
     // Obtenir la zone actuellement sélectionnée
     const selectedZone = zone ? getZoneByValue(zone) : null;
-    
+
     // Obtenir l'ID de la zone sélectionnée (pour utilisation future dans les filtres)
     const selectedZoneId = zone ? getZoneIdByValue(zone) : null;
 
@@ -93,12 +93,12 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
         const loadSubscriptionPlans = async () => {
             try {
                 const plans = await fetchSubscriptionPlans();
-                const kylimmoPlan = plans.find(plan => plan.code === "kylimmo");
+                const kylimmoPlan = plans.find((plan) => plan.code === "kylimmo");
                 if (kylimmoPlan) {
                     setSubscriptionPlan(kylimmoPlan);
                 }
             } catch (error) {
-                console.error('[HOMEPAGE] Error loading subscription plans:', error);
+                console.error("[HOMEPAGE] Error loading subscription plans:", error);
             }
         };
 
@@ -233,14 +233,10 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                         <SelectContent>
                                             {geoZones.map((geoZone) => {
                                                 // Mapper le nom de zone vers la valeur simplifiée
-                                                const zoneValue = geoZone.name === "Grand Abidjan" 
-                                                    ? "grand-abidjan" 
-                                                    : geoZone.name === "Hors Abidjan" 
-                                                    ? "hors-abidjan" 
-                                                    : null;
-                                                
+                                                const zoneValue = geoZone.name === "Grand Abidjan" ? "grand-abidjan" : geoZone.name === "Hors Abidjan" ? "hors-abidjan" : null;
+
                                                 if (!zoneValue) return null;
-                                                
+
                                                 return (
                                                     <SelectItem key={geoZone.id} value={zoneValue}>
                                                         {geoZone.name}
@@ -310,9 +306,7 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                             <h3 className="text-sm font-semibold text-muted-foreground mb-3">En vedette</h3>
                             <div>
                                 {featuredProperties.length > 0 ? (
-                                    featuredProperties.slice(0, 4).map((p, idx) => (
-                                        <PropertyListCardAnimated key={p.id} {...p} index={idx} />
-                                    ))
+                                    featuredProperties.slice(0, 4).map((p, idx) => <PropertyListCardAnimated key={p.id} {...p} index={idx} />)
                                 ) : (
                                     <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour le moment.</p>
                                 )}
@@ -327,7 +321,7 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                 {/* Header annonces */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-foreground">{subscriptionPlan?.title || "Les annonces"}</h2>
+                                        <h2 className="text-2xl font-bold text-foreground">{subscriptionPlan?.title || "Annonces kylimmo"}</h2>
                                     </div>
                                 </div>
 
@@ -338,7 +332,7 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                             <div key={`vip-${property.id}`} className="group relative">
                                                 {/* Badge VIP simple en coin */}
                                                 <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
-                                                    {subscriptionPlan?.code || "VIP"}
+                                                    {subscriptionPlan?.code || "kylimmo"}
                                                 </span>
 
                                                 {/* Carte premium */}
@@ -350,7 +344,7 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                     </div>
                                 ) : (
                                     <div className="text-center py-12">
-                                        <p className="text-muted-foreground">Aucune annonce VIP pour le moment.</p>
+                                        <p className="text-muted-foreground">Aucune annonce {subscriptionPlan?.code || "kylimmo"} pour le moment.</p>
                                     </div>
                                 )}
 
@@ -403,10 +397,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         const geoZones = await fetchGeoZones();
 
         // Récupérer les annonces en vedette (premium) et VIP (kylimmo)
-        const [featuredProperties, vipProperties] = await Promise.all([
-            fetchFeaturedProperties(),
-            fetchVipProperties()
-        ]);
+        const [featuredProperties, vipProperties] = await Promise.all([fetchFeaturedProperties(), fetchVipProperties()]);
 
         // Headers pour la mise en cache - longue durée pour la page d'accueil
         context.res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");

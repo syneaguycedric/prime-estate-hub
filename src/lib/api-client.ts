@@ -3,19 +3,24 @@ import { handleUnauthorized } from './auth-helpers';
 
 /**
  * Récupère le token d'authentification approprié selon l'état de connexion
+ * - Si l'utilisateur est connecté (token dans localStorage), retourne le token utilisateur
+ * - Sinon, retourne le token par défaut (uniquement quand on n'est pas connecté)
  */
 function getAuthToken(): string | null {
-    // Vérifier si on est côté client
+    // Vérifier si on est côté serveur
     if (typeof window === 'undefined') {
+        // Côté serveur, utiliser le token par défaut
         return process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
     }
 
-    // Essayer de récupérer l'access_token du localStorage
+    // Côté client : essayer de récupérer l'access_token du localStorage
+    // Si un token existe, l'utilisateur est connecté, donc on l'utilise
     try {
         const authData = localStorage.getItem('kylimmo_auth_data');
         if (authData) {
             const parsed = JSON.parse(authData);
             if (parsed.access_token) {
+                // Utilisateur connecté : utiliser son token
                 return parsed.access_token;
             }
         }
@@ -23,7 +28,7 @@ function getAuthToken(): string | null {
         console.warn('[AUTH] Error reading auth token:', error);
     }
 
-    // Fallback sur le DEFAULT_TOKEN
+    // Utilisateur non connecté : utiliser le token par défaut
     return process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
 }
 
@@ -141,6 +146,99 @@ class SecureApiClient {
 
                 // ✅ Intercepter les erreurs 401 (Non autorisé)
                 if (response.status === 401) {
+                    // Récupérer les données d'erreur pour vérifier si on doit utiliser le token par défaut
+                    let errorData: any;
+                    try {
+                        errorData = await response.json();
+                    } catch {
+                        errorData = {};
+                    }
+
+                    // Si la réponse indique qu'il faut utiliser le token par défaut et rediriger vers login
+                    if (errorData.requiresLogin && errorData.useDefaultToken) {
+                        console.log('[API CLIENT] 401 Unauthorized - Token invalide, suppression du token et utilisation du token par défaut');
+
+                        // Supprimer le token invalide du localStorage
+                        try {
+                            localStorage.removeItem('kylimmo_auth_data');
+                            console.log('[API CLIENT] Invalid token removed from localStorage');
+                        } catch (e) {
+                            console.warn('[API CLIENT] Error removing token from localStorage:', e);
+                        }
+
+                        // Retenter la requête avec le token par défaut
+                        const defaultToken = process.env.NEXT_PUBLIC_DEFAULT_TOKEN;
+                        if (defaultToken) {
+                            console.log('[API CLIENT] Retrying request with default token');
+                            const newProxyHeaders = {
+                                ...proxyHeaders,
+                                'Authorization': `Bearer ${defaultToken}`,
+                            };
+
+                            const retryResponse = await fetch(proxyUrl, {
+                                ...fetchOptions,
+                                headers: newProxyHeaders,
+                                signal: controller.signal,
+                            });
+
+                            clearTimeout(timeoutId);
+
+                            if (!retryResponse.ok) {
+                                const retryErrorData = await retryResponse.json().catch(() => ({}));
+                                const error = new Error(
+                                    retryErrorData.message ||
+                                    `Erreur HTTP ${retryResponse.status}: ${retryResponse.statusText}`
+                                );
+                                (error as any).status = retryResponse.status;
+                                (error as any).data = retryErrorData;
+                                
+                                // Rediriger vers login en cas d'échec
+                                if (typeof window !== 'undefined') {
+                                    const currentPath = window.location.pathname + window.location.search;
+                                    if (currentPath !== '/login' && currentPath !== '/register') {
+                                        sessionStorage.setItem('redirect_after_login', currentPath);
+                                    }
+                                    window.location.href = '/login';
+                                }
+                                
+                                throw error;
+                            }
+
+                            const data = await retryResponse.json();
+                            const responseTime = Date.now() - startTime;
+
+                            // Rediriger vers login de manière asynchrone après avoir retourné la réponse
+                            if (typeof window !== 'undefined') {
+                                setTimeout(() => {
+                                    const currentPath = window.location.pathname + window.location.search;
+                                    if (currentPath !== '/login' && currentPath !== '/register') {
+                                        sessionStorage.setItem('redirect_after_login', currentPath);
+                                        window.location.href = '/login';
+                                    }
+                                }, 100);
+                            }
+
+                            return {
+                                data,
+                                cached: false,
+                                responseTime,
+                            };
+                        } else {
+                            console.error('[API CLIENT] No default token available');
+                            // Rediriger vers login si pas de token par défaut
+                            if (typeof window !== 'undefined') {
+                                const currentPath = window.location.pathname + window.location.search;
+                                if (currentPath !== '/login' && currentPath !== '/register') {
+                                    sessionStorage.setItem('redirect_after_login', currentPath);
+                                }
+                                window.location.href = '/login';
+                            }
+                            handleUnauthorized();
+                            throw new Error('Unauthorized - No default token available');
+                        }
+                    }
+
+                    // Sinon, tenter le refresh token comme avant
                     console.log('[API CLIENT] 401 Unauthorized - Tentative de refresh token');
 
                     // Tenter le refresh token avant de déconnecter
@@ -186,13 +284,13 @@ class SecureApiClient {
 
                                 // Traiter la réponse de retry comme une réponse normale
                                 if (!retryResponse.ok) {
-                                    const errorData = await retryResponse.json().catch(() => ({}));
+                                    const retryErrorData = await retryResponse.json().catch(() => ({}));
                                     const error = new Error(
-                                        errorData.message ||
+                                        retryErrorData.message ||
                                         `Erreur HTTP ${retryResponse.status}: ${retryResponse.statusText}`
                                     );
                                     (error as any).status = retryResponse.status;
-                                    (error as any).data = errorData;
+                                    (error as any).data = retryErrorData;
                                     throw error;
                                 }
 

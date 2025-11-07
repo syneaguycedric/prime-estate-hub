@@ -103,14 +103,29 @@ export default async function handler(
 
         console.log(`[PROXY] ${req.method} ${targetUrl}`);
 
+        // Déterminer le token d'authentification à utiliser
+        // Si un header Authorization est présent, l'utiliser
+        // Sinon, pour les requêtes vers Directus, utiliser le token par défaut
+        let authorizationHeader: string | undefined;
+        if (req.headers.authorization) {
+            authorizationHeader = req.headers.authorization as string;
+        } else if (targetDomain === 'ki-backoffice.eyoboue.dev' || targetDomain === 'ki-backoffice.eyoboue.dev:8143') {
+            // Utiliser le token par défaut uniquement pour Directus quand on n'est pas connecté
+            const defaultToken = process.env.NEXT_PUBLIC_DEFAULT_TOKEN;
+            if (defaultToken) {
+                authorizationHeader = `Bearer ${defaultToken}`;
+                console.log('[PROXY] Using default token for Directus request (user not authenticated)');
+            }
+        }
+
         // Configuration de la requête
         const fetchOptions: RequestInit = {
             method: req.method,
             headers: {
                 'Content-Type': 'application/json',
                 'User-Agent': 'Kylimmo-Proxy/1.0',
-                // Transférer certains headers de la requête originale
-                ...(req.headers.authorization && { 'Authorization': req.headers.authorization }),
+                // Ajouter le header Authorization si disponible
+                ...(authorizationHeader && { 'Authorization': authorizationHeader }),
                 ...(req.headers['accept-language'] && { 'Accept-Language': req.headers['accept-language'] }),
             },
         };
@@ -145,6 +160,17 @@ export default async function handler(
                         error: 'External API error',
                         message: `Erreur de l'API externe: ${response.status} ${response.statusText}`,
                     };
+                }
+
+                // Gestion spéciale des erreurs 401 (Unauthorized)
+                // Indiquer qu'il faut rediriger vers login et utiliser le token par défaut
+                if (response.status === 401 && (targetDomain === 'ki-backoffice.eyoboue.dev' || targetDomain === 'ki-backoffice.eyoboue.dev:8143')) {
+                    return res.status(401).json({
+                        ...errorData,
+                        requiresLogin: true,
+                        useDefaultToken: true,
+                        message: 'Token invalide. Redirection vers la page de connexion requise.',
+                    });
                 }
 
                 return res.status(response.status).json(errorData);
