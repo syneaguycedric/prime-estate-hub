@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { BadgeDollarSign, CheckCircle, Loader2, Star, TrendingUp, Users, Shield } from "lucide-react";
+import { Banknote, CheckCircle, Loader2, Star, TrendingUp, Users, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,7 +153,7 @@ export default function BecomeAdvertiser() {
 
                         <div className="flex justify-center">
                             <Badge variant="default" className="bg-green-600 text-white">
-                                <BadgeDollarSign className="h-3 w-3 mr-1" />
+                                <Banknote className="h-3 w-3 mr-1" />
                                 Annonceur actif
                             </Badge>
                         </div>
@@ -211,7 +211,7 @@ export default function BecomeAdvertiser() {
                                     plateforme.
                                 </p>
                                 <Badge variant="outline" className="border-yellow-600 text-yellow-800">
-                                    <BadgeDollarSign className="h-3 w-3 mr-1" />
+                                    <Banknote className="h-3 w-3 mr-1" />
                                     Annonceur sans agence
                                 </Badge>
                             </div>
@@ -313,7 +313,7 @@ export default function BecomeAdvertiser() {
                 <CardContent className="p-6">
                     <div className="text-center space-y-4">
                         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                            <BadgeDollarSign className="h-8 w-8 text-primary" />
+                            <Banknote className="h-8 w-8 text-primary" />
                         </div>
                         <div>
                             <h3 className="text-xl font-semibold mb-2">Prêt à devenir annonceur ?</h3>
@@ -327,7 +327,7 @@ export default function BecomeAdvertiser() {
                                 </>
                             ) : (
                                 <>
-                                    <BadgeDollarSign className="h-4 w-4 mr-2" />
+                                    <Banknote className="h-4 w-4 mr-2" />
                                     Devenir annonceur
                                 </>
                             )}

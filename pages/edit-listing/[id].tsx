@@ -9,7 +9,6 @@ import { fetchUserPropertyById, updateProperty, uploadFile, fetchGeoZones, GeoZo
 import { buildImageUrl } from "@/lib/property-helpers";
 import { Property } from "@/data/properties";
 import { toast } from "@/lib/toast-helpers";
-import Footer from "@/components/layout/Footer";
 import PageNavbar from "@/components/layout/PageNavbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -928,8 +927,6 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
                     </div>
                 </div>
             </div>
-
-            <Footer />
         </>
     );
 }

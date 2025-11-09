@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { X, MapPin, Home, Euro, Bed, Bath, Ruler } from "lucide-react";
+import { X, MapPin, Home, Banknote, Bed, Bath, Ruler } from "lucide-react";
 import { PropertyFilters, GeoZone } from "@/lib/directus-api";
 
 interface ActiveFiltersProps {
@@ -12,14 +12,14 @@ interface ActiveFiltersProps {
 const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: ActiveFiltersProps) => {
     // Fonction pour obtenir le nom de la zone depuis son ID
     const getZoneName = (zoneId: string): string => {
-        const zone = geoZones.find(z => z.id === zoneId);
+        const zone = geoZones.find((z) => z.id === zoneId);
         return zone?.name || zoneId;
     };
 
     // Fonction pour obtenir le nom de la commune depuis son ID
     const getTownName = (townId: string): string => {
         for (const zone of geoZones) {
-            const town = zone.towns?.find(t => t.id === townId);
+            const town = zone.towns?.find((t) => t.id === townId);
             if (town) return town.name;
         }
         return townId;
@@ -28,8 +28,8 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
     // Fonction pour déterminer si on doit afficher "Commune" ou "Département" selon la zone
     const getTownLabel = (): string => {
         if (!filters.zone) return "Commune/Département";
-        
-        const zone = geoZones.find(z => z.id === filters.zone);
+
+        const zone = geoZones.find((z) => z.id === filters.zone);
         if (zone?.name === "Grand Abidjan") {
             return "Commune";
         } else if (zone?.name === "Hors Abidjan") {
@@ -44,7 +44,7 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
             case "town":
                 return <MapPin className="h-3 w-3" />;
             case "contractType":
-                return <Euro className="h-3 w-3" />;
+                return <Banknote className="h-3 w-3" />;
             case "type":
                 return <Home className="h-3 w-3" />;
             case "rooms":
@@ -78,7 +78,7 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
             case "rooms":
                 return `${value} pièce${value > 1 ? "s" : ""}`;
             case "bathrooms":
-                return `${value} salle${value > 1 ? "s" : ""} de bain`;
+                return `${value} salle${value > 1 ? "s" : ""} d'eau`;
             case "price":
                 if (typeof value === "object" && value._gte && value._lte) {
                     return `${value._gte.toLocaleString()} - ${value._lte.toLocaleString()} FCFA`;
@@ -110,7 +110,7 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
             contractType: "Transaction",
             type: "Type",
             rooms: "Pièces",
-            bathrooms: "Salles de bain",
+            bathrooms: "Salles d'eau",
             price: "Prix",
             surfaceArea: "Surface",
         };
@@ -193,7 +193,7 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
             key: "price",
             label: getFilterLabel("price"),
             value: formatFilterValue("price", priceValue),
-            icon: getFilterIcon("price"),
+            icon: <Banknote className="h-3 w-3" />,
         });
     }
 
@@ -219,7 +219,7 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
             if (key === "town") return 1;
             return 2;
         };
-        
+
         return getPriority(a.key) - getPriority(b.key);
     });
 

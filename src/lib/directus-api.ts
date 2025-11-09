@@ -149,7 +149,7 @@ export interface PropertyFilters {
     minSurface?: number;          // Surface minimum en m²
     maxSurface?: number;          // Surface maximum en m²
     rooms?: number;               // Nombre de pièces
-    bathrooms?: number;           // Nombre de salles de bain
+    bathrooms?: number;           // Nombre de salles d'eau
     page?: number;                // Numéro de page (défaut: 1)
     limit?: number;               // Éléments par page (défaut: 12)
     planCode?: string;           // Code du plan d'abonnement (ex: "kylimmo", "premium")

@@ -4,10 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, MapPin, Home, Euro, Bed, Bath, Ruler, Search } from "lucide-react";
+import { X, MapPin, Home, Banknote, Bed, Bath, Ruler, Search } from "lucide-react";
 import { PropertyFilters, GeoZone } from "@/lib/directus-api";
 
 interface SearchFiltersProps {
@@ -471,19 +470,12 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                     {/* Prix */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium text-foreground flex items-center">
-                            <Euro className="h-4 w-4 mr-2" />
+                            <Banknote className="h-4 w-4 mr-2" />
                             Budget
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             <Input placeholder="Prix min" value={filters.minPrice} onChange={(e) => updateFilter("minPrice", e.target.value)} />
                             <Input placeholder="Prix max" value={filters.maxPrice} onChange={(e) => updateFilter("maxPrice", e.target.value)} />
-                        </div>
-                        <div className="px-2">
-                            <Slider defaultValue={[82500000]} max={412500000} min={20625000} step={4125000} className="w-full" />
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                <span>20M FCFA</span>
-                                <span>412M FCFA</span>
-                            </div>
                         </div>
                     </div>
 
@@ -521,20 +513,20 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                         </Select>
                     </div>
 
-                    {/* Salles de bain */}
+                    {/* Nombre de salle d'eau */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium text-foreground flex items-center">
                             <Bath className="h-4 w-4 mr-2" />
-                            Salles de bain
+                            Nombre de salle d'eau
                         </label>
                         <Select value={filters.bathrooms} onValueChange={(value) => updateFilter("bathrooms", value)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Indifférent" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="1">1 salle de bain</SelectItem>
-                                <SelectItem value="2">2 salles de bain</SelectItem>
-                                <SelectItem value="3">3+ salles de bain</SelectItem>
+                                <SelectItem value="1">1 salle d'eau</SelectItem>
+                                <SelectItem value="2">2 salles d'eau</SelectItem>
+                                <SelectItem value="3">3+ salles d'eau</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { TrendingUp, Eye, Plus, Building2, Users, Calendar, DollarSign, MapPin, ArrowRight } from "lucide-react";
+import { TrendingUp, Eye, Plus, Building2, Users, Calendar, Banknote, MapPin, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchUserProperties } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
@@ -226,7 +226,7 @@ export default function DashboardOverview() {
                     value={stats.revenue}
                     loading={loadingStats}
                     subtitle={stats.revenue === 0 ? "Aucun revenu généré" : "Revenus générés"}
-                    icon={<DollarSign className="h-6 w-6 text-yellow-600" />}
+                    icon={<Banknote className="h-6 w-6 text-yellow-600" />}
                     iconBgColor="bg-yellow-100"
                     suffix=" FCFA"
                 />

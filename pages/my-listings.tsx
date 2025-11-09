@@ -4,7 +4,6 @@ import Head from "next/head";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchUserProperties } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
-import Footer from "@/components/layout/Footer";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import ListingsDataTable from "@/components/dashboard/ListingsDataTable";
@@ -115,8 +114,6 @@ export default function MyListingsPage() {
             </Head>
 
             <DashboardLayout activeTab={activeTab}>{renderContent()}</DashboardLayout>
-
-            <Footer />
         </>
     );
 }

@@ -327,7 +327,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                             {property.bathrooms !== undefined && (
                                                 <div className="flex items-center text-foreground">
                                                     <Bath className="h-4 w-4 mr-2" />
-                                                    {property.bathrooms} salle(s) de bain
+                                                    {property.bathrooms} salle{property.bathrooms > 1 ? "s" : ""} d'eau
                                                 </div>
                                             )}
                                             {property.kitchens !== undefined && (
@@ -543,7 +543,7 @@ function generateSeoData(property: Property, baseUrl: string) {
     return {
         title: `${property.title} - ${property.price} | Kylimmo`,
         description: `${property.type} de ${property.surfaceArea} ${property.surfaceAreaUnit} à ${property.location}. ${property.rooms ? `${property.rooms} chambres, ` : ""}${
-            property.bathrooms ? `${property.bathrooms} salles de bain. ` : ""
+            property.bathrooms ? `${property.bathrooms} salle${property.bathrooms > 1 ? "s" : ""} d'eau. ` : ""
         }Prix: ${property.price}`,
         keywords: `${property.type.toLowerCase()}, ${property.location.toLowerCase()}, immobilier côte d'ivoire, ${property.surfaceArea} ${
             property.surfaceAreaUnit

@@ -4,7 +4,9 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Search, Filter, Eye, Pencil, Trash2, MoreHorizontal, Plus, Calendar, MapPin } from "lucide-react";
 import { Property } from "@/data/properties";
-import { getFirstImageUrl, formatPriceOnly } from "@/lib/property-helpers";
+import { getFirstImageUrl, formatPriceOnly, getFirstImageUrlForCard, getPropertyTypeLabel, getContractTypeLabel } from "@/lib/property-helpers";
+import { useIsMobile } from "@/hooks/use-mobile";
+import ImageWithLoading from "@/components/ui/image-with-loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +38,7 @@ interface ListingsDataTableProps {
 export default function ListingsDataTable({ properties, loading, onRefresh }: ListingsDataTableProps) {
     const router = useRouter();
     const { authData, refreshUser } = useAuth();
+    const isMobile = useIsMobile();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
@@ -191,19 +194,43 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                     <Skeleton className="h-10 w-32" />
                 </div>
                 <Card>
-                    <CardContent className="p-0">
-                        <div className="space-y-4 p-6">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="flex items-center space-x-4">
-                                    <Skeleton className="h-16 w-20" />
-                                    <div className="space-y-2 flex-1">
-                                        <Skeleton className="h-4 w-3/4" />
-                                        <Skeleton className="h-3 w-1/2" />
+                    <CardContent className={isMobile ? "p-3 md:p-4" : "p-0"}>
+                        {isMobile ? (
+                            <div className="space-y-2">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <div key={i} className="flex items-center gap-2.5 p-2 rounded-lg border border-border">
+                                        <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
+                                        <div className="flex-1 min-w-0 space-y-1.5">
+                                            <Skeleton className="h-3 w-32" />
+                                            <div className="flex items-center gap-1.5">
+                                                <Skeleton className="h-2.5 w-16" />
+                                                <Skeleton className="h-2.5 w-16" />
+                                                <Skeleton className="h-2.5 w-12" />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton className="h-2.5 w-20" />
+                                                <Skeleton className="h-2.5 w-24" />
+                                                <Skeleton className="h-2.5 w-16" />
+                                            </div>
+                                        </div>
+                                        <Skeleton className="h-8 w-8 rounded" />
                                     </div>
-                                    <Skeleton className="h-8 w-20" />
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-4 p-6">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <div key={i} className="flex items-center space-x-4">
+                                        <Skeleton className="h-16 w-20" />
+                                        <div className="space-y-2 flex-1">
+                                            <Skeleton className="h-4 w-3/4" />
+                                            <Skeleton className="h-3 w-1/2" />
+                                        </div>
+                                        <Skeleton className="h-8 w-20" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -285,7 +312,91 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                         </div>
                     </CardContent>
                 </Card>
+            ) : isMobile ? (
+                // Vue mobile avec cartes verticales
+                <Card>
+                    <CardContent className="p-3 md:p-4">
+                        <div className="space-y-2">
+                            {filteredProperties.map((property) => (
+                                <motion.div
+                                    key={property.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="flex items-center gap-2.5 p-2 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                                >
+                                    {/* Image */}
+                                    <div className="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+                                        <ImageWithLoading
+                                            src={getFirstImageUrlForCard(property)}
+                                            alt={property.title}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    </div>
+
+                                    {/* Informations */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-medium text-xs truncate group-hover:text-primary transition-colors">
+                                                    {property.title}
+                                                </h4>
+                                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                    <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                                        {getPropertyTypeLabel(property.type)}
+                                                    </Badge>
+                                                    <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                                        {getContractTypeLabel(property.contractType)}
+                                                    </Badge>
+                                                    <div className="[&>span]:text-[10px] [&>span]:px-1 [&>span]:py-0">
+                                                        {getStatusBadge(property.status)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* Dropdown d'actions */}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleView(property)}>
+                                                        <Eye className="h-4 w-4 mr-2" />
+                                                        Voir
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEdit(property)}>
+                                                        <Pencil className="h-4 w-4 mr-2" />
+                                                        Modifier
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDelete(property)} className="text-destructive">
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Supprimer
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground flex-wrap">
+                                            <span className="font-semibold text-foreground">{formatPriceOnly(property.price)}</span>
+                                            {property.location && (
+                                                <span className="flex items-center gap-0.5 truncate">
+                                                    <MapPin className="h-2.5 w-2.5" />
+                                                    <span className="truncate">{property.location}</span>
+                                                </span>
+                                            )}
+                                            <span className="flex items-center gap-0.5">
+                                                <Calendar className="h-2.5 w-2.5" />
+                                                <span>{formatDate(property.date_created)}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             ) : (
+                // Vue desktop avec tableau
                 <Card>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">

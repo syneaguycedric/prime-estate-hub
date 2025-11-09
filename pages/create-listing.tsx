@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { Upload, X, Plus, Loader2, ArrowRight, Save, Search } from "lucide-react";
+import { Upload, X, Plus, Loader2, ArrowRight, Save, Search, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,6 +61,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
     const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
     const [areas, setAreas] = useState<string[]>([]);
     const [areasOpen, setAreasOpen] = useState(false);
+
 
     // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
     const getZoneMapping = () => {
@@ -375,7 +376,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
             <div className="bg-background min-h-screen">
                 <PageNavbar breadcrumbs={[{ label: "Mes annonces", href: "/my-listings?tab=listings" }, { label: "Créer une annonce" }]} />
 
-                <main className="container py-8 pt-20">
+                <main className="container mx-auto px-4 md:px-8 py-8 pt-20">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-4xl mx-auto">
                         <div className="mb-8">
                             <h1 className="text-3xl font-bold">Créer une annonce</h1>
@@ -732,9 +733,9 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
 
                             {/* Boutons de soumission */}
                             <div className="flex flex-col sm:flex-row gap-4 justify-end">
-                                <Button type="button" variant="outline" onClick={() => handleSubmit("draft")} disabled={isSubmitting}>
-                                    <Save className="h-4 w-4 mr-2" />
-                                    Sauvegarder en brouillon
+                                <Button type="button" variant="outline" onClick={() => router.push("/my-listings?tab=listings")} disabled={isSubmitting}>
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    Annuler
                                 </Button>
 
                                 <Button type="submit" disabled={isSubmitting} size="lg">
@@ -761,7 +762,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-auto"
                     >
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}

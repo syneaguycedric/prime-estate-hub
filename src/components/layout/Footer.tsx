@@ -1,7 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, Mail, Phone, Smartphone, MapPin, Facebook, Twitter, Instagram, Linkedin, Clock, ExternalLink } from "lucide-react";
+import { Home, Mail, Phone, Smartphone, MapPin, Facebook, Clock, ExternalLink } from "lucide-react";
 import { fetchGlobals, Globals } from "@/lib/directus-api";
+
+// Icône TikTok personnalisée
+const TikTokIcon = ({ className }: { className?: string }) => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className={className}
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+    </svg>
+);
 
 const Footer = () => {
     const [globals, setGlobals] = useState<Globals | null>(null);
@@ -37,18 +49,26 @@ const Footer = () => {
                             </a>
                         </div>
                         <div className="flex space-x-4">
-                            <Button variant="ghost" size="icon" className="text-background hover:text-primary">
-                                <Facebook className="h-5 w-5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-background hover:text-primary">
-                                <Twitter className="h-5 w-5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-background hover:text-primary">
-                                <Instagram className="h-5 w-5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-background hover:text-primary">
-                                <Linkedin className="h-5 w-5" />
-                            </Button>
+                            <a
+                                href="https://www.facebook.com/share/1DkQ9q42Y3/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Facebook"
+                            >
+                                <Button variant="ghost" size="icon" className="text-background hover:text-primary">
+                                    <Facebook className="h-5 w-5" />
+                                </Button>
+                            </a>
+                            <a
+                                href="https://www.tiktok.com/@kylimmosarl?_r=1&_t=ZS-91GObyi19lK"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="TikTok"
+                            >
+                                <Button variant="ghost" size="icon" className="text-background hover:text-primary">
+                                    <TikTokIcon className="h-5 w-5" />
+                                </Button>
+                            </a>
                         </div>
                     </div>
 
