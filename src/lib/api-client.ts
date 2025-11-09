@@ -199,13 +199,9 @@ class SecureApiClient {
                                 (error as any).status = retryResponse.status;
                                 (error as any).data = retryErrorData;
                                 
-                                // Rediriger vers login en cas d'échec
+                                // Utiliser handleUnauthorized() pour afficher le toast et rediriger
                                 if (typeof window !== 'undefined') {
-                                    const currentPath = window.location.pathname + window.location.search;
-                                    if (currentPath !== '/login' && currentPath !== '/register') {
-                                        sessionStorage.setItem('redirect_after_login', currentPath);
-                                    }
-                                    window.location.href = '/login';
+                                    handleUnauthorized({ reason: 'invalid_token' });
                                 }
                                 
                                 throw error;
@@ -215,13 +211,10 @@ class SecureApiClient {
                             const responseTime = Date.now() - startTime;
 
                             // Rediriger vers login de manière asynchrone après avoir retourné la réponse
+                            // Utiliser handleUnauthorized() pour afficher le toast et rediriger
                             if (typeof window !== 'undefined') {
                                 setTimeout(() => {
-                                    const currentPath = window.location.pathname + window.location.search;
-                                    if (currentPath !== '/login' && currentPath !== '/register') {
-                                        sessionStorage.setItem('redirect_after_login', currentPath);
-                                        window.location.href = '/login';
-                                    }
+                                    handleUnauthorized({ reason: 'invalid_token' });
                                 }, 100);
                             }
 
@@ -232,15 +225,10 @@ class SecureApiClient {
                             };
                         } else {
                             console.error('[API CLIENT] No default token available');
-                            // Rediriger vers login si pas de token par défaut
+                            // Utiliser handleUnauthorized() pour afficher le toast et rediriger
                             if (typeof window !== 'undefined') {
-                                const currentPath = window.location.pathname + window.location.search;
-                                if (currentPath !== '/login' && currentPath !== '/register') {
-                                    sessionStorage.setItem('redirect_after_login', currentPath);
-                                }
-                                window.location.href = '/login';
+                                handleUnauthorized({ reason: 'no_token' });
                             }
-                            handleUnauthorized();
                             throw new Error('Unauthorized - No default token available');
                         }
                     }
@@ -311,17 +299,17 @@ class SecureApiClient {
                                 };
                             } else {
                                 console.log('[API CLIENT] Refresh failed, logging out');
-                                handleUnauthorized();
+                                handleUnauthorized({ reason: 'refresh_failed' });
                                 throw new Error('Unauthorized');
                             }
                         } else {
                             console.log('[API CLIENT] No refresh token available');
-                            handleUnauthorized();
+                            handleUnauthorized({ reason: 'no_token' });
                             throw new Error('Unauthorized');
                         }
                     } catch (refreshError) {
                         console.error('[API CLIENT] Error during refresh:', refreshError);
-                        handleUnauthorized();
+                        handleUnauthorized({ reason: 'refresh_failed' });
                         throw new Error('Unauthorized');
                     }
                 }

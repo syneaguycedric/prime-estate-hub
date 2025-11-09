@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { X, MapPin, Home, Banknote, Bed, Bath, Ruler, Search } from "lucide-react";
-import { PropertyFilters, GeoZone } from "@/lib/directus-api";
+import { PropertyFilters, GeoZone, zoneNameToSlug, findZoneBySlug } from "@/lib/directus-api";
 
 interface SearchFiltersProps {
     isOpen: boolean;
@@ -34,32 +34,9 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
     });
     const [areasOpen, setAreasOpen] = useState(false);
 
-    // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
-    const getZoneMapping = () => {
-        const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
-        
-        // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
-        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
-        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
-        
-        mapping["grand-abidjan"] = {
-            id: grandAbidjan?.id || "",
-            zone: grandAbidjan || null,
-        };
-        
-        mapping["hors-abidjan"] = {
-            id: horsAbidjan?.id || "",
-            zone: horsAbidjan || null,
-        };
-        
-        return mapping;
-    };
-
-    const zoneMapping = getZoneMapping();
-
-    // Helper pour obtenir la zone complète à partir de la valeur simplifiée
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée (slug)
     const getZoneByValue = (zoneValue: string): GeoZone | null => {
-        return zoneMapping[zoneValue]?.zone || null;
+        return findZoneBySlug(zoneValue, geoZones);
     };
 
     // Obtenir la zone actuellement sélectionnée
@@ -97,12 +74,8 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                 for (const geoZone of geoZones) {
                     const town = geoZone.towns?.find((t) => t.id === currentFilters.town);
                     if (town) {
-                        // Déterminer la valeur simplifiée de la zone
-                        if (geoZone.name === "Grand Abidjan") {
-                            zoneValue = "grand-abidjan";
-                        } else if (geoZone.name === "Hors Abidjan") {
-                            zoneValue = "hors-abidjan";
-                        }
+                        // Générer dynamiquement le slug de la zone
+                        zoneValue = zoneNameToSlug(geoZone.name);
                         areasValue = [currentFilters.town];
                         break;
                     }
@@ -239,14 +212,10 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
 
         // Ajouter le filtre zone si une zone est sélectionnée
         if (filters.zone) {
-            // Convertir la valeur simplifiée (grand-abidjan, hors-abidjan) en ID de zone
-            const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
-            const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
-            
-            if (filters.zone === "grand-abidjan" && grandAbidjan) {
-                propertyFilters.zone = grandAbidjan.id;
-            } else if (filters.zone === "hors-abidjan" && horsAbidjan) {
-                propertyFilters.zone = horsAbidjan.id;
+            // Trouver la zone par son slug et utiliser son ID
+            const selectedZone = findZoneBySlug(filters.zone, geoZones);
+            if (selectedZone) {
+                propertyFilters.zone = selectedZone.id;
             }
         }
 
@@ -371,14 +340,8 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                             </SelectTrigger>
                             <SelectContent>
                                 {geoZones.map((geoZone) => {
-                                    // Mapper le nom de zone vers la valeur simplifiée
-                                    const zoneValue = geoZone.name === "Grand Abidjan" 
-                                        ? "grand-abidjan" 
-                                        : geoZone.name === "Hors Abidjan" 
-                                        ? "hors-abidjan" 
-                                        : null;
-                                    
-                                    if (!zoneValue) return null;
+                                    // Générer dynamiquement le slug pour chaque zone
+                                    const zoneValue = zoneNameToSlug(geoZone.name);
                                     
                                     return (
                                         <SelectItem key={geoZone.id} value={zoneValue}>

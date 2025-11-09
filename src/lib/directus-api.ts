@@ -890,6 +890,41 @@ export async function fetchGeoZones(): Promise<GeoZone[]> {
 }
 
 /**
+ * Convertit un nom de zone en slug (ex: "Grand Abidjan" → "grand-abidjan")
+ * @param zoneName Le nom de la zone
+ * @returns Le slug de la zone
+ */
+export function zoneNameToSlug(zoneName: string): string {
+    return zoneName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+        .replace(/[^a-z0-9]+/g, '-') // Remplacer les caractères non alphanumériques par des tirets
+        .replace(/^-+|-+$/g, ''); // Supprimer les tirets en début et fin
+}
+
+/**
+ * Convertit un slug en nom de zone (ex: "grand-abidjan" → "Grand Abidjan")
+ * @param slug Le slug de la zone
+ * @param geoZones La liste des zones géographiques
+ * @returns Le nom de la zone ou null si non trouvé
+ */
+export function slugToZoneName(slug: string, geoZones: GeoZone[]): string | null {
+    const zone = geoZones.find(z => zoneNameToSlug(z.name) === slug);
+    return zone?.name || null;
+}
+
+/**
+ * Trouve une zone par son slug
+ * @param slug Le slug de la zone
+ * @param geoZones La liste des zones géographiques
+ * @returns La zone trouvée ou null
+ */
+export function findZoneBySlug(slug: string, geoZones: GeoZone[]): GeoZone | null {
+    return geoZones.find(z => zoneNameToSlug(z.name) === slug) || null;
+}
+
+/**
  * Récupère la liste des plans d'abonnement depuis l'API Directus
  */
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {

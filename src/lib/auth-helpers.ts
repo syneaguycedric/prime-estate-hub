@@ -3,16 +3,32 @@
  */
 
 /**
+ * Options pour personnaliser le message de toast lors de la déconnexion
+ */
+interface UnauthorizedOptions {
+    reason?: 'token_expired' | 'refresh_failed' | 'invalid_token' | 'no_token' | 'session_expired';
+    customMessage?: string;
+    customDescription?: string;
+}
+
+/**
  * Fonction globale pour gérer les erreurs 401 (non autorisé)
  * Déconnecte l'utilisateur, nettoie le localStorage, affiche un toast et redirige vers /login
+ * @param options Options pour personnaliser le message de toast
  */
-export function handleUnauthorized() {
+export function handleUnauthorized(options: UnauthorizedOptions = {}) {
     // Vérifier qu'on est côté client
     if (typeof window === 'undefined') {
         return;
     }
 
     console.log('[AUTH] Handling 401 - Unauthorized access');
+
+    // Sauvegarder le chemin actuel pour redirection après login
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/login' && currentPath !== '/register') {
+        sessionStorage.setItem('redirect_after_login', currentPath);
+    }
 
     // Nettoyer toutes les données d'authentification
     localStorage.removeItem('kylimmo_auth_data');
@@ -22,11 +38,36 @@ export function handleUnauthorized() {
     // Nettoyer le style pointer-events qui pourrait bloquer l'interface
     document.body.style.pointerEvents = '';
 
+    // Déterminer le message de toast selon le contexte
+    let message = options.customMessage || 'Vous avez été déconnecté';
+    let description = options.customDescription;
+
+    if (!description) {
+        switch (options.reason) {
+            case 'token_expired':
+                description = 'Votre token d\'accès a expiré. Veuillez vous reconnecter.';
+                break;
+            case 'refresh_failed':
+                description = 'Impossible de renouveler votre session. Veuillez vous reconnecter.';
+                break;
+            case 'invalid_token':
+                description = 'Votre token d\'accès est invalide. Veuillez vous reconnecter.';
+                break;
+            case 'no_token':
+                description = 'Aucun token d\'accès disponible. Veuillez vous reconnecter.';
+                break;
+            case 'session_expired':
+            default:
+                description = 'Votre session a expiré. Veuillez vous reconnecter.';
+                break;
+        }
+    }
+
     // Afficher un toast d'information
     // Import dynamique pour éviter les dépendances circulaires
     import('@/lib/toast-helpers').then(({ toast }) => {
-        toast.error('Vous avez été déconnecté', {
-            description: 'Votre session a expiré. Veuillez vous reconnecter.',
+        toast.error(message, {
+            description,
             duration: 4000,
         });
     }).catch(err => {
@@ -103,7 +144,7 @@ export async function createAuthenticatedFetch(url: string, options: RequestInit
 
     if (!authData) {
         console.log('[AUTH FETCH] No auth data available');
-        handleUnauthorized();
+        handleUnauthorized({ reason: 'no_token' });
         throw new Error('No authentication data');
     }
 
@@ -158,12 +199,12 @@ export async function createAuthenticatedFetch(url: string, options: RequestInit
                 });
             } else {
                 console.log('[AUTH FETCH] Refresh failed, logging out');
-                handleUnauthorized();
+                handleUnauthorized({ reason: 'refresh_failed' });
                 throw new Error('Refresh token expired');
             }
         } catch (error) {
             console.error('[AUTH FETCH] Error during refresh:', error);
-            handleUnauthorized();
+            handleUnauthorized({ reason: 'refresh_failed' });
             throw error;
         }
     }

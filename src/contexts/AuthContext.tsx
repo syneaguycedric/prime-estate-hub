@@ -377,7 +377,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (!success) {
             console.log("[AUTH CONTEXT] Refresh token expired or invalid, redirecting to login");
             // Utiliser handleUnauthorized() qui nettoie le localStorage, affiche un toast et redirige vers /login
-            handleUnauthorized();
+            handleUnauthorized({ reason: 'refresh_failed' });
         }
         return success;
     };

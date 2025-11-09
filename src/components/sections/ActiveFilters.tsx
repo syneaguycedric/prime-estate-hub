@@ -26,15 +26,8 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
     };
 
     // Fonction pour déterminer si on doit afficher "Commune" ou "Département" selon la zone
+    // Par défaut, on utilise "Commune/Département" pour toutes les zones
     const getTownLabel = (): string => {
-        if (!filters.zone) return "Commune/Département";
-
-        const zone = geoZones.find((z) => z.id === filters.zone);
-        if (zone?.name === "Grand Abidjan") {
-            return "Commune";
-        } else if (zone?.name === "Hors Abidjan") {
-            return "Département";
-        }
         return "Commune/Département";
     };
     // Fonction pour obtenir l'icône selon le type de filtre

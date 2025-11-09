@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import PageNavbar from "@/components/layout/PageNavbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { uploadFile, createListing, CreateListingData, fetchGeoZones, GeoZone } from "@/lib/directus-api";
+import { uploadFile, createListing, CreateListingData, fetchGeoZones, GeoZone, zoneNameToSlug, findZoneBySlug } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import Image from "next/image";
 
@@ -58,37 +58,13 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
     }, [isAuthenticated, user, router]);
 
     // États pour la sélection de zone et commune
-    const [zone, setZone] = useState<"grand-abidjan" | "hors-abidjan" | "">("");
+    const [zone, setZone] = useState<string>("");
     const [areas, setAreas] = useState<string[]>([]);
     const [areasOpen, setAreasOpen] = useState(false);
 
-
-    // Mapping entre les valeurs simplifiées (pour l'URL) et les IDs réels des zones
-    const getZoneMapping = () => {
-        const mapping: Record<string, { id: string; zone: GeoZone | null }> = {};
-        
-        // Trouver "Grand Abidjan" et "Hors Abidjan" dans les zones récupérées
-        const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
-        const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
-        
-        mapping["grand-abidjan"] = {
-            id: grandAbidjan?.id || "",
-            zone: grandAbidjan || null,
-        };
-        
-        mapping["hors-abidjan"] = {
-            id: horsAbidjan?.id || "",
-            zone: horsAbidjan || null,
-        };
-        
-        return mapping;
-    };
-
-    const zoneMapping = getZoneMapping();
-
-    // Helper pour obtenir la zone complète à partir de la valeur simplifiée
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée (slug)
     const getZoneByValue = (zoneValue: string): GeoZone | null => {
-        return zoneMapping[zoneValue]?.zone || null;
+        return findZoneBySlug(zoneValue, geoZones);
     };
 
     // Obtenir la zone actuellement sélectionnée
@@ -402,14 +378,8 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {geoZones.map((geoZone) => {
-                                                    // Mapper le nom de zone vers la valeur simplifiée
-                                                    const zoneValue = geoZone.name === "Grand Abidjan" 
-                                                        ? "grand-abidjan" 
-                                                        : geoZone.name === "Hors Abidjan" 
-                                                        ? "hors-abidjan" 
-                                                        : null;
-                                                    
-                                                    if (!zoneValue) return null;
+                                                    // Générer dynamiquement le slug pour chaque zone
+                                                    const zoneValue = zoneNameToSlug(geoZone.name);
                                                     
                                                     return (
                                                         <SelectItem key={geoZone.id} value={zoneValue}>
