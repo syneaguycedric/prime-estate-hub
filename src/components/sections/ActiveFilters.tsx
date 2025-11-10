@@ -26,9 +26,9 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
 
                 // Animation : scroll vers la gauche puis retour à droite
                 const animateScroll = () => {
-                    // Scroll vers la gauche (50% du scroll max)
+                    // Scroll vers la gauche (170% du scroll max - va jusqu'au maximum)
                     container.scrollTo({
-                        left: maxScroll * 0.5,
+                        left: maxScroll * 1.7,
                         behavior: "smooth",
                     });
 
@@ -42,8 +42,8 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
                     }, 600);
                 };
 
-                // Démarrer l'animation après un court délai
-                setTimeout(animateScroll, 300);
+                // Démarrer l'animation après un délai plus long pour laisser le temps à l'utilisateur de voir les filtres
+                setTimeout(animateScroll, 1000);
             } else {
                 setHasAnimated(true);
             }
