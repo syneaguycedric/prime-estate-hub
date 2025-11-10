@@ -64,18 +64,31 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
 
     // Synchroniser l'état local avec les filtres actuels
     useEffect(() => {
-        if (currentFilters) {
-            // Gérer town pour préremplir zone et areas
+        if (currentFilters && isOpen) {
+            // Gérer zone et town pour préremplir zone et areas
             let zoneValue = "";
             let areasValue: string[] = [];
 
+            // Si une zone est déjà sélectionnée, l'utiliser directement
+            if (currentFilters.zone) {
+                // currentFilters.zone est stocké comme ID dans PropertyFilters
+                // Chercher la zone par ID
+                const zoneById = geoZones.find((z) => z.id === currentFilters.zone);
+                if (zoneById) {
+                    zoneValue = zoneNameToSlug(zoneById.name);
+                }
+            }
+
+            // Si une commune est sélectionnée, trouver sa zone et l'ajouter aux areas
             if (currentFilters.town) {
                 // Chercher dans quelle zone se trouve ce town
                 for (const geoZone of geoZones) {
                     const town = geoZone.towns?.find((t) => t.id === currentFilters.town);
                     if (town) {
-                        // Générer dynamiquement le slug de la zone
-                        zoneValue = zoneNameToSlug(geoZone.name);
+                        // Générer dynamiquement le slug de la zone si pas déjà défini
+                        if (!zoneValue) {
+                            zoneValue = zoneNameToSlug(geoZone.name);
+                        }
                         areasValue = [currentFilters.town];
                         break;
                     }
@@ -107,8 +120,22 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                 rooms: currentFilters.rooms?.toString() || prev.rooms,
                 bathrooms: currentFilters.bathrooms?.toString() || prev.bathrooms,
             }));
+        } else if (!currentFilters && isOpen) {
+            // Réinitialiser les filtres si le panneau s'ouvre sans filtres actuels
+            setFilters({
+                zone: "",
+                areas: [],
+                transaction: "",
+                propertyType: "",
+                minPrice: "",
+                maxPrice: "",
+                minSurface: "",
+                maxSurface: "",
+                rooms: "",
+                bathrooms: "",
+            });
         }
-    }, [currentFilters, geoZones]);
+    }, [currentFilters, geoZones, isOpen]);
 
     // Gérer l'overlay et le scroll selon la taille d'écran
     useEffect(() => {

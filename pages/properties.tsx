@@ -8,7 +8,7 @@ import SearchFilters from "@/components/sections/SearchFilters";
 import ActiveFilters from "@/components/sections/ActiveFilters";
 import MobileSearchBar from "@/components/sections/MobileSearchBar";
 import { Property } from "@/data/properties";
-import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse, fetchGeoZones, GeoZone } from "@/lib/directus-api";
+import { fetchProperties, fetchPropertiesWithFilters, PropertyFilters, PaginatedResponse, fetchGeoZones, GeoZone, zoneNameToSlug } from "@/lib/directus-api";
 import { getFirstImageUrl } from "@/lib/property-helpers";
 import { usePageLoading } from "@/hooks/use-page-loading";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,51 +48,16 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
     useEffect(() => {
         setMounted(true);
 
-        // Ajuster la vue selon la taille d'écran seulement côté client
-        const handleResize = () => {
-            if (typeof window !== "undefined") {
-                if (window.innerWidth < 768) {
-                    setView("list");
-                } else if (view === "list" && window.innerWidth >= 768) {
-                    setView("grid");
-                }
-            }
-        };
-
-        // Initial check
-        handleResize();
-
+        // Initialiser la vue par défaut selon la taille d'écran seulement au montage
+        // Une fois que l'utilisateur a choisi une vue, on ne la change plus automatiquement
         if (typeof window !== "undefined") {
-            window.addEventListener("resize", handleResize);
-        }
-        return () => {
-            if (typeof window !== "undefined") {
-                window.removeEventListener("resize", handleResize);
+            if (window.innerWidth < 768) {
+                setView("list");
+            } else {
+                setView("grid");
             }
-        };
+        }
     }, []);
-
-    // Écouter les changements de taille d'écran pour ajuster la vue par défaut
-    useEffect(() => {
-        if (!mounted) return;
-
-        const handleResize = () => {
-            if (typeof window !== "undefined") {
-                if (window.innerWidth < 768 && view === "grid") {
-                    setView("list");
-                }
-            }
-        };
-
-        if (typeof window !== "undefined") {
-            window.addEventListener("resize", handleResize);
-        }
-        return () => {
-            if (typeof window !== "undefined") {
-                window.removeEventListener("resize", handleResize);
-            }
-        };
-    }, [view, mounted]);
 
     // Fonction pour charger les propriétés avec filtres
     const loadProperties = useCallback(async (newFilters: PropertyFilters) => {
@@ -124,7 +89,7 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
     // Gestion des query params pour les communes, zone, contractType et le plan
     useEffect(() => {
         if (router.isReady) {
-            const { communes, areas, zone, contractType, plan } = router.query;
+            const { communes, areas, zone, contractType, plan, propertyType, minPrice, maxPrice, minSurface, maxSurface, rooms, bathrooms, search } = router.query;
             const updatedFilters: PropertyFilters = {};
 
             // Gérer les communes (ancien format) ou areas (nouveau format depuis index.tsx)
@@ -150,17 +115,56 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
                 }
             }
 
-            // Gérer la zone : convertir la valeur simplifiée (grand-abidjan, hors-abidjan) en ID de zone
+            // Gérer la zone : convertir le slug en ID de zone
             if (zone && typeof zone === "string") {
-                // Mapping entre les valeurs simplifiées et les IDs réels des zones
-                const grandAbidjan = geoZones.find(z => z.name === "Grand Abidjan");
-                const horsAbidjan = geoZones.find(z => z.name === "Hors Abidjan");
-                
-                if (zone === "grand-abidjan" && grandAbidjan) {
-                    updatedFilters.zone = grandAbidjan.id;
-                } else if (zone === "hors-abidjan" && horsAbidjan) {
-                    updatedFilters.zone = horsAbidjan.id;
+                // Trouver la zone par son slug
+                const foundZone = geoZones.find((z) => zoneNameToSlug(z.name) === zone);
+                if (foundZone) {
+                    updatedFilters.zone = foundZone.id;
                 }
+            }
+
+            // Type de bien
+            if (propertyType && typeof propertyType === "string") {
+                updatedFilters.propertyType = propertyType;
+            }
+
+            // Prix
+            if (minPrice && typeof minPrice === "string") {
+                const min = parseFloat(minPrice);
+                if (!isNaN(min)) updatedFilters.minPrice = min;
+            }
+            if (maxPrice && typeof maxPrice === "string") {
+                const max = parseFloat(maxPrice);
+                if (!isNaN(max)) updatedFilters.maxPrice = max;
+            }
+
+            // Surface
+            if (minSurface && typeof minSurface === "string") {
+                const min = parseFloat(minSurface);
+                if (!isNaN(min)) updatedFilters.minSurface = min;
+            }
+            if (maxSurface && typeof maxSurface === "string") {
+                const max = parseFloat(maxSurface);
+                if (!isNaN(max)) updatedFilters.maxSurface = max;
+            }
+
+            // Pièces
+            if (rooms && typeof rooms === "string") {
+                const roomsNum = parseInt(rooms);
+                if (!isNaN(roomsNum)) updatedFilters.rooms = roomsNum;
+            }
+
+            // Salles d'eau
+            if (bathrooms && typeof bathrooms === "string") {
+                const bathroomsNum = parseInt(bathrooms);
+                if (!isNaN(bathroomsNum)) updatedFilters.bathrooms = bathroomsNum;
+            }
+
+            // Recherche
+            if (search && typeof search === "string") {
+                updatedFilters.search = search;
+                setSearchQuery(search);
             }
 
             // Détecter le paramètre plan (VIP/Kylimmo)
@@ -180,7 +184,7 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
                 });
             }
         }
-    }, [router.isReady, router.query]);
+    }, [router.isReady, router.query, geoZones]);
 
     // Initialiser une seule fois au montage
     useEffect(() => {
@@ -191,11 +195,90 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
         }
     }, [hasInitialized]);
 
+    // Fonction pour synchroniser les filtres avec l'URL
+    const syncFiltersToUrl = (filtersToSync: PropertyFilters) => {
+        const query: Record<string, string> = {};
+
+        // Zone : convertir l'ID en slug
+        if (filtersToSync.zone) {
+            const zone = geoZones.find((z) => z.id === filtersToSync.zone);
+            if (zone) {
+                query.zone = zoneNameToSlug(zone.name);
+            }
+        }
+
+        // Commune/Département
+        if (filtersToSync.town) {
+            query.areas = filtersToSync.town;
+        }
+
+        // Type de transaction : convertir vers le format URL
+        if (filtersToSync.contractType) {
+            if (filtersToSync.contractType === "selling" || filtersToSync.contractType === "sale") {
+                query.contractType = "sale";
+            } else if (filtersToSync.contractType === "leasing" || filtersToSync.contractType === "rent") {
+                query.contractType = "rent";
+            }
+        }
+
+        // Type de bien
+        if (filtersToSync.propertyType) {
+            query.propertyType = filtersToSync.propertyType;
+        }
+
+        // Prix
+        if (filtersToSync.minPrice !== undefined) {
+            query.minPrice = filtersToSync.minPrice.toString();
+        }
+        if (filtersToSync.maxPrice !== undefined) {
+            query.maxPrice = filtersToSync.maxPrice.toString();
+        }
+
+        // Surface
+        if (filtersToSync.minSurface !== undefined) {
+            query.minSurface = filtersToSync.minSurface.toString();
+        }
+        if (filtersToSync.maxSurface !== undefined) {
+            query.maxSurface = filtersToSync.maxSurface.toString();
+        }
+
+        // Pièces
+        if (filtersToSync.rooms !== undefined) {
+            query.rooms = filtersToSync.rooms.toString();
+        }
+
+        // Salles d'eau
+        if (filtersToSync.bathrooms !== undefined) {
+            query.bathrooms = filtersToSync.bathrooms.toString();
+        }
+
+        // Recherche
+        if (filtersToSync.search) {
+            query.search = filtersToSync.search;
+        }
+
+        // Page
+        if (filtersToSync.page && filtersToSync.page > 1) {
+            query.page = filtersToSync.page.toString();
+        }
+
+        // Mettre à jour l'URL sans recharger la page
+        router.push(
+            {
+                pathname: router.pathname,
+                query,
+            },
+            undefined,
+            { shallow: true }
+        );
+    };
+
     // Gérer l'application des filtres
     const handleApplyFilters = (newFilters: PropertyFilters) => {
         // Combiner avec les filtres existants (recherche, etc.)
         const updatedFilters = { ...filters, ...newFilters, page: 1 };
         setFilters(updatedFilters);
+        syncFiltersToUrl(updatedFilters);
         loadPropertiesRef.current(updatedFilters);
     };
 
@@ -205,8 +288,9 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
 
         // Filtres simples
         if (filters.search) count++;
-        // Zone et town comptent comme un seul filtre (liés)
-        if (filters.zone || filters.town) count++;
+        // Zone et town comptent séparément
+        if (filters.zone) count++;
+        if (filters.town) count++;
         if (filters.contractType) count++;
         if (filters.propertyType) count++;
         if (filters.rooms) count++;
@@ -232,9 +316,12 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
         } else if (filterKey === "surfaceArea") {
             delete updatedFilters.minSurface;
             delete updatedFilters.maxSurface;
-        } else if (filterKey === "zone" || filterKey === "town") {
-            // Supprimer zone et town ensemble (liés)
+        } else if (filterKey === "zone") {
+            // Supprimer zone et town ensemble (quand zone est supprimée, town aussi)
             delete updatedFilters.zone;
+            delete updatedFilters.town;
+        } else if (filterKey === "town") {
+            // Supprimer seulement town
             delete updatedFilters.town;
         } else {
             delete updatedFilters[filterKey as keyof PropertyFilters];
@@ -242,11 +329,7 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
 
         updatedFilters.page = 1;
         setFilters(updatedFilters);
-
-        // Mettre à jour le compteur de filtres actifs
-        const newCount = calculateActiveFiltersCount(updatedFilters);
-        setActiveFiltersCount(newCount);
-
+        syncFiltersToUrl(updatedFilters);
         loadPropertiesRef.current(updatedFilters);
     };
 
@@ -254,9 +337,17 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
     const handleClearAllFilters = () => {
         setFilters({});
         setSearchQuery("");
-        setActiveFiltersCount(0); // Réinitialiser le compteur
         setProperties(initialProperties);
         setPagination({ total: initialProperties.length, page: 1, totalPages: 1 });
+        // Réinitialiser l'URL
+        router.push(
+            {
+                pathname: router.pathname,
+                query: {},
+            },
+            undefined,
+            { shallow: true }
+        );
     };
 
     // Gérer le changement de page
@@ -271,6 +362,13 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
         setSearchQuery(query);
     };
 
+    // Calculer le comptage des filtres dès qu'ils changent
+    useEffect(() => {
+        const count = calculateActiveFiltersCount(filters);
+        setActiveFiltersCount(count);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters]);
+
     // Debounce la recherche avec useEffect
     useEffect(() => {
         console.log("[DEBUG] useEffect searchQuery changed:", searchQuery);
@@ -280,6 +378,7 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
                 console.log("[DEBUG] Calling loadProperties with searchQuery:", trimmedQuery);
                 setFilters((currentFilters) => {
                     const updatedFilters = { ...currentFilters, search: trimmedQuery, page: 1 };
+                    syncFiltersToUrl(updatedFilters);
                     loadPropertiesRef.current(updatedFilters);
                     return updatedFilters;
                 });
@@ -288,6 +387,7 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
                 console.log("[DEBUG] Clearing search filter");
                 setFilters((currentFilters) => {
                     const { search, ...filtersWithoutSearch } = currentFilters;
+                    syncFiltersToUrl(filtersWithoutSearch);
                     loadPropertiesRef.current(filtersWithoutSearch);
                     return filtersWithoutSearch;
                 });
@@ -295,7 +395,7 @@ const HomePage = ({ initialProperties, geoZones, seoData }: HomePageProps) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, initialProperties]);
+    }, [searchQuery]);
 
     const handleReset = () => {
         setSearchQuery(undefined);

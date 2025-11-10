@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { X, MapPin, Home, Banknote, Bed, Bath, Ruler } from "lucide-react";
 import { PropertyFilters, GeoZone } from "@/lib/directus-api";
+import { useState, useRef, useEffect } from "react";
 
 interface ActiveFiltersProps {
     filters: PropertyFilters;
@@ -10,6 +11,45 @@ interface ActiveFiltersProps {
 }
 
 const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: ActiveFiltersProps) => {
+    const [hasAnimated, setHasAnimated] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Animation de scroll pour indiquer qu'on peut scroller (mobile uniquement)
+    useEffect(() => {
+        if (scrollContainerRef.current && !hasAnimated && typeof window !== "undefined" && window.innerWidth < 768) {
+            const container = scrollContainerRef.current;
+            const { scrollWidth, clientWidth } = container;
+
+            // Vérifier si le contenu dépasse
+            if (scrollWidth > clientWidth) {
+                const maxScroll = scrollWidth - clientWidth;
+
+                // Animation : scroll vers la gauche puis retour à droite
+                const animateScroll = () => {
+                    // Scroll vers la gauche (50% du scroll max)
+                    container.scrollTo({
+                        left: maxScroll * 0.5,
+                        behavior: "smooth",
+                    });
+
+                    // Après 600ms, revenir à droite
+                    setTimeout(() => {
+                        container.scrollTo({
+                            left: 0,
+                            behavior: "smooth",
+                        });
+                        setHasAnimated(true);
+                    }, 600);
+                };
+
+                // Démarrer l'animation après un court délai
+                setTimeout(animateScroll, 300);
+            } else {
+                setHasAnimated(true);
+            }
+        }
+    }, [hasAnimated, filters]);
+
     // Fonction pour obtenir le nom de la zone depuis son ID
     const getZoneName = (zoneId: string): string => {
         const zone = geoZones.find((z) => z.id === zoneId);
@@ -26,9 +66,16 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
     };
 
     // Fonction pour déterminer si on doit afficher "Commune" ou "Département" selon la zone
-    // Par défaut, on utilise "Commune/Département" pour toutes les zones
     const getTownLabel = (): string => {
-        return "Commune/Département";
+        // Si une zone est sélectionnée, vérifier si c'est "Grand Abidjan"
+        if (filters.zone) {
+            const selectedZone = geoZones.find((z) => z.id === filters.zone);
+            if (selectedZone && selectedZone.name === "Grand Abidjan") {
+                return "Commune";
+            }
+        }
+        // Sinon, afficher "Département"
+        return "Département";
     };
     // Fonction pour obtenir l'icône selon le type de filtre
     const getFilterIcon = (key: string) => {
@@ -222,27 +269,46 @@ const ActiveFilters = ({ filters, onRemoveFilter, onClearAll, geoZones = [] }: A
 
     return (
         <div className="bg-background border-b border-border">
-            <div className="container mx-auto px-4 py-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm text-muted-foreground font-medium">Filtres actifs ({activeFilters.length}) :</span>
-                        {activeFilters.map((filter) => (
-                            <Badge
-                                key={filter.key}
-                                variant="secondary"
-                                className="flex items-center gap-1 px-3 py-1 text-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-200 cursor-pointer group"
-                                onClick={() => onRemoveFilter(filter.key)}
-                            >
-                                {filter.icon}
-                                <span className="font-medium">{filter.label}:</span>
-                                <span className="text-muted-foreground">{filter.value}</span>
-                                <div className="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-gray-300 group-hover:bg-destructive/20 transition-all duration-200">
-                                    <X className="h-2.5 w-2.5 text-gray-600 group-hover:text-destructive transition-colors duration-200" />
-                                </div>
-                            </Badge>
-                        ))}
+            <div className="container mx-auto px-4 py-2 md:py-2.5">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
+                    {/* Section des badges avec scroll horizontal sur mobile */}
+                    <div className="relative flex-1 min-w-0">
+                        <div
+                            ref={scrollContainerRef}
+                            className="flex items-center gap-1.5 md:gap-2.5 overflow-x-auto scrollbar-hide md:flex-wrap md:overflow-x-visible -mx-1 px-1 md:mx-0 md:px-0"
+                        >
+                            <span className="text-xs md:text-sm text-muted-foreground font-medium whitespace-nowrap flex-shrink-0">
+                                {activeFilters.length} filtre{activeFilters.length > 1 ? "s" : ""}
+                            </span>
+                            {activeFilters.map((filter) => (
+                                <Badge
+                                    key={filter.key}
+                                    variant="secondary"
+                                    className="flex items-center gap-1.5 px-2.5 py-1 md:px-3 md:py-1.5 text-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-200 cursor-pointer group flex-shrink-0 h-[28px] md:h-7 border border-border/50"
+                                    onClick={() => onRemoveFilter(filter.key)}
+                                >
+                                    {filter.icon && <span className="flex-shrink-0 text-muted-foreground/70">{filter.icon}</span>}
+                                    <span className="font-medium whitespace-nowrap text-gray-500">{filter.label}:</span>
+                                    <span className="text-gray-400 whitespace-nowrap">{filter.value}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemoveFilter(filter.key);
+                                        }}
+                                        className="ml-0.5 flex items-center justify-center w-4 h-4 md:w-4 md:h-4 rounded-full bg-background hover:bg-destructive/20 transition-all duration-200 flex-shrink-0 border border-border shadow-sm"
+                                        aria-label={`Supprimer ${filter.label}`}
+                                    >
+                                        <X className="h-2.5 w-2.5 text-foreground/80 group-hover:text-destructive transition-colors duration-200" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
                     </div>
-                    <button onClick={onClearAll} className="text-sm text-muted-foreground hover:text-foreground transition-colors underline">
+                    {/* Bouton Tout effacer : en dessous sur mobile, en bas à droite sur PC */}
+                    <button
+                        onClick={onClearAll}
+                        className="text-xs md:text-sm text-muted-foreground hover:text-destructive transition-colors underline whitespace-nowrap self-start md:self-center font-medium"
+                    >
                         Tout effacer
                     </button>
                 </div>
