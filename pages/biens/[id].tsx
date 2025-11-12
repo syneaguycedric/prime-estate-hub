@@ -271,12 +271,19 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         <CardTitle className="text-2xl text-primary">{formattedPrice}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        <Button className="w-full" size="lg">
-                                            Appeler
-                                        </Button>
-                                        <Button variant="outline" className="w-full" size="lg">
-                                            Demander une visite
-                                        </Button>
+                                        {/* Bouton Appeler - Mobile uniquement */}
+                                        {userInfo?.phone && (
+                                            <Button 
+                                                className="w-full" 
+                                                size="lg"
+                                                asChild
+                                            >
+                                                <a href={`tel:${userInfo.phone.replace(/\s/g, '')}`}>
+                                                    <Phone className="h-4 w-4 mr-2" />
+                                                    Appeler
+                                                </a>
+                                            </Button>
+                                        )}
 
                                         {/* Informations de contact - Mobile uniquement */}
                                         <div className="pt-4 border-t border-border space-y-3">
@@ -366,12 +373,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         <CardTitle className="text-2xl text-primary">{formattedPrice}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        <Button className="w-full" size="lg">
-                                            Appeler
-                                        </Button>
-                                        <Button variant="outline" className="w-full" size="lg">
-                                            Demander une visite
-                                        </Button>
+                                        {/* Pas de boutons d'action sur desktop */}
                                     </CardContent>
                                 </Card>
 

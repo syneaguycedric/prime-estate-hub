@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { User as UserIcon, Mail, Edit2, Save, X, Loader2 } from "lucide-react";
+import { User as UserIcon, Mail, Edit2, Save, X, Loader2, Phone } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const ProfilePage = () => {
     const [location, setLocation] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
 
     // Validation errors
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,6 +50,7 @@ const ProfilePage = () => {
             setLocation(contextUser.location || "");
             setTitle(contextUser.title || "");
             setDescription(contextUser.description || "");
+            setPhoneNumber(contextUser.account?.phoneNumber || "");
             setIsLoadingProfile(false);
         }
     }, [contextUser]);
@@ -84,13 +86,28 @@ const ProfilePage = () => {
 
         setIsSaving(true);
 
-        const updates: Partial<User> = {
+        const updates: any = {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             location: location.trim() || undefined,
             title: title.trim() || undefined,
             description: description.trim() || undefined,
         };
+
+        // Mettre à jour le phoneNumber dans account
+        // Directus nécessite l'ID de l'account pour mettre à jour une relation
+        if (profile?.account?.id) {
+            updates.account = {
+                id: profile.account.id,
+                phoneNumber: phoneNumber.trim() || null,
+            };
+        } else if (phoneNumber.trim()) {
+            // Si pas d'account existant mais qu'on veut créer un phoneNumber
+            // Note: Normalement account devrait toujours exister, mais on gère le cas
+            updates.account = {
+                phoneNumber: phoneNumber.trim(),
+            };
+        }
 
         const result = await updateUserProfile(authData.access_token, updates);
 
@@ -121,6 +138,7 @@ const ProfilePage = () => {
             setLocation(profile.location || "");
             setTitle(profile.title || "");
             setDescription(profile.description || "");
+            setPhoneNumber(profile.account?.phoneNumber || "");
         }
         setErrors({});
         setIsEditing(false);
@@ -181,9 +199,17 @@ const ProfilePage = () => {
                                                     </span>
                                                 </div>
                                             )}
-                                            <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
-                                                <Mail className="h-4 w-4 text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">{profile?.email}</span>
+                                            <div className="flex flex-col gap-2 mt-2 justify-center sm:justify-start">
+                                                <div className="flex items-center gap-2">
+                                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="text-sm text-muted-foreground">{profile?.email}</span>
+                                                </div>
+                                                {profile?.account?.phoneNumber && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="h-4 w-4 text-muted-foreground" />
+                                                        <span className="text-sm text-muted-foreground">{profile.account.phoneNumber}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         {!isEditing && (
@@ -249,6 +275,23 @@ const ProfilePage = () => {
                                             <Label htmlFor="email">Email</Label>
                                             <Input id="email" value={profile?.email || ""} disabled className="bg-muted" />
                                             <p className="text-xs text-muted-foreground">L'email ne peut pas être modifié</p>
+                                        </div>
+
+                                        {/* Téléphone */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="phoneNumber">Téléphone</Label>
+                                            <div className="relative">
+                                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="phoneNumber"
+                                                    type="tel"
+                                                    value={phoneNumber}
+                                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                                    disabled={!isEditing}
+                                                    className="pl-10"
+                                                    placeholder="Ex: +225 XX XX XX XX XX"
+                                                />
+                                            </div>
                                         </div>
 
                                         {/* Titre/Fonction */}
