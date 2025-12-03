@@ -48,7 +48,7 @@ const HomeHeader = () => {
     };
 
     const getPublishButtonLabel = () => {
-        return "Publier";
+        return "Faire une annonce";
     };
 
     return (

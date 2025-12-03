@@ -4,6 +4,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 // Removed progressive cards flow; using top search banner instead
 import HomeHeader from "@/components/layout/HomeHeader";
+import PromoBanner from "@/components/sections/PromoBanner";
 import PropertyListCardAnimated from "@/components/ui/property-list-card-animated";
 import PropertyCardAnimated from "@/components/ui/property-card-animated";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Search, Award } from "lucide-react";
+import { Search, Award, ChevronDown } from "lucide-react";
 import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan, fetchFeaturedProperties, fetchVipProperties, zoneNameToSlug } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
 
@@ -166,6 +167,8 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
 
             <div className="min-h-screen bg-background">
                 <HomeHeader />
+                {/* Bannière publicitaire */}
+                <PromoBanner />
                 {/* Bandeau de recherche */}
                 <div className="container py-6">
                     <Card className="border-border/60 bg-card/80 backdrop-blur">
@@ -225,8 +228,8 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                                     <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
-                                                {areas.length === 1 ? getAreaName(areas[0]) : "Choisir..."}
-                                                <Search className="h-4 w-4 opacity-60" />
+                                                {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                <ChevronDown className="h-4 w-4 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[320px] p-3">

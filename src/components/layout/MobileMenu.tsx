@@ -102,7 +102,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
         if (user?.role?.name !== "Advertiser") {
             return "Devenir annonceur";
         }
-        return "Publier une annonce";
+        return "Faire une annonce";
     };
 
     return (

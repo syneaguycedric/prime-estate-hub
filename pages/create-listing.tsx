@@ -716,7 +716,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                                         </>
                                     ) : (
                                         <>
-                                            Publier l'annonce
+                                            Faire une annonce
                                             <ArrowRight className="h-4 w-4 ml-2" />
                                         </>
                                     )}
