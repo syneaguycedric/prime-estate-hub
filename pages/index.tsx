@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 // Removed progressive cards flow; using top search banner instead
 import HomeHeader from "@/components/layout/HomeHeader";
 import PromoBanner from "@/components/sections/PromoBanner";
-import PropertyListCardAnimated from "@/components/ui/property-list-card-animated";
 import PropertyCardAnimated from "@/components/ui/property-card-animated";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Search, Award, ChevronDown } from "lucide-react";
-import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan, fetchFeaturedProperties, fetchVipProperties, zoneNameToSlug } from "@/lib/directus-api";
+import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan, fetchFeaturedPropertiesByZone, fetchVipProperties, zoneNameToSlug } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
 
 interface HomePageProps {
@@ -28,13 +27,14 @@ interface HomePageProps {
         canonicalUrl: string;
     };
     geoZones: GeoZone[];
-    featuredProperties: Property[];
+    featuredPropertiesGrandAbidjan: Property[];
+    featuredPropertiesHorsAbidjan: Property[];
     vipProperties: Property[];
 }
 
 type ContractType = "sale" | "rent";
 
-const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: HomePageProps) => {
+const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredPropertiesHorsAbidjan, vipProperties }: HomePageProps) => {
     const router = useRouter();
     const [selectedContract, setSelectedContract] = useState<ContractType>("rent");
     const [zone, setZone] = useState<string>("");
@@ -274,23 +274,98 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
                     </Card>
                 </div>
 
-                <div className="container grid grid-cols-1 lg:grid-cols-4 gap-6 pb-8">
+                <div className="container grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
                     {/* Colonne gauche - En vedette */}
-                    <aside className="lg:col-span-1 order-2 lg:order-1">
-                        <div className="sticky top-24">
-                            <h3 className="text-sm font-semibold text-muted-foreground mb-3">En vedette</h3>
-                            <div>
-                                {featuredProperties.length > 0 ? (
-                                    featuredProperties.slice(0, 4).map((p, idx) => <PropertyListCardAnimated key={p.id} {...p} index={idx} />)
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour le moment.</p>
-                                )}
-                            </div>
-                        </div>
+                    <aside className="order-2 lg:order-1">
+                        <Card className="border-2 border-primary/30 bg-white shadow-lg">
+                            <CardContent className="p-6">
+                                {/* Header annonces */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-foreground">En vedette</h2>
+                                    </div>
+                                </div>
+
+                                {/* Section Grand Abidjan */}
+                                <div className="mb-8">
+                                    <div className="flex items-center justify-center mb-4">
+                                        <Separator className="flex-1" />
+                                        <h3 className="text-lg font-semibold text-foreground mx-4">Grand Abidjan</h3>
+                                        <Separator className="flex-1" />
+                                    </div>
+                                    {featuredPropertiesGrandAbidjan.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {featuredPropertiesGrandAbidjan.slice(0, 6).map((property, index) => (
+                                                <div key={`featured-ga-${property.id}`} className="group relative">
+                                                    {/* Badge Premium simple en coin */}
+                                                    <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                                        Premium
+                                                    </span>
+
+                                                    {/* Carte premium */}
+                                                    <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                        <PropertyCardAnimated {...property} index={index} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour Grand Abidjan.</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Section Hors d'Abidjan */}
+                                <div>
+                                    <div className="flex items-center justify-center mb-4">
+                                        <Separator className="flex-1" />
+                                        <h3 className="text-lg font-semibold text-foreground mx-4">Hors d'Abidjan</h3>
+                                        <Separator className="flex-1" />
+                                    </div>
+                                    {featuredPropertiesHorsAbidjan.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {featuredPropertiesHorsAbidjan.slice(0, 6).map((property, index) => (
+                                                <div key={`featured-ha-${property.id}`} className="group relative">
+                                                    {/* Badge Premium simple en coin */}
+                                                    <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                                        Premium
+                                                    </span>
+
+                                                    {/* Carte premium */}
+                                                    <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                        <PropertyCardAnimated {...property} index={index} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour Hors d'Abidjan.</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer avec séparateur et bouton */}
+                                <div className="mt-8 pt-6 border-t-2 border-primary/20">
+                                    <div className="flex justify-center">
+                                        <Button
+                                            onClick={() => router.push(`/properties?plan=premium`)}
+                                            variant="default"
+                                            size="lg"
+                                            className="shadow-md hover:shadow-lg transition-shadow"
+                                        >
+                                            <Award className="h-4 w-4 mr-2" />
+                                            Voir plus
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </aside>
 
-                    {/* Colonne principale - Annonces VIP */}
-                    <main className="lg:col-span-3 order-1 lg:order-2">
+                    {/* Colonne droite - Annonces VIP */}
+                    <main className="order-1 lg:order-2">
                         <Card className="border-2 border-primary/30 bg-white shadow-lg">
                             <CardContent className="p-6">
                                 {/* Header annonces */}
@@ -302,8 +377,8 @@ const HomePage = ({ seoData, geoZones, featuredProperties, vipProperties }: Home
 
                                 {/* Grille des annonces VIP */}
                                 {vipProperties.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {vipProperties.slice(0, 6).map((property, index) => (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {vipProperties.slice(0, 4).map((property, index) => (
                                             <div key={`vip-${property.id}`} className="group relative">
                                                 {/* Badge VIP simple en coin */}
                                                 <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
@@ -371,8 +446,16 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         // Récupérer les zones géographiques depuis l'API
         const geoZones = await fetchGeoZones();
 
-        // Récupérer les annonces en vedette (premium) et VIP (kylimmo)
-        const [featuredProperties, vipProperties] = await Promise.all([fetchFeaturedProperties(), fetchVipProperties()]);
+        // Trouver les zones "Grand Abidjan" et "Hors Abidjan"
+        const grandAbidjanZone = geoZones.find((z) => z.name === "Grand Abidjan");
+        const horsAbidjanZone = geoZones.find((z) => z.name === "Hors Abidjan");
+
+        // Récupérer les annonces en vedette par zone et VIP (kylimmo) - NE PAS MODIFIER fetchVipProperties
+        const [featuredPropertiesGrandAbidjan, featuredPropertiesHorsAbidjan, vipProperties] = await Promise.all([
+            grandAbidjanZone ? fetchFeaturedPropertiesByZone(grandAbidjanZone.id, 6) : Promise.resolve([]),
+            horsAbidjanZone ? fetchFeaturedPropertiesByZone(horsAbidjanZone.id, 6) : Promise.resolve([]),
+            fetchVipProperties(), // Appel API inchangé pour les annonces kylimmo
+        ]);
 
         // Headers pour la mise en cache - longue durée pour la page d'accueil
         context.res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
@@ -381,7 +464,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
             props: {
                 seoData,
                 geoZones: geoZones || [],
-                featuredProperties: featuredProperties || [],
+                featuredPropertiesGrandAbidjan: featuredPropertiesGrandAbidjan || [],
+                featuredPropertiesHorsAbidjan: featuredPropertiesHorsAbidjan || [],
                 vipProperties: vipProperties || [],
             },
         };
@@ -396,7 +480,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
             props: {
                 seoData,
                 geoZones: [],
-                featuredProperties: [],
+                featuredPropertiesGrandAbidjan: [],
+                featuredPropertiesHorsAbidjan: [],
                 vipProperties: [],
             },
         };

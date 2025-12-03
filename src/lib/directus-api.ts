@@ -671,6 +671,64 @@ export async function fetchFeaturedProperties(): Promise<Property[]> {
 }
 
 /**
+ * Récupère les annonces en vedette (premium) par zone depuis l'API Directus
+ * Filtre : utilisateur ou agence avec plan premium ET zone spécifiée
+ * @param zoneId - ID de la zone géographique
+ * @param limit - Nombre maximum d'annonces à récupérer (défaut: 6)
+ */
+export async function fetchFeaturedPropertiesByZone(zoneId: string, limit: number = 6): Promise<Property[]> {
+    // Si on utilise les données mockées, fallback vers données locales
+    if (USE_MOCK_DATA) {
+        console.log('[DIRECTUS API] Using mock data for featured properties by zone');
+        return properties.slice(0, limit).map(formatProperty);
+    }
+
+    try {
+        console.log(`[DIRECTUS API] Fetching featured properties (premium) for zone ${zoneId} from API`);
+
+        // Construire le filtre premium avec zone : 
+        // (user_created.plan.code='premium' OU agency.plan.code='premium') ET town.zone=zoneId
+        const premiumFilter = {
+            "_and": [
+                {
+                    "_or": [
+                        { "user_created": { "plan": { "code": { "_eq": "premium" } } } },
+                        { "agency": { "plan": { "code": { "_eq": "premium" } } } }
+                    ]
+                },
+                { "town": { "zone": { "_eq": zoneId } } }
+            ]
+        };
+
+        // Construire l'URL avec paramètres
+        const params: Record<string, string> = {
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
+            limit: limit.toString(),
+            filter: JSON.stringify(premiumFilter)
+        };
+
+        const queryString = new URLSearchParams(params).toString();
+
+        const response = await apiClient.get<DirectusResponse<Property[]>>(
+            DIRECTUS_DOMAIN,
+            `items/real_estates?${queryString}`
+        );
+
+        const formattedProperties = response.data.map(formatProperty);
+
+        console.log(`[DIRECTUS API] Fetched ${formattedProperties.length} featured properties for zone ${zoneId}`);
+
+        return formattedProperties;
+
+    } catch (error) {
+        console.error(`[DIRECTUS API] Error fetching featured properties for zone ${zoneId}:`, error);
+
+        // Retourner un tableau vide en cas d'erreur
+        return [];
+    }
+}
+
+/**
  * Récupère les annonces VIP (kylimmo) depuis l'API Directus
  * Filtre : agence avec plan kylimmo
  */
