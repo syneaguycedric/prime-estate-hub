@@ -228,8 +228,10 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                                     <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
-                                                {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
-                                                <ChevronDown className="h-4 w-4 opacity-50" />
+                                                <span className="truncate min-w-0 flex-1 text-left">
+                                                    {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                </span>
+                                                <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[320px] p-3">

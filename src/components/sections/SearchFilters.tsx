@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { X, MapPin, Home, Banknote, Bed, Bath, Ruler, Search } from "lucide-react";
+import { X, MapPin, Home, Banknote, Bed, Bath, Ruler, ChevronDown } from "lucide-react";
 import { PropertyFilters, GeoZone, zoneNameToSlug, findZoneBySlug } from "@/lib/directus-api";
 
 interface SearchFiltersProps {
@@ -382,8 +382,10 @@ const SearchFilters = ({ isOpen, onClose, onFiltersChange, onReset, onApplyFilte
                         <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                             <PopoverTrigger asChild>
                                 <Button variant="outline" className="w-full justify-between" disabled={!filters.zone}>
-                                    {filters.areas.length === 1 ? getAreaName(filters.areas[0]) : "Choisir une commune ou département"}
-                                    <Search className="h-4 w-4 opacity-60" />
+                                    <span className="truncate min-w-0 flex-1 text-left">
+                                        {filters.areas.length === 1 ? getAreaName(filters.areas[0]) : "Choisir une commune ou département"}
+                                    </span>
+                                    <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[320px] p-3">
