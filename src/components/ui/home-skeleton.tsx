@@ -39,39 +39,106 @@ const HomeSkeleton = () => {
             </div>
 
             {/* Contenu principal skeleton */}
-            <div className="container grid grid-cols-1 lg:grid-cols-4 gap-6 pb-8">
+            <div className="container grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
                 {/* Colonne gauche - En vedette skeleton */}
-                <aside className="lg:col-span-1 order-2 lg:order-1">
-                    <div className="sticky top-24">
-                        <Skeleton className="h-4 w-24 mb-3" />
-                        <div className="space-y-4">
-                            {[1, 2, 3, 4].map((i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="rounded-lg border border-border bg-card p-3"
-                                >
-                                    <div className="flex gap-3">
-                                        <Skeleton className="w-20 h-20 sm:w-24 sm:h-24 rounded-md flex-shrink-0" />
-                                        <div className="flex-1 space-y-2">
-                                            <Skeleton className="h-4 w-3/4" />
-                                            <div className="flex gap-2">
-                                                <Skeleton className="h-3 w-12" />
-                                                <Skeleton className="h-3 w-12" />
+                <aside className="order-2 lg:order-1">
+                    <Card className="border-2 border-primary/30 bg-white shadow-lg">
+                        <CardContent className="p-6">
+                            {/* Header skeleton */}
+                            <div className="flex items-center justify-between mb-6">
+                                <Skeleton className="h-8 w-32" />
+                            </div>
+
+                            {/* Section Grand Abidjan skeleton */}
+                            <div className="mb-8">
+                                <div className="flex items-center justify-center mb-4">
+                                    <Skeleton className="h-px flex-1" />
+                                    <Skeleton className="h-6 w-32 mx-4" />
+                                    <Skeleton className="h-px flex-1" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                                        <motion.div
+                                            key={`ga-${i}`}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="rounded-lg border border-border bg-card overflow-hidden relative"
+                                        >
+                                            {/* Badge skeleton */}
+                                            <Skeleton className="absolute top-2 right-2 h-5 w-16 rounded-full" />
+                                            {/* Image skeleton */}
+                                            <Skeleton className="w-full h-48" />
+                                            {/* Content skeleton */}
+                                            <div className="p-4 space-y-3">
+                                                <div className="space-y-2">
+                                                    <Skeleton className="h-5 w-full" />
+                                                    <Skeleton className="h-5 w-3/4" />
+                                                </div>
+                                                <Skeleton className="h-4 w-1/2" />
+                                                <div className="flex gap-4">
+                                                    <Skeleton className="h-4 w-12" />
+                                                    <Skeleton className="h-4 w-8" />
+                                                    <Skeleton className="h-4 w-8" />
+                                                </div>
+                                                <Skeleton className="h-9 w-full mt-2" />
                                             </div>
-                                            <Skeleton className="h-3 w-1/2" />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Section Hors d'Abidjan skeleton */}
+                            <div>
+                                <div className="flex items-center justify-center mb-4">
+                                    <Skeleton className="h-px flex-1" />
+                                    <Skeleton className="h-6 w-36 mx-4" />
+                                    <Skeleton className="h-px flex-1" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                                        <motion.div
+                                            key={`ha-${i}`}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="rounded-lg border border-border bg-card overflow-hidden relative"
+                                        >
+                                            {/* Badge skeleton */}
+                                            <Skeleton className="absolute top-2 right-2 h-5 w-16 rounded-full" />
+                                            {/* Image skeleton */}
+                                            <Skeleton className="w-full h-48" />
+                                            {/* Content skeleton */}
+                                            <div className="p-4 space-y-3">
+                                                <div className="space-y-2">
+                                                    <Skeleton className="h-5 w-full" />
+                                                    <Skeleton className="h-5 w-3/4" />
+                                                </div>
+                                                <Skeleton className="h-4 w-1/2" />
+                                                <div className="flex gap-4">
+                                                    <Skeleton className="h-4 w-12" />
+                                                    <Skeleton className="h-4 w-8" />
+                                                    <Skeleton className="h-4 w-8" />
+                                                </div>
+                                                <Skeleton className="h-9 w-full mt-2" />
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Footer skeleton */}
+                            <div className="mt-8 pt-6 border-t-2 border-primary/20">
+                                <div className="flex justify-center">
+                                    <Skeleton className="h-10 w-32" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </aside>
 
-                {/* Colonne principale - Annonces VIP skeleton */}
-                <main className="lg:col-span-3 order-1 lg:order-2">
+                {/* Colonne droite - Annonces VIP skeleton */}
+                <main className="order-1 lg:order-2">
                     <Card className="border-2 border-primary/30 bg-white shadow-lg">
                         <CardContent className="p-6">
                             {/* Header skeleton */}
@@ -79,34 +146,32 @@ const HomeSkeleton = () => {
                                 <Skeleton className="h-8 w-48" />
                             </div>
 
-                            {/* Grille des annonces skeleton */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {[1, 2, 3, 4, 5, 6].map((i) => (
+                            {/* Grille des annonces VIP skeleton */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {[1, 2, 3, 4].map((i) => (
                                     <motion.div
                                         key={i}
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: i * 0.05 }}
-                                        className="rounded-lg border border-border bg-card overflow-hidden"
+                                        className="rounded-lg border border-border bg-card overflow-hidden relative"
                                     >
+                                        {/* Badge skeleton */}
+                                        <Skeleton className="absolute top-2 right-2 h-5 w-16 rounded-full" />
                                         {/* Image skeleton */}
                                         <Skeleton className="w-full h-48" />
-
                                         {/* Content skeleton */}
                                         <div className="p-4 space-y-3">
                                             <div className="space-y-2">
                                                 <Skeleton className="h-5 w-full" />
                                                 <Skeleton className="h-5 w-3/4" />
                                             </div>
-
                                             <Skeleton className="h-4 w-1/2" />
-
                                             <div className="flex gap-4">
                                                 <Skeleton className="h-4 w-12" />
                                                 <Skeleton className="h-4 w-8" />
                                                 <Skeleton className="h-4 w-8" />
                                             </div>
-
                                             <Skeleton className="h-9 w-full mt-2" />
                                         </div>
                                     </motion.div>
