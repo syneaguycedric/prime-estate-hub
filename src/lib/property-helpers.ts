@@ -223,7 +223,10 @@ export function getAllImageUrls(property: Property): string[] {
 /**
  * Formate les caractéristiques pour l'affichage
  */
-export function formatCharacteristics(characteristics: Array<{ name: string; value: string }>): string[] {
+export function formatCharacteristics(characteristics: Array<{ name: string; value: string }> | null | undefined): string[] {
+    if (!characteristics || !Array.isArray(characteristics)) {
+        return [];
+    }
     return characteristics.map(char => `${char.name}: ${char.value}`);
 }
 
