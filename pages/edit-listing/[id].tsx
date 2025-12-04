@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Loader2, Upload, X, Plus, Search } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Upload, X, Plus, ChevronDown } from "lucide-react";
 
 interface UploadedImage {
     fileId: string;
@@ -136,7 +136,7 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
                 // Formater les nombres sans virgules ni décimales
                 const formatNumberForInput = (value: any): string => {
                     if (!value && value !== 0) return "";
-                    const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : parseFloat(value);
+                    const numValue = typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : parseFloat(value);
                     if (isNaN(numValue)) return "";
                     // Retourner le nombre entier sans décimales ni virgules
                     return Math.floor(numValue).toString();
@@ -165,9 +165,9 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
 
                 // Gérer le cas où town est un ID (string) ou un objet (relation)
                 if (propertyTown) {
-                    if (typeof propertyTown === 'string') {
+                    if (typeof propertyTown === "string") {
                         townId = propertyTown;
-                    } else if (typeof propertyTown === 'object') {
+                    } else if (typeof propertyTown === "object") {
                         townId = propertyTown.id;
                         // Si town a une zone avec un nom, l'utiliser directement
                         if (propertyTown.zone && propertyTown.zone.name) {
@@ -247,17 +247,17 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
 
     const handleInputChange = (field: string, value: string) => {
         // Pour les champs numériques entiers, supprimer les virgules et points
-        const integerFields = ['price', 'rooms', 'bathrooms', 'kitchens', 'floors'];
+        const integerFields = ["price", "rooms", "bathrooms", "kitchens", "floors"];
         if (integerFields.includes(field)) {
             // Supprimer toutes les virgules et points (on veut juste des entiers)
-            const cleanedValue = value.replace(/[^\d]/g, '');
+            const cleanedValue = value.replace(/[^\d]/g, "");
             setFormData((prev) => ({
                 ...prev,
                 [field]: cleanedValue,
             }));
-        } else if (field === 'surfaceArea') {
+        } else if (field === "surfaceArea") {
             // Pour la surface, supprimer toutes les virgules et points (entiers uniquement)
-            const cleanedValue = value.replace(/[^\d]/g, '');
+            const cleanedValue = value.replace(/[^\d]/g, "");
             setFormData((prev) => ({
                 ...prev,
                 [field]: cleanedValue,
@@ -475,424 +475,417 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
 
                         {/* Sélection de zone et commune/département */}
                         <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
-                                    <CardContent className="p-4 md:p-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                                            {/* Zone */}
-                                            <div className="md:col-span-4">
-                                                <Label className="text-xs text-muted-foreground">Zone</Label>
-                                                <Select
-                                                    value={zone}
-                                                    onValueChange={(v: any) => {
-                                                        setZone(v);
-                                                        setAreas([]);
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="mt-1">
-                                                        <SelectValue placeholder="Choisir une zone" />
+                            <CardContent className="p-4 md:p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                    {/* Zone */}
+                                    <div className="md:col-span-4">
+                                        <Label className="text-xs text-muted-foreground">Zone</Label>
+                                        <Select
+                                            value={zone}
+                                            onValueChange={(v: any) => {
+                                                setZone(v);
+                                                setAreas([]);
+                                            }}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="Choisir une zone" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {geoZones.map((geoZone) => {
+                                                    // Générer dynamiquement le slug pour chaque zone
+                                                    const zoneValue = zoneNameToSlug(geoZone.name);
+
+                                                    return (
+                                                        <SelectItem key={geoZone.id} value={zoneValue}>
+                                                            {geoZone.name}
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Communes / Départements */}
+                                    <div className="md:col-span-8">
+                                        <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                        <Popover open={areasOpen} onOpenChange={setAreasOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
+                                                    <span className="truncate min-w-0 flex-1 text-left">
+                                                        {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                    </span>
+                                                    <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[320px] p-3">
+                                                <div className="max-h-64 overflow-auto pr-1">
+                                                    {getTownsForSelectedZone().map((town) => (
+                                                        <button
+                                                            type="button"
+                                                            key={town.id}
+                                                            onClick={() => toggleArea(town.id)}
+                                                            className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
+                                                        >
+                                                            <span>{town.name}</span>
+                                                            <Checkbox checked={areas[0] === town.id} onCheckedChange={() => toggleArea(town.id)} />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {areas.length > 0 && (
+                                                    <>
+                                                        <Separator className="my-2" />
+                                                        <div className="flex items-center justify-end">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setAreas([]);
+                                                                    setAreasOpen(false);
+                                                                }}
+                                                            >
+                                                                Effacer
+                                                            </Button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Informations de base */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Informations de base</CardTitle>
+                                    <CardDescription>Les informations essentielles de votre bien</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/* Titre */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title">Titre de l'annonce *</Label>
+                                        <Input
+                                            id="title"
+                                            placeholder="Ex: Appartement 3 pièces à Cocody"
+                                            value={formData.title}
+                                            onChange={(e) => handleInputChange("title", e.target.value)}
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Description */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Description</Label>
+                                        <Textarea
+                                            id="description"
+                                            placeholder="Décrivez votre bien en détail..."
+                                            rows={5}
+                                            value={formData.description}
+                                            onChange={(e) => handleInputChange("description", e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Type de bien et contrat */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="propertyType">Type de bien *</Label>
+                                            <Select value={formData.propertyType} onValueChange={(value) => handleInputChange("propertyType", value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="appartment">Appartement</SelectItem>
+                                                    <SelectItem value="villa">Villa</SelectItem>
+                                                    <SelectItem value="land">Terrain</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contractType">Type de contrat *</Label>
+                                            <Select value={formData.contractType} onValueChange={(value) => handleInputChange("contractType", value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="selling">Vente</SelectItem>
+                                                    <SelectItem value="leasing">Location</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Prix et surface */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Prix et surface</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="price">{formData.contractType === "leasing" ? "Loyer (FCFA)" : "Prix (FCFA)"} *</Label>
+                                            <Input
+                                                id="price"
+                                                type="number"
+                                                placeholder="10000000"
+                                                value={formData.price}
+                                                onChange={(e) => handleInputChange("price", e.target.value)}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="surfaceArea">Surface *</Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="surfaceArea"
+                                                    type="number"
+                                                    placeholder="400"
+                                                    value={formData.surfaceArea}
+                                                    onChange={(e) => handleInputChange("surfaceArea", e.target.value)}
+                                                    className="flex-1"
+                                                    required
+                                                />
+                                                <Select value={formData.surfaceAreaUnit} onValueChange={(value) => handleInputChange("surfaceAreaUnit", value)}>
+                                                    <SelectTrigger className="w-24">
+                                                        <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {geoZones.map((geoZone) => {
-                                                            // Générer dynamiquement le slug pour chaque zone
-                                                            const zoneValue = zoneNameToSlug(geoZone.name);
-                                                            
-                                                            return (
-                                                                <SelectItem key={geoZone.id} value={zoneValue}>
-                                                                    {geoZone.name}
-                                                                </SelectItem>
-                                                            );
-                                                        })}
+                                                        <SelectItem value="m2">m²</SelectItem>
+                                                        <SelectItem value="ha">ha</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-
-                                            {/* Communes / Départements */}
-                                            <div className="md:col-span-8">
-                                                <Label className="text-xs text-muted-foreground">Commune ou département</Label>
-                                                <Popover open={areasOpen} onOpenChange={setAreasOpen}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
-                                                            {areas.length === 1 ? getAreaName(areas[0]) : "Choisir..."}
-                                                            <Search className="h-4 w-4 opacity-60" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-[320px] p-3">
-                                                        <div className="max-h-64 overflow-auto pr-1">
-                                                            {getTownsForSelectedZone().map((town) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={town.id}
-                                                                    onClick={() => toggleArea(town.id)}
-                                                                    className="w-full flex items-center justify-between py-2 text-sm hover:bg-muted rounded px-2"
-                                                                >
-                                                                    <span>{town.name}</span>
-                                                                    <Checkbox checked={areas[0] === town.id} onCheckedChange={() => toggleArea(town.id)} />
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                        {areas.length > 0 && (
-                                                            <>
-                                                                <Separator className="my-2" />
-                                                                <div className="flex items-center justify-end">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => {
-                                                                            setAreas([]);
-                                                                            setAreasOpen(false);
-                                                                        }}
-                                                                    >
-                                                                        Effacer
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                <form onSubmit={handleSubmit} className="space-y-6">
-                                    {/* Informations de base */}
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Informations de base</CardTitle>
-                                            <CardDescription>Les informations essentielles de votre bien</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            {/* Titre */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="title">Titre de l'annonce *</Label>
-                                                <Input
-                                                    id="title"
-                                                    placeholder="Ex: Appartement 3 pièces à Cocody"
-                                                    value={formData.title}
-                                                    onChange={(e) => handleInputChange("title", e.target.value)}
-                                                    required
-                                                />
-                                            </div>
+                            {/* Détails du bien */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Détails du bien</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="rooms">Nombre de pièces *</Label>
+                                            <Input id="rooms" type="number" min="0" value={formData.rooms} onChange={(e) => handleInputChange("rooms", e.target.value)} />
+                                        </div>
 
-                                            {/* Description */}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="description">Description</Label>
-                                                <Textarea
-                                                    id="description"
-                                                    placeholder="Décrivez votre bien en détail..."
-                                                    rows={5}
-                                                    value={formData.description}
-                                                    onChange={(e) => handleInputChange("description", e.target.value)}
-                                                />
-                                            </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bathrooms">Salles d'eau *</Label>
+                                            <Input
+                                                id="bathrooms"
+                                                type="number"
+                                                min="0"
+                                                value={formData.bathrooms}
+                                                onChange={(e) => handleInputChange("bathrooms", e.target.value)}
+                                            />
+                                        </div>
 
-                                            {/* Type de bien et contrat */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="propertyType">Type de bien *</Label>
-                                                    <Select value={formData.propertyType} onValueChange={(value) => handleInputChange("propertyType", value)}>
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="appartment">Appartement</SelectItem>
-                                                            <SelectItem value="villa">Villa</SelectItem>
-                                                            <SelectItem value="land">Terrain</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="kitchens">Cuisines *</Label>
+                                            <Input id="kitchens" type="number" min="0" value={formData.kitchens} onChange={(e) => handleInputChange("kitchens", e.target.value)} />
+                                        </div>
 
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="contractType">Type de contrat *</Label>
-                                                    <Select value={formData.contractType} onValueChange={(value) => handleInputChange("contractType", value)}>
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="selling">Vente</SelectItem>
-                                                            <SelectItem value="leasing">Location</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="floors">Nombre de niveau *</Label>
+                                            <Input id="floors" type="number" min="0" value={formData.floors} onChange={(e) => handleInputChange("floors", e.target.value)} />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                    {/* Prix et surface */}
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Prix et surface</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="price">{formData.contractType === "leasing" ? "Loyer (FCFA)" : "Prix (FCFA)"} *</Label>
-                                                    <Input
-                                                        id="price"
-                                                        type="number"
-                                                        placeholder="10000000"
-                                                        value={formData.price}
-                                                        onChange={(e) => handleInputChange("price", e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
+                            {/* Localisation */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Localisation</CardTitle>
+                                    <CardDescription>Précisez l'emplacement exact de votre bien</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="location">Localisation *</Label>
+                                        <Input
+                                            id="location"
+                                            placeholder="Ex: Place de la République, Avenue 12, Cocody"
+                                            value={formData.location}
+                                            onChange={(e) => handleInputChange("location", e.target.value)}
+                                            required
+                                        />
+                                        <p className="text-xs text-muted-foreground">Indiquez l'adresse complète ou un point de repère précis</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="surfaceArea">Surface *</Label>
-                                                    <div className="flex gap-2">
-                                                        <Input
-                                                            id="surfaceArea"
-                                                            type="number"
-                                                            placeholder="400"
-                                                            value={formData.surfaceArea}
-                                                            onChange={(e) => handleInputChange("surfaceArea", e.target.value)}
-                                                            className="flex-1"
-                                                            required
-                                                        />
-                                                        <Select value={formData.surfaceAreaUnit} onValueChange={(value) => handleInputChange("surfaceAreaUnit", value)}>
-                                                            <SelectTrigger className="w-24">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="m2">m²</SelectItem>
-                                                                <SelectItem value="ha">ha</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
+                            {/* Images */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Photos du bien *</CardTitle>
+                                    <CardDescription>Ajoutez au moins une photo de votre bien</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/* Zone de drop */}
+                                    <div
+                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                                            isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary"
+                                        }`}
+                                        onDragEnter={handleDragEnter}
+                                        onDragLeave={handleDragLeave}
+                                        onDragOver={handleDragOver}
+                                        onDrop={handleDrop}
+                                    >
+                                        <input type="file" id="image-upload" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
+                                        <label htmlFor="image-upload" className="cursor-pointer">
+                                            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                            <p className="text-sm font-medium">{isDragging ? "Déposez vos images ici" : "Cliquez ou glissez-déposez vos images"}</p>
+                                            <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (max. 10MB par image)</p>
+                                        </label>
+                                    </div>
+
+                                    {/* Prévisualisation des images */}
+                                    {images.length > 0 && (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {images.map((image) => (
+                                                <div key={image.fileId} className="relative group">
+                                                    <div className="aspect-video relative rounded-lg overflow-hidden border border-border">
+                                                        <Image src={image.preview} alt="Preview" fill className="object-cover" />
+                                                        {image.uploaded && <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">✓</div>}
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Détails du bien */}
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Détails du bien</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="rooms">Nombre de pièces *</Label>
-                                                    <Input id="rooms" type="number" min="0" value={formData.rooms} onChange={(e) => handleInputChange("rooms", e.target.value)} />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="bathrooms">Salles d'eau *</Label>
-                                                    <Input
-                                                        id="bathrooms"
-                                                        type="number"
-                                                        min="0"
-                                                        value={formData.bathrooms}
-                                                        onChange={(e) => handleInputChange("bathrooms", e.target.value)}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="kitchens">Cuisines *</Label>
-                                                    <Input id="kitchens" type="number" min="0" value={formData.kitchens} onChange={(e) => handleInputChange("kitchens", e.target.value)} />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="floors">Nombre de niveau *</Label>
-                                                    <Input id="floors" type="number" min="0" value={formData.floors} onChange={(e) => handleInputChange("floors", e.target.value)} />
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Localisation */}
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Localisation</CardTitle>
-                                            <CardDescription>Précisez l'emplacement exact de votre bien</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="location">Localisation *</Label>
-                                                <Input
-                                                    id="location"
-                                                    placeholder="Ex: Place de la République, Avenue 12, Cocody"
-                                                    value={formData.location}
-                                                    onChange={(e) => handleInputChange("location", e.target.value)}
-                                                    required
-                                                />
-                                                <p className="text-xs text-muted-foreground">Indiquez l'adresse complète ou un point de repère précis</p>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Images */}
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Photos du bien *</CardTitle>
-                                            <CardDescription>Ajoutez au moins une photo de votre bien</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            {/* Zone de drop */}
-                                            <div
-                                                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                                                    isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary"
-                                                }`}
-                                                onDragEnter={handleDragEnter}
-                                                onDragLeave={handleDragLeave}
-                                                onDragOver={handleDragOver}
-                                                onDrop={handleDrop}
-                                            >
-                                                <input type="file" id="image-upload" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
-                                                <label htmlFor="image-upload" className="cursor-pointer">
-                                                    <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                                    <p className="text-sm font-medium">{isDragging ? "Déposez vos images ici" : "Cliquez ou glissez-déposez vos images"}</p>
-                                                    <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (max. 10MB par image)</p>
-                                                </label>
-                                            </div>
-
-                                            {/* Prévisualisation des images */}
-                                            {images.length > 0 && (
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                    {images.map((image) => (
-                                                        <div key={image.fileId} className="relative group">
-                                                            <div className="aspect-video relative rounded-lg overflow-hidden border border-border">
-                                                                <Image src={image.preview} alt="Preview" fill className="object-cover" />
-                                                                {image.uploaded && <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">✓</div>}
-                                                            </div>
-                                                            <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="icon"
-                                                                className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                onClick={() => handleRemoveImage(image.fileId)}
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Caractéristiques */}
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Caractéristiques supplémentaires</CardTitle>
-                                            <CardDescription>Ajoutez des caractéristiques spécifiques à votre bien (optionnel)</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            {characteristics.map((char, index) => (
-                                                <div key={index} className="flex gap-2">
-                                                    <Input
-                                                        placeholder="Nom (ex: Piscine)"
-                                                        value={char.name}
-                                                        onChange={(e) => handleCharacteristicChange(index, "name", e.target.value)}
-                                                        className="flex-1"
-                                                    />
-                                                    <Input
-                                                        placeholder="Valeur (ex: Oui)"
-                                                        value={char.value}
-                                                        onChange={(e) => handleCharacteristicChange(index, "value", e.target.value)}
-                                                        className="flex-1"
-                                                    />
-                                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveCharacteristic(index)}>
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => handleRemoveImage(image.fileId)}
+                                                    >
                                                         <X className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             ))}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                                            <Button type="button" variant="outline" onClick={handleAddCharacteristic} className="w-full">
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Ajouter une caractéristique
+                            {/* Caractéristiques */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Caractéristiques supplémentaires</CardTitle>
+                                    <CardDescription>Ajoutez des caractéristiques spécifiques à votre bien (optionnel)</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {characteristics.map((char, index) => (
+                                        <div key={index} className="flex gap-2">
+                                            <Input
+                                                placeholder="Nom (ex: Piscine)"
+                                                value={char.name}
+                                                onChange={(e) => handleCharacteristicChange(index, "name", e.target.value)}
+                                                className="flex-1"
+                                            />
+                                            <Input
+                                                placeholder="Valeur (ex: Oui)"
+                                                value={char.value}
+                                                onChange={(e) => handleCharacteristicChange(index, "value", e.target.value)}
+                                                className="flex-1"
+                                            />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveCharacteristic(index)}>
+                                                <X className="h-4 w-4" />
                                             </Button>
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* Boutons d'action */}
-                                    <div className="flex justify-end gap-4 pt-6">
-                                        <Button type="button" variant="outline" onClick={() => router.back()}>
-                                            Annuler
-                                        </Button>
-                                        <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                                            {saving ? (
-                                                <>
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                    Enregistrement...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="mr-2 h-4 w-4" />
-                                                    Enregistrer les modifications
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                </form>
-
-                {/* Loader avec overlay pendant le chargement */}
-                {saving && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-card border border-border rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4"
-                        >
-                            <div className="text-center space-y-4">
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    className="w-16 h-16 mx-auto"
-                                >
-                                    <Loader2 className="w-16 h-16 text-primary" />
-                                </motion.div>
-
-                                <div className="space-y-2">
-                                    <motion.p
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.2 }}
-                                        className="text-lg font-semibold text-foreground"
-                                    >
-                                        Mise à jour en cours...
-                                    </motion.p>
-                                    <motion.p
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3 }}
-                                        className="text-sm text-muted-foreground"
-                                    >
-                                        Veuillez patienter pendant le chargement des photos et la mise à jour de l'annonce
-                                    </motion.p>
-                                </div>
-
-                                {/* Points de progression animés */}
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.4 }}
-                                    className="flex justify-center gap-2 pt-4"
-                                >
-                                    {[0, 1, 2].map((i) => (
-                                        <motion.div
-                                            key={i}
-                                            className="w-2 h-2 rounded-full bg-primary"
-                                            animate={{
-                                                scale: [1, 1.2, 1],
-                                                opacity: [0.5, 1, 0.5],
-                                            }}
-                                            transition={{
-                                                duration: 1.5,
-                                                repeat: Infinity,
-                                                delay: i * 0.2,
-                                            }}
-                                        />
+                                        </div>
                                     ))}
-                                </motion.div>
+
+                                    <Button type="button" variant="outline" onClick={handleAddCharacteristic} className="w-full">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Ajouter une caractéristique
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            {/* Boutons d'action */}
+                            <div className="flex justify-end gap-4 pt-6">
+                                <Button type="button" variant="outline" onClick={() => router.back()}>
+                                    Annuler
+                                </Button>
+                                <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Enregistrement...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="mr-2 h-4 w-4" />
+                                            Enregistrer les modifications
+                                        </>
+                                    )}
+                                </Button>
                             </div>
-                        </motion.div>
-                    </motion.div>
-                )}
+                        </form>
+
+                        {/* Loader avec overlay pendant le chargement */}
+                        {saving && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+                            >
+                                <motion.div
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="bg-card border border-border rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4"
+                                >
+                                    <div className="text-center space-y-4">
+                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-16 h-16 mx-auto">
+                                            <Loader2 className="w-16 h-16 text-primary" />
+                                        </motion.div>
+
+                                        <div className="space-y-2">
+                                            <motion.p
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.2 }}
+                                                className="text-lg font-semibold text-foreground"
+                                            >
+                                                Mise à jour en cours...
+                                            </motion.p>
+                                            <motion.p
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.3 }}
+                                                className="text-sm text-muted-foreground"
+                                            >
+                                                Veuillez patienter pendant le chargement des photos et la mise à jour de l'annonce
+                                            </motion.p>
+                                        </div>
+
+                                        {/* Points de progression animés */}
+                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex justify-center gap-2 pt-4">
+                                            {[0, 1, 2].map((i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    className="w-2 h-2 rounded-full bg-primary"
+                                                    animate={{
+                                                        scale: [1, 1.2, 1],
+                                                        opacity: [0.5, 1, 0.5],
+                                                    }}
+                                                    transition={{
+                                                        duration: 1.5,
+                                                        repeat: Infinity,
+                                                        delay: i * 0.2,
+                                                    }}
+                                                />
+                                            ))}
+                                        </motion.div>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
                     </div>
                 </div>
             </div>

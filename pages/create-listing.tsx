@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { Upload, X, Plus, Loader2, ArrowRight, Save, Search, ArrowLeft } from "lucide-react";
+import { Upload, X, Plus, Loader2, ArrowRight, Save, ChevronDown, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -397,8 +397,10 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                                         <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
-                                                    {areas.length === 1 ? getAreaName(areas[0]) : "Choisir..."}
-                                                    <Search className="h-4 w-4 opacity-60" />
+                                                    <span className="truncate min-w-0 flex-1 text-left">
+                                                        {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                    </span>
+                                                    <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[320px] p-3">
