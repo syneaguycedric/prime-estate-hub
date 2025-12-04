@@ -278,7 +278,7 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
 
                 <div className="container grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
                     {/* Colonne gauche - En vedette */}
-                    <aside className="order-2 lg:order-1">
+                    <aside className="order-1 lg:order-1">
                         <Card className="border-2 border-primary/30 bg-white shadow-lg">
                             <CardContent className="p-6">
                                 {/* Header annonces */}
@@ -367,7 +367,7 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                     </aside>
 
                     {/* Colonne droite - Annonces VIP */}
-                    <main className="order-1 lg:order-2">
+                    <main className="order-2 lg:order-2">
                         <Card className="border-2 border-primary/30 bg-white shadow-lg">
                             <CardContent className="p-6">
                                 {/* Header annonces */}
