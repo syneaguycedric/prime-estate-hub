@@ -55,38 +55,35 @@ const PropertyCardAnimated = ({
                         <ImageWithLoading
                             src={imageUrl}
                             alt={`${title} - ${location}`}
-                            className="w-full h-48 group-hover:scale-110 transition-transform duration-300"
+                            className="w-full h-40 group-hover:scale-110 transition-transform duration-300"
                             loading={index < 4 ? "eager" : "lazy"}
                         />
 
                         {/* Overlay badges avec animation */}
-                        <motion.div
-                            className="absolute top-4 left-4 flex gap-2"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 + index * 0.1 }}
-                        >
-                            <Badge variant="secondary" className="bg-card/90 text-foreground">
+                        <motion.div className="absolute top-3 left-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + index * 0.1 }}>
+                            <Badge variant="secondary" className="bg-card/70 text-foreground text-[10px] px-2 py-0.5">
                                 {propertyTypeLabel}
                             </Badge>
-                            <Badge variant="outline" className="bg-card/90 text-foreground">
+                        </motion.div>
+                        <motion.div className="absolute top-3 right-3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + index * 0.1 }}>
+                            <Badge variant="outline" className="bg-card/70 text-foreground text-[10px] px-2 py-0.5">
                                 {contractTypeLabel}
                             </Badge>
                         </motion.div>
 
                         {/* Price overlay avec animation */}
-                        <motion.div className="absolute bottom-4 left-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + index * 0.1 }}>
-                            <div className="bg-primary text-primary-foreground px-3 py-1 rounded-lg font-semibold shadow-lg">{formattedPrice}</div>
+                        <motion.div className="absolute bottom-3 left-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + index * 0.1 }}>
+                            <div className="bg-primary/95 text-primary-foreground px-3 py-1 rounded-lg font-semibold shadow-lg">{formattedPrice}</div>
                         </motion.div>
                     </div>
 
-                    <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                        <motion.div className="space-y-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + index * 0.1 }}>
-                            <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors">{title}</h3>
+                    <CardContent className="p-3 space-y-2 flex-1 flex flex-col justify-between">
+                        <motion.div className="space-y-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + index * 0.1 }}>
+                            <h3 className="font-semibold text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors">{title}</h3>
 
-                            <div className="flex items-center text-muted-foreground text-sm">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                {location}
+                            <div className="flex items-center text-muted-foreground text-sm min-w-0">
+                                <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                                <span className="truncate">{location}</span>
                             </div>
 
                             <motion.div
@@ -114,23 +111,23 @@ const PropertyCardAnimated = ({
                             </motion.div>
                         </motion.div>
 
-                        <motion.div className="flex gap-2 pt-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + index * 0.1 }}>
+                        <motion.div className="flex gap-1.5 pt-1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + index * 0.1 }}>
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="flex-1"
+                                className="flex-1 text-xs py-1.5 h-auto"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleCardClick();
                                 }}
                             >
-                                <Eye className="h-4 w-4 mr-1" />
+                                <Eye className="h-3.5 w-3.5 mr-1" />
                                 Voir
                             </Button>
                             <Button
                                 variant="default"
                                 size="sm"
-                                className="flex-1"
+                                className="flex-1 text-xs py-1.5 h-auto"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();

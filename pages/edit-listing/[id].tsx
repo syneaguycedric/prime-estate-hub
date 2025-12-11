@@ -98,6 +98,8 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
     const [characteristics, setCharacteristics] = useState<Array<{ name: string; value: string }>>([]);
     const [isDragging, setIsDragging] = useState(false);
 
+    const MAX_IMAGES = 5;
+
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             router.push("/login");
@@ -272,7 +274,27 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
 
     // Fonction pour traiter les fichiers (sélection ou drop)
     const processFiles = (files: File[]) => {
-        for (const file of files) {
+        // Vérifier la limite de photos
+        const currentImageCount = images.length;
+        const remainingSlots = MAX_IMAGES - currentImageCount;
+
+        if (remainingSlots <= 0) {
+            toast.error("Limite atteinte", {
+                description: `Vous ne pouvez ajouter que ${MAX_IMAGES} photos maximum`,
+            });
+            return;
+        }
+
+        // Limiter le nombre de fichiers à traiter selon les places restantes
+        const filesToProcess = files.slice(0, remainingSlots);
+
+        if (files.length > remainingSlots) {
+            toast.warning("Limite de photos", {
+                description: `Seulement ${remainingSlots} photo(s) supplémentaire(s) autorisée(s)`,
+            });
+        }
+
+        for (const file of filesToProcess) {
             // Validation du fichier
             if (!file.type.startsWith("image/")) {
                 toast.error("Fichier invalide", {
@@ -726,23 +748,48 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Photos du bien *</CardTitle>
-                                    <CardDescription>Ajoutez au moins une photo de votre bien</CardDescription>
+                                    <CardDescription>
+                                        Ajoutez au moins une photo de votre bien (maximum {MAX_IMAGES} photos)
+                                        {images.length > 0 && (
+                                            <span className="ml-2 text-muted-foreground">
+                                                ({images.length}/{MAX_IMAGES})
+                                            </span>
+                                        )}
+                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {/* Zone de drop */}
                                     <div
-                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                                            isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary"
+                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                                            images.length >= MAX_IMAGES
+                                                ? "border-muted bg-muted/50 cursor-not-allowed opacity-50"
+                                                : isDragging
+                                                ? "border-primary bg-primary/5 cursor-pointer"
+                                                : "border-border hover:border-primary cursor-pointer"
                                         }`}
-                                        onDragEnter={handleDragEnter}
-                                        onDragLeave={handleDragLeave}
-                                        onDragOver={handleDragOver}
-                                        onDrop={handleDrop}
+                                        onDragEnter={images.length < MAX_IMAGES ? handleDragEnter : undefined}
+                                        onDragLeave={images.length < MAX_IMAGES ? handleDragLeave : undefined}
+                                        onDragOver={images.length < MAX_IMAGES ? handleDragOver : undefined}
+                                        onDrop={images.length < MAX_IMAGES ? handleDrop : undefined}
                                     >
-                                        <input type="file" id="image-upload" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
-                                        <label htmlFor="image-upload" className="cursor-pointer">
+                                        <input
+                                            type="file"
+                                            id="image-upload"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleFileSelect}
+                                            className="hidden"
+                                            disabled={images.length >= MAX_IMAGES}
+                                        />
+                                        <label htmlFor="image-upload" className={images.length >= MAX_IMAGES ? "cursor-not-allowed" : "cursor-pointer"}>
                                             <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                            <p className="text-sm font-medium">{isDragging ? "Déposez vos images ici" : "Cliquez ou glissez-déposez vos images"}</p>
+                                            <p className="text-sm font-medium">
+                                                {images.length >= MAX_IMAGES
+                                                    ? `Limite de ${MAX_IMAGES} photos atteinte`
+                                                    : isDragging
+                                                    ? "Déposez vos images ici"
+                                                    : "Cliquez ou glissez-déposez vos images"}
+                                            </p>
                                             <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (max. 10MB par image)</p>
                                         </label>
                                     </div>

@@ -488,7 +488,7 @@ export async function fetchPropertiesWithFilters(
 
         // Gérer town et contractType dans un _AND si les deux sont présents
         const andFilters: any[] = [];
-        
+
         if (filters.town && contractType) {
             // Si on a les deux, les combiner dans un _AND
             andFilters.push({ town: { _eq: filters.town } });
@@ -518,7 +518,7 @@ export async function fetchPropertiesWithFilters(
                     { 'user_created': { 'plan': { 'code': { '_eq': 'premium' } } } },
                     { 'agency': { 'plan': { 'code': { '_eq': 'premium' } } } }
                 ];
-                
+
                 // Si on a aussi un filtre de recherche, combiner avec _and
                 if (searchOrFilter) {
                     // Si on a déjà un _AND avec town et contractType, l'ajouter
@@ -731,12 +731,13 @@ export async function fetchFeaturedPropertiesByZone(zoneId: string, limit: numbe
 /**
  * Récupère les annonces VIP (kylimmo) depuis l'API Directus
  * Filtre : agence avec plan kylimmo
+ * @param limit - Nombre maximum d'annonces à récupérer (défaut: 6)
  */
-export async function fetchVipProperties(): Promise<Property[]> {
+export async function fetchVipProperties(limit: number = 6): Promise<Property[]> {
     // Si on utilise les données mockées, fallback vers données locales
     if (USE_MOCK_DATA) {
         console.log('[DIRECTUS API] Using mock data for VIP properties');
-        return properties.slice(0, 6).map(formatProperty);
+        return properties.slice(0, limit).map(formatProperty);
     }
 
     try {
@@ -750,7 +751,7 @@ export async function fetchVipProperties(): Promise<Property[]> {
         // Construire l'URL avec paramètres
         const params: Record<string, string> = {
             fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
-            limit: '6',
+            limit: limit.toString(),
             filter: JSON.stringify(kylimmoFilter)
         };
 

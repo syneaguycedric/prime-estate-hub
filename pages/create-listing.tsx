@@ -112,6 +112,8 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [isDragging, setIsDragging] = useState(false);
 
+    const MAX_IMAGES = 5;
+
     // Handlers drag and drop
     const handleDragEnter = (e: React.DragEvent) => {
         e.preventDefault();
@@ -141,7 +143,27 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
 
     // Fonction pour traiter les fichiers (sélection ou drop)
     const processFiles = (files: File[]) => {
-        for (const file of files) {
+        // Vérifier la limite de photos
+        const currentImageCount = images.length;
+        const remainingSlots = MAX_IMAGES - currentImageCount;
+
+        if (remainingSlots <= 0) {
+            toast.error("Limite atteinte", {
+                description: `Vous ne pouvez ajouter que ${MAX_IMAGES} photos maximum`,
+            });
+            return;
+        }
+
+        // Limiter le nombre de fichiers à traiter selon les places restantes
+        const filesToProcess = files.slice(0, remainingSlots);
+
+        if (files.length > remainingSlots) {
+            toast.warning("Limite de photos", {
+                description: `Seulement ${remainingSlots} photo(s) supplémentaire(s) autorisée(s)`,
+            });
+        }
+
+        for (const file of filesToProcess) {
             // Validation du fichier
             if (!file.type.startsWith("image/")) {
                 toast.error("Fichier invalide", {
@@ -318,14 +340,14 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
     // Gestion des changements de champs
     const handleInputChange = (field: string, value: string) => {
         // Pour les champs numériques entiers, supprimer les virgules et points
-        const integerFields = ['price', 'rooms', 'bathrooms', 'kitchens', 'floors'];
+        const integerFields = ["price", "rooms", "bathrooms", "kitchens", "floors"];
         if (integerFields.includes(field)) {
             // Supprimer toutes les virgules et points (on veut juste des entiers)
-            const cleanedValue = value.replace(/[^\d]/g, '');
+            const cleanedValue = value.replace(/[^\d]/g, "");
             setFormData((prev) => ({ ...prev, [field]: cleanedValue }));
-        } else if (field === 'surfaceArea') {
+        } else if (field === "surfaceArea") {
             // Pour la surface, supprimer toutes les virgules et points (entiers uniquement)
-            const cleanedValue = value.replace(/[^\d]/g, '');
+            const cleanedValue = value.replace(/[^\d]/g, "");
             setFormData((prev) => ({ ...prev, [field]: cleanedValue }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
@@ -380,7 +402,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                                                 {geoZones.map((geoZone) => {
                                                     // Générer dynamiquement le slug pour chaque zone
                                                     const zoneValue = zoneNameToSlug(geoZone.name);
-                                                    
+
                                                     return (
                                                         <SelectItem key={geoZone.id} value={zoneValue}>
                                                             {geoZone.name}
@@ -622,23 +644,48 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Photos du bien *</CardTitle>
-                                    <CardDescription>Ajoutez au moins une photo de votre bien</CardDescription>
+                                    <CardDescription>
+                                        Ajoutez au moins une photo de votre bien (maximum {MAX_IMAGES} photos)
+                                        {images.length > 0 && (
+                                            <span className="ml-2 text-muted-foreground">
+                                                ({images.length}/{MAX_IMAGES})
+                                            </span>
+                                        )}
+                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {/* Zone de drop */}
                                     <div
-                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                                            isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary"
+                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                                            images.length >= MAX_IMAGES
+                                                ? "border-muted bg-muted/50 cursor-not-allowed opacity-50"
+                                                : isDragging
+                                                ? "border-primary bg-primary/5 cursor-pointer"
+                                                : "border-border hover:border-primary cursor-pointer"
                                         }`}
-                                        onDragEnter={handleDragEnter}
-                                        onDragLeave={handleDragLeave}
-                                        onDragOver={handleDragOver}
-                                        onDrop={handleDrop}
+                                        onDragEnter={images.length < MAX_IMAGES ? handleDragEnter : undefined}
+                                        onDragLeave={images.length < MAX_IMAGES ? handleDragLeave : undefined}
+                                        onDragOver={images.length < MAX_IMAGES ? handleDragOver : undefined}
+                                        onDrop={images.length < MAX_IMAGES ? handleDrop : undefined}
                                     >
-                                        <input type="file" id="image-upload" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
-                                        <label htmlFor="image-upload" className="cursor-pointer">
+                                        <input
+                                            type="file"
+                                            id="image-upload"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleFileSelect}
+                                            className="hidden"
+                                            disabled={images.length >= MAX_IMAGES}
+                                        />
+                                        <label htmlFor="image-upload" className={images.length >= MAX_IMAGES ? "cursor-not-allowed" : "cursor-pointer"}>
                                             <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                            <p className="text-sm font-medium">{isDragging ? "Déposez vos images ici" : "Cliquez ou glissez-déposez vos images"}</p>
+                                            <p className="text-sm font-medium">
+                                                {images.length >= MAX_IMAGES
+                                                    ? `Limite de ${MAX_IMAGES} photos atteinte`
+                                                    : isDragging
+                                                    ? "Déposez vos images ici"
+                                                    : "Cliquez ou glissez-déposez vos images"}
+                                            </p>
                                             <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (max. 10MB par image)</p>
                                         </label>
                                     </div>
@@ -742,11 +789,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                             className="bg-card border border-border rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4"
                         >
                             <div className="text-center space-y-4">
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    className="w-16 h-16 mx-auto"
-                                >
+                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-16 h-16 mx-auto">
                                     <Loader2 className="w-16 h-16 text-primary" />
                                 </motion.div>
 
@@ -759,23 +802,13 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                                     >
                                         Publication en cours...
                                     </motion.p>
-                                    <motion.p
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3 }}
-                                        className="text-sm text-muted-foreground"
-                                    >
+                                    <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-sm text-muted-foreground">
                                         Veuillez patienter pendant le chargement des photos et la création de l'annonce
                                     </motion.p>
                                 </div>
 
                                 {/* Points de progression animés */}
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.4 }}
-                                    className="flex justify-center space-x-2 pt-2"
-                                >
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex justify-center space-x-2 pt-2">
                                     {[0, 1, 2].map((index) => (
                                         <motion.div
                                             key={index}

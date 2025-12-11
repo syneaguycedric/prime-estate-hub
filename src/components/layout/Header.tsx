@@ -213,7 +213,7 @@ const Header = ({ onOpenFilters, onSearch, onReset, view, onViewChange, activeFi
                         </Button>
                     )}
 
-                    <Button variant="hero" size="sm" onClick={handlePublishClick}>
+                    <Button variant="hero" size="sm" onClick={handlePublishClick} className="text-lg">
                         <PlusCircle className="h-4 w-4 mr-2" />
                         {getPublishButtonLabel()}
                     </Button>

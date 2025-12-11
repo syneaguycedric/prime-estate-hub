@@ -286,6 +286,15 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                                     <div>
                                         <h2 className="text-2xl font-bold text-foreground">En vedette</h2>
                                     </div>
+                                    <Button
+                                        onClick={() => router.push(`/properties?plan=premium`)}
+                                        variant="default"
+                                        size="sm"
+                                        className="shadow-md hover:shadow-lg transition-shadow"
+                                    >
+                                        <Award className="h-4 w-4 mr-2" />
+                                        Voir plus
+                                    </Button>
                                 </div>
 
                                 {/* Section Grand Abidjan */}
@@ -296,16 +305,16 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                                         <Separator className="flex-1" />
                                     </div>
                                     {featuredPropertiesGrandAbidjan.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {featuredPropertiesGrandAbidjan.slice(0, 6).map((property, index) => (
-                                                <div key={`featured-ga-${property.id}`} className="group relative">
-                                                    {/* Badge Premium simple en coin */}
-                                                    <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                            {featuredPropertiesGrandAbidjan.map((property, index) => (
+                                                <div key={`featured-ga-${property.id}`} className="group relative h-full">
+                                                    {/* Badge Premium positionné collé au type de contrat à droite */}
+                                                    <span className="pointer-events-none absolute top-10 right-3 z-20 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
                                                         Premium
                                                     </span>
 
                                                     {/* Carte premium */}
-                                                    <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                    <div className="h-full transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
                                                         <PropertyCardAnimated {...property} index={index} />
                                                     </div>
                                                 </div>
@@ -326,16 +335,16 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                                         <Separator className="flex-1" />
                                     </div>
                                     {featuredPropertiesHorsAbidjan.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {featuredPropertiesHorsAbidjan.slice(0, 6).map((property, index) => (
-                                                <div key={`featured-ha-${property.id}`} className="group relative">
-                                                    {/* Badge Premium simple en coin */}
-                                                    <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                            {featuredPropertiesHorsAbidjan.map((property, index) => (
+                                                <div key={`featured-ha-${property.id}`} className="group relative h-full">
+                                                    {/* Badge Premium positionné collé au type de contrat à droite */}
+                                                    <span className="pointer-events-none absolute top-10 right-3 z-20 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
                                                         Premium
                                                     </span>
 
                                                     {/* Carte premium */}
-                                                    <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                    <div className="h-full transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
                                                         <PropertyCardAnimated {...property} index={index} />
                                                     </div>
                                                 </div>
@@ -375,20 +384,29 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                                     <div>
                                         <h2 className="text-2xl font-bold text-foreground">{subscriptionPlan?.title || "Annonces kylimmo"}</h2>
                                     </div>
+                                    <Button
+                                        onClick={() => router.push(`/properties?plan=kylimmo`)}
+                                        variant="default"
+                                        size="sm"
+                                        className="shadow-md hover:shadow-lg transition-shadow"
+                                    >
+                                        <Award className="h-4 w-4 mr-2" />
+                                        Voir plus
+                                    </Button>
                                 </div>
 
                                 {/* Grille des annonces VIP */}
                                 {vipProperties.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {vipProperties.slice(0, 4).map((property, index) => (
-                                            <div key={`vip-${property.id}`} className="group relative">
-                                                {/* Badge VIP simple en coin */}
-                                                <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                        {vipProperties.slice(0, 9).map((property, index) => (
+                                            <div key={`vip-${property.id}`} className="group relative h-full">
+                                                {/* Badge VIP positionné collé au type de contrat à droite */}
+                                                <span className="pointer-events-none absolute top-10 right-3 z-20 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
                                                     {subscriptionPlan?.code || "kylimmo"}
                                                 </span>
 
                                                 {/* Carte premium */}
-                                                <div className="transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                <div className="h-full transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
                                                     <PropertyCardAnimated {...property} index={index} />
                                                 </div>
                                             </div>
@@ -452,11 +470,11 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         const grandAbidjanZone = geoZones.find((z) => z.name === "Grand Abidjan");
         const horsAbidjanZone = geoZones.find((z) => z.name === "Hors Abidjan");
 
-        // Récupérer les annonces en vedette par zone et VIP (kylimmo) - NE PAS MODIFIER fetchVipProperties
+        // Récupérer les annonces en vedette par zone et VIP (kylimmo)
         const [featuredPropertiesGrandAbidjan, featuredPropertiesHorsAbidjan, vipProperties] = await Promise.all([
             grandAbidjanZone ? fetchFeaturedPropertiesByZone(grandAbidjanZone.id, 6) : Promise.resolve([]),
             horsAbidjanZone ? fetchFeaturedPropertiesByZone(horsAbidjanZone.id, 6) : Promise.resolve([]),
-            fetchVipProperties(), // Appel API inchangé pour les annonces kylimmo
+            fetchVipProperties(9), // Limite à 9 éléments pour les annonces kylimmo
         ]);
 
         // Headers pour la mise en cache - longue durée pour la page d'accueil
