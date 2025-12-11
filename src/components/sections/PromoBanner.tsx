@@ -22,7 +22,7 @@ const PromoBanner = () => {
     };
 
     const handleListingClick = () => {
-        window.open("https://kylimmo.net/", "_blank", "noopener,noreferrer");
+        window.open("https://kylimmo.net/estimation-immobiliere/", "_blank", "noopener,noreferrer");
     };
 
     return (
@@ -32,7 +32,7 @@ const PromoBanner = () => {
                     {/* Section gauche - Marron avec texte blanc */}
                     <motion.div
                         onClick={handleAgencyClick}
-                        className="relative bg-primary p-5 md:p-5 cursor-pointer group flex-1 overflow-hidden"
+                        className="relative bg-primary py-2.5 px-5 md:py-2.5 md:px-5 cursor-pointer group flex-1 overflow-hidden"
                         whileHover={{ scale: 1.01 }}
                         transition={{ duration: 0.2 }}
                         style={{
@@ -46,7 +46,7 @@ const PromoBanner = () => {
                                 </div>
                             </div>
                             <div className="flex-1 min-w-0 text-center md:text-left">
-                                <h3 className="text-base md:text-sm font-semibold text-white leading-relaxed md:leading-tight group-hover:text-white/95 transition-colors duration-300">
+                                <h3 className="text-2xl md:text-xl font-semibold text-white leading-relaxed md:leading-tight group-hover:text-white/95 transition-colors duration-300">
                                     Accéder à l'agence Kylimmo
                                 </h3>
                             </div>
@@ -61,7 +61,7 @@ const PromoBanner = () => {
                     {/* Section droite - Blanc avec texte marron */}
                     <motion.div
                         onClick={handleListingClick}
-                        className="relative bg-white p-5 md:p-5 cursor-pointer group border-t-2 md:border-t-0 border-primary/30 flex-1 md:absolute md:top-0 md:right-0 md:w-full md:h-full"
+                        className="relative bg-white py-2.5 px-5 md:py-2.5 md:px-5 cursor-pointer group border-t-2 md:border-t-0 border-primary/30 flex-1 md:absolute md:top-0 md:right-0 md:w-full md:h-full"
                         whileHover={{ scale: 1.01 }}
                         transition={{ duration: 0.2 }}
                         style={{
@@ -75,7 +75,7 @@ const PromoBanner = () => {
                                 </div>
                             </div>
                             <div className="flex-1 min-w-0 text-center md:text-right md:order-2">
-                                <h3 className="text-base md:text-sm font-semibold text-primary leading-relaxed md:leading-tight group-hover:text-primary/90 transition-colors duration-300 whitespace-nowrap">
+                                <h3 className="text-2xl md:text-xl font-semibold text-primary leading-relaxed md:leading-tight group-hover:text-primary/90 transition-colors duration-300 whitespace-nowrap">
                                     Confier un bien à Kylimmo
                                 </h3>
                             </div>
