@@ -122,7 +122,7 @@ const HomeHeader = () => {
                     )}
 
                     {/* Bouton Publier - visible sur mobile et desktop */}
-                    <Button variant="hero" size="sm" onClick={handlePublishClick} className="flex items-center text-lg">
+                    <Button variant="hero" size="sm" onClick={handlePublishClick} className="flex items-center text-sm md:text-base lg:text-lg">
                         <PlusCircle className="h-4 w-4 mr-2" />
                         <span>{getPublishButtonLabel()}</span>
                     </Button>

@@ -46,7 +46,7 @@ const PromoBanner = () => {
                                 </div>
                             </div>
                             <div className="flex-1 min-w-0 text-center md:text-left">
-                                <h3 className="text-2xl md:text-xl font-semibold text-white leading-relaxed md:leading-tight group-hover:text-white/95 transition-colors duration-300">
+                                <h3 className="text-base md:text-lg lg:text-xl font-semibold text-white leading-relaxed md:leading-tight group-hover:text-white/95 transition-colors duration-300">
                                     Accéder à l'agence Kylimmo
                                 </h3>
                             </div>
@@ -75,7 +75,7 @@ const PromoBanner = () => {
                                 </div>
                             </div>
                             <div className="flex-1 min-w-0 text-center md:text-right md:order-2">
-                                <h3 className="text-2xl md:text-xl font-semibold text-primary leading-relaxed md:leading-tight group-hover:text-primary/90 transition-colors duration-300 whitespace-nowrap">
+                                <h3 className="text-base md:text-lg lg:text-xl font-semibold text-primary leading-relaxed md:leading-tight group-hover:text-primary/90 transition-colors duration-300 whitespace-nowrap">
                                     Confier un bien à Kylimmo
                                 </h3>
                             </div>
