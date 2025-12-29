@@ -447,6 +447,24 @@ class SecureApiClient {
     }
 
     /**
+     * Méthode PATCH simplifiée
+     */
+    async patch<T = unknown>(
+        targetDomain: string,
+        path: string,
+        body: unknown,
+        options: Omit<ProxyRequestOptions, 'method' | 'body'> = {}
+    ): Promise<T> {
+        const response = await this.secureRequest<T>(targetDomain, path, {
+            ...options,
+            method: 'PATCH',
+            body,
+        });
+
+        return response.data;
+    }
+
+    /**
      * Invalider le cache pour une clé donnée
      */
     async invalidateCache(cacheKey: string): Promise<void> {
@@ -491,6 +509,7 @@ export function useSecureApi() {
         get: apiClient.get.bind(apiClient),
         post: apiClient.post.bind(apiClient),
         put: apiClient.put.bind(apiClient),
+        patch: apiClient.patch.bind(apiClient),
         delete: apiClient.delete.bind(apiClient),
         invalidateCache: apiClient.invalidateCache.bind(apiClient),
         healthCheck: apiClient.healthCheck.bind(apiClient),

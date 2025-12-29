@@ -22,7 +22,7 @@ export default async function handler(
         if (req.method === 'GET') {
             console.log('[PROFILE API] Fetching user profile');
 
-            const response = await fetch(`${directusUrl}/users/me?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,account.agency.*,account.agency.address.*,role.*`, {
+            const response = await fetch(`${directusUrl}/users/me?fields=*.*`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

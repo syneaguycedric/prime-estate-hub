@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('[LIST AGENCIES API] Fetching agencies list');
 
-        const response = await fetch(`${directusUrl}/items/estate_agencies?fields=*.*,docs.*,user_created.first_name,user_created.last_name`, {
+        const response = await fetch(`${directusUrl}/items/estate_agencies?fields=*,docs.*,town.*,user_created.*`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

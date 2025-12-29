@@ -47,7 +47,7 @@ export interface User {
     status?: string;
     last_access?: string | null;
     plan?: SubscriptionPlan | null;
-    agency?: string | null;
+    agency?: string | Agency | null;
     tags?: string | null;
     account?: {
         id: string;
@@ -74,57 +74,63 @@ export interface Contact {
 }
 
 // Interface pour l'adresse d'agence
-export interface AgencyAddress {
-    id: number;
-    country: string;
-    state: string;
-    city: string;
-    street: string;
-    geocoord?: {
-        type: string;
-        coordinates: [number, number];
-    };
-    contacts: Contact[];
-    social_links?: Array<{
-        service: string;
-        url: string;
-    }>;
-}
-
 // Interface pour les agences immobilières
 export interface Agency {
     id: string;
     title: string;
-    address: AgencyAddress; // Maintenant objet complet au lieu de juste ID
+    description?: string;
+    contacts?: Array<{
+        type: "phone" | "email";
+        value: string;
+    }>;
+    social_links?: Array<{
+        service: string;
+        url: string;
+    }>;
+    geocoord?: {
+        type: "Point";
+        coordinates: [number, number];
+    };
+    street?: string;
+    town?: string | {
+        id: string;
+        name: string;
+        [key: string]: any;
+    };
     docs?: any[];
     date_created?: string;
     date_updated?: string;
-    user_created?: string;
-    user_updated?: string;
+    user_created?: string | {
+        id: string;
+        first_name?: string;
+        last_name?: string;
+        phoneNumber?: string;
+        email?: string;
+        [key: string]: any;
+    };
+    user_updated?: string | null;
     status?: string;
+    plan?: string | null;
 }
 
 // Interface pour la création d'une agence
 export interface CreateAgencyData {
     title: string;
-    address: {
-        country: string;
-        state: string;
-        city: string;
-        street: string;
-        geocoord?: {
-            type: "Point";
-            coordinates: [number, number];
-        };
-        contacts?: Array<{
-            type: "email" | "phone";
-            value: string;
-        }>;
-        social_links?: Array<{
-            service: string;
-            url: string;
-        }>;
+    description?: string;
+    contacts?: Array<{
+        type: "phone" | "email";
+        value: string;
+    }>;
+    social_links?: Array<{
+        service: string;
+        url: string;
+    }>;
+    geocoord?: {
+        type: "Point";
+        coordinates: [number, number];
     };
+    street?: string;
+    town?: string; // UUID de la ville
     docs?: any[];
 }
 
@@ -221,6 +227,26 @@ export interface SubscriptionPlan {
     agencies?: any[];
 }
 
+// Interface pour une promotion/boost d'annonce
+export interface PromotionRange {
+    id: string;
+    code: string;
+    sort: number | null;
+    title: string;
+    price: number;
+    duration: number;
+    items_count: number;
+}
+
+// Interface pour un moyen de paiement
+export interface PaymentMethod {
+    id: string;
+    sort: number | null;
+    code: string;
+    title: string;
+    logo: DirectusFile | null;
+}
+
 // Interface pour les fichiers Directus
 export interface DirectusFile {
     id: string;
@@ -309,7 +335,7 @@ export async function fetchProperties(): Promise<Property[]> {
 
         const response = await apiClient.get<DirectusResponse<Property[]>>(
             DIRECTUS_DOMAIN,
-            'items/real_estates?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
+            'items/real_estates?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*',
             {
                 cacheKey: 'real-estates-list',
                 cacheTtl: 300000, // 5 minutes
@@ -602,7 +628,7 @@ export async function fetchPropertiesWithFilters(
         // Construire l'URL avec paramètres
         const offset = (page - 1) * limit;
         const params: Record<string, string> = {
-            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*',
             limit: limit.toString(),
             offset: offset.toString(),
             meta: 'filter_count'
@@ -688,7 +714,7 @@ export async function fetchFeaturedProperties(): Promise<Property[]> {
 
         // Construire l'URL avec paramètres
         const params: Record<string, string> = {
-            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*',
             limit: '4',
             filter: JSON.stringify(premiumFilter)
         };
@@ -720,7 +746,7 @@ export async function fetchFeaturedProperties(): Promise<Property[]> {
  * @param zoneId - ID de la zone géographique
  * @param limit - Nombre maximum d'annonces à récupérer (défaut: 6)
  */
-export async function fetchFeaturedPropertiesByZone(zoneId: string, limit: number = 6): Promise<Property[]> {
+export async function fetchFeaturedPropertiesByZone(zoneId: string | null, limit: number = 6): Promise<Property[]> {
     // Si on utilise les données mockées, fallback vers données locales
     if (USE_MOCK_DATA) {
         console.log('[DIRECTUS API] Using mock data for featured properties by zone');
@@ -728,41 +754,49 @@ export async function fetchFeaturedPropertiesByZone(zoneId: string, limit: numbe
     }
 
     try {
-        console.log(`[DIRECTUS API] Fetching featured properties (premium) for zone ${zoneId} from API`);
-
-        // Construire le filtre premium avec zone : 
-        // (user_created.plan.code='premium' OU agency.plan.code='premium') ET town.zone=zoneId
-        const premiumFilter = {
-            "_and": [
-                {
-                    "_or": [
-                        { "user_created": { "plan": { "code": { "_eq": "premium" } } } },
-                        { "agency": { "plan": { "code": { "_eq": "premium" } } } }
-                    ]
-                },
-                { "town": { "zone": { "_eq": zoneId } } }
-            ]
-        };
-
-        // Construire l'URL avec paramètres
+        // Construire l'URL avec paramètres (mêmes query params que l'ancienne API)
         const params: Record<string, string> = {
-            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
-            limit: limit.toString(),
-            filter: JSON.stringify(premiumFilter)
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*',
         };
+
+        // Ajouter le filtre seulement si zoneId est fourni
+        if (zoneId) {
+            const zoneFilter = {
+                "zone": { "_eq": zoneId }
+            };
+            params.filter = JSON.stringify(zoneFilter);
+        }
 
         const queryString = new URLSearchParams(params).toString();
+        const fullUrl = `https://${DIRECTUS_DOMAIN}/extended-services-api/real-estate/list/featured?${queryString}`;
 
+        // Log de la requête complète
+        console.log(`\n[REQUEST] GET ${fullUrl}`);
+        if (zoneId) {
+            console.log(`[FILTER] {"zone":{"_eq":"${zoneId}"}}`);
+        } else {
+            console.log(`[FILTER] No filter - fetching all featured properties`);
+        }
+
+        // Utiliser la nouvelle API featured
         const response = await apiClient.get<DirectusResponse<Property[]>>(
             DIRECTUS_DOMAIN,
-            `items/real_estates?${queryString}`
+            `extended-services-api/real-estate/list/featured?${queryString}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                },
+            }
         );
 
         const formattedProperties = response.data.map(formatProperty);
 
-        console.log(`[DIRECTUS API] Fetched ${formattedProperties.length} featured properties for zone ${zoneId}`);
+        // Limiter le nombre de résultats si nécessaire (seulement si zoneId est fourni)
+        const limitedProperties = zoneId ? formattedProperties.slice(0, limit) : formattedProperties;
 
-        return formattedProperties;
+        console.log(`[RESPONSE] ${limitedProperties.length} properties returned${zoneId ? ` for zone ID: ${zoneId}` : ' (all zones)'}\n`);
+
+        return limitedProperties;
 
     } catch (error) {
         console.error(`[DIRECTUS API] Error fetching featured properties for zone ${zoneId}:`, error);
@@ -785,32 +819,36 @@ export async function fetchVipProperties(limit: number = 6): Promise<Property[]>
     }
 
     try {
-        console.log('[DIRECTUS API] Fetching VIP properties (kylimmo) from API');
+        console.log('[DIRECTUS API] Fetching VIP properties (kylimmo) from new exclusive-plan-estates API');
 
-        // Construire le filtre kylimmo : agency.plan.code='kylimmo'
-        const kylimmoFilter = {
-            "agency": { "plan": { "code": { "_eq": "kylimmo" } } }
-        };
-
-        // Construire l'URL avec paramètres
+        // Construire l'URL avec paramètres pour la nouvelle API
         const params: Record<string, string> = {
-            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*',
-            limit: limit.toString(),
-            filter: JSON.stringify(kylimmoFilter)
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*',
         };
 
         const queryString = new URLSearchParams(params).toString();
 
+        // Utiliser la nouvelle API exclusive-plan-estates
+        // L'API retourne { data: [...] } comme l'ancienne API
         const response = await apiClient.get<DirectusResponse<Property[]>>(
             DIRECTUS_DOMAIN,
-            `items/real_estates?${queryString}`
+            `extended-services-api/real-estate/list/exclusive-plan-estates?${queryString}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                },
+            }
         );
 
+        // Même pattern que les autres fonctions : apiClient.get retourne { data: [...] }
         const formattedProperties = response.data.map(formatProperty);
 
-        console.log(`[DIRECTUS API] Fetched ${formattedProperties.length} VIP properties`);
+        // Limiter le nombre de résultats si nécessaire
+        const limitedProperties = formattedProperties.slice(0, limit);
 
-        return formattedProperties;
+        console.log(`[DIRECTUS API] Fetched ${limitedProperties.length} VIP properties from exclusive-plan-estates API`);
+
+        return limitedProperties;
 
     } catch (error) {
         console.error('[DIRECTUS API] Error fetching VIP properties:', error);
@@ -1023,8 +1061,6 @@ export async function invalidatePropertyCache(propertyId: string): Promise<void>
  */
 export async function fetchGeoZones(): Promise<GeoZone[]> {
     try {
-        console.log('[DIRECTUS API] Fetching geo zones from API');
-
         const response = await apiClient.get<DirectusResponse<GeoZone[]>>(
             DIRECTUS_DOMAIN,
             'items/geo_zones?fields=*.*',
@@ -1033,8 +1069,6 @@ export async function fetchGeoZones(): Promise<GeoZone[]> {
                 cacheTtl: 3600000, // 1 heure - les zones changent rarement
             }
         );
-
-        console.log(`[DIRECTUS API] Fetched ${response.data.length} geo zones`);
 
         return response.data;
     } catch (error) {
@@ -1715,7 +1749,7 @@ export async function becomeAdvertiser(
 export async function togglePropertyStatus(
     accessToken: string,
     propertyId: string,
-    newStatus: 'published' | 'draft'
+    newStatus: 'published' | 'draft' | 'expired' | 'archived' | 'rejected'
 ): Promise<{ success: boolean; error?: string }> {
     try {
         console.log('[DIRECTUS API] Toggling property status:', propertyId, 'to', newStatus);
@@ -1978,5 +2012,228 @@ export async function attachAgencyToUser(userId: string, agencyId: string, acces
         return { success: true };
     } catch (error) {
         return { success: false, error: 'Erreur réseau' };
+    }
+}
+
+/**
+ * Relancer une annonce expirée (PATCH /extended-services-api/real-estate/:id/reload)
+ */
+export async function reloadProperty(propertyId: string): Promise<{ success: boolean; error?: string; property?: Property }> {
+    try {
+        console.log(`[DIRECTUS API] Reloading property ${propertyId}`);
+
+        const response = await apiClient.patch<DirectusResponse<Property>>(
+            DIRECTUS_DOMAIN,
+            `extended-services-api/real-estate/${propertyId}/reload?fields=*.*`,
+            {}
+        );
+
+        // Formater la propriété pour l'UI
+        const formattedProperty = formatProperty(response.data);
+
+        console.log('[DIRECTUS API] Property reloaded successfully');
+
+        return {
+            success: true,
+            property: formattedProperty,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error reloading property:', error);
+
+        let errorMessage = 'Erreur lors de la relance de l\'annonce';
+
+        if (error.status === 401) {
+            errorMessage = 'Session expirée. Veuillez vous reconnecter';
+        } else if (error.status === 404) {
+            errorMessage = 'Annonce introuvable';
+        } else if (error.status === 403) {
+            errorMessage = 'Vous n\'avez pas les permissions pour relancer cette annonce';
+        } else if (error.data?.message) {
+            errorMessage = error.data.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+}
+
+/**
+ * Soumettre à nouveau une annonce rejetée (PATCH /extended-services-api/real-estate/:id/resubmit)
+ */
+export async function resubmitProperty(propertyId: string): Promise<{ success: boolean; error?: string; property?: Property }> {
+    try {
+        console.log(`[DIRECTUS API] Resubmitting property ${propertyId}`);
+
+        const response = await apiClient.patch<DirectusResponse<Property>>(
+            DIRECTUS_DOMAIN,
+            `extended-services-api/real-estate/${propertyId}/resubmit?fields=*.*`,
+            {}
+        );
+
+        // Formater la propriété pour l'UI
+        const formattedProperty = formatProperty(response.data);
+
+        console.log('[DIRECTUS API] Property resubmitted successfully');
+
+        return {
+            success: true,
+            property: formattedProperty,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error resubmitting property:', error);
+
+        let errorMessage = 'Erreur lors de la soumission de l\'annonce';
+
+        if (error.status === 401) {
+            errorMessage = 'Session expirée. Veuillez vous reconnecter';
+        } else if (error.status === 404) {
+            errorMessage = 'Annonce introuvable';
+        } else if (error.status === 403) {
+            errorMessage = 'Vous n\'avez pas les permissions pour soumettre cette annonce';
+        } else if (error.data?.message) {
+            errorMessage = error.data.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+}
+
+/**
+ * Récupère la liste des promotions disponibles pour booster les annonces
+ */
+export async function fetchPromotionRanges(): Promise<{ success: boolean; promotions?: PromotionRange[]; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Fetching promotion ranges from API');
+
+        const response = await apiClient.get<DirectusResponse<PromotionRange[]>>(
+            DIRECTUS_DOMAIN,
+            'items/promotion_ranges?fields=*.*',
+            {
+                cacheKey: 'promotion-ranges-list',
+                cacheTtl: 3600000, // 1 heure - les promotions changent rarement
+            }
+        );
+
+        console.log(`[DIRECTUS API] Fetched ${response.data.length} promotion ranges`);
+
+        return {
+            success: true,
+            promotions: response.data,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error fetching promotion ranges:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue lors de la récupération des promotions',
+            promotions: [],
+        };
+    }
+}
+
+/**
+ * Récupère la liste des moyens de paiement disponibles
+ */
+export async function fetchPaymentMethods(): Promise<{ success: boolean; paymentMethods?: PaymentMethod[]; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Fetching payment methods from API');
+
+        const response = await apiClient.get<DirectusResponse<PaymentMethod[]>>(
+            DIRECTUS_DOMAIN,
+            'items/payment_methods?fields=*.*',
+            {
+                cacheKey: 'payment-methods-list',
+                cacheTtl: 3600000, // 1 heure - les moyens de paiement changent rarement
+            }
+        );
+
+        console.log(`[DIRECTUS API] Fetched ${response.data.length} payment methods`);
+
+        return {
+            success: true,
+            paymentMethods: response.data,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error fetching payment methods:', error);
+        return {
+            success: false,
+            error: 'Une erreur est survenue lors de la récupération des moyens de paiement',
+            paymentMethods: [],
+        };
+    }
+}
+
+/**
+ * Interface pour créer une promotion
+ */
+export interface CreatePromotionData {
+    range: string; // ID de la promotion range
+    payment_method: string; // ID du moyen de paiement
+    estate_promotions: Array<{
+        real_estates_id: string; // ID de l'annonce
+    }>;
+}
+
+/**
+ * Crée une promotion pour booster une annonce
+ */
+export async function createPromotion(
+    promotionData: CreatePromotionData
+): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+        console.log('[DIRECTUS API] Creating promotion:', promotionData);
+
+        const response = await apiClient.post<DirectusResponse<any>>(
+            DIRECTUS_DOMAIN,
+            'extended-services-api/promotion?fields=*.*,payments.*,promotions.*,promotions.estate_promotions.*,promotions.estate_promotions.real_estates_id.*',
+            promotionData,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        console.log('[DIRECTUS API] Promotion created successfully');
+
+        return {
+            success: true,
+            data: response.data,
+        };
+
+    } catch (error: any) {
+        console.error('[DIRECTUS API] Error creating promotion:', error);
+
+        let errorMessage = 'Erreur lors de la création de la promotion';
+
+        if (error.status === 401) {
+            errorMessage = 'Session expirée. Veuillez vous reconnecter';
+        } else if (error.status === 400) {
+            errorMessage = 'Données invalides pour la promotion';
+        } else if (error.status === 403) {
+            errorMessage = 'Vous n\'avez pas les permissions pour créer cette promotion';
+        } else if (error.data?.message) {
+            errorMessage = error.data.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
     }
 }

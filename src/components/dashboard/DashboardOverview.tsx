@@ -255,7 +255,7 @@ export default function DashboardOverview() {
                                 )}
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs text-muted-foreground">En brouillon</span>
+                                <span className="text-xs text-muted-foreground">En attente de validation</span>
                                 {loadingStats ? (
                                     <Skeleton className="h-4 w-6" />
                                 ) : (

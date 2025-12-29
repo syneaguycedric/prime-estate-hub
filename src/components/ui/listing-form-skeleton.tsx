@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ListingFormSkeleton = () => {
     return (
         <div className="min-h-screen bg-background">
             {/* PageNavbar skeleton - déjà géré par PageNavbar */}
-            
+
             <div className="container mx-auto px-4 py-8 pt-24">
                 <div className="max-w-4xl mx-auto">
                     {/* Header skeleton */}
@@ -40,9 +40,9 @@ const ListingFormSkeleton = () => {
                             <CardTitle>
                                 <Skeleton className="h-6 w-48" />
                             </CardTitle>
-                            <CardDescription>
+                            <div className="text-sm text-muted-foreground">
                                 <Skeleton className="h-4 w-64" />
-                            </CardDescription>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -140,9 +140,9 @@ const ListingFormSkeleton = () => {
                             <CardTitle>
                                 <Skeleton className="h-6 w-24" />
                             </CardTitle>
-                            <CardDescription>
+                            <div className="text-sm text-muted-foreground">
                                 <Skeleton className="h-4 w-48" />
-                            </CardDescription>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -168,9 +168,9 @@ const ListingFormSkeleton = () => {
                             <CardTitle>
                                 <Skeleton className="h-6 w-40" />
                             </CardTitle>
-                            <CardDescription>
+                            <div className="text-sm text-muted-foreground">
                                 <Skeleton className="h-4 w-56" />
-                            </CardDescription>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -197,4 +197,3 @@ const ListingFormSkeleton = () => {
 };
 
 export default ListingFormSkeleton;
-

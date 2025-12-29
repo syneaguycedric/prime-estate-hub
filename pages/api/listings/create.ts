@@ -24,9 +24,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('[CREATE LISTING API] Creating listing:', listingData.title);
 
-        const response = await fetch(`${directusUrl}/items/real_estates`, {
+        const response = await fetch(`${directusUrl}/items/real_estates?fields=*,images.directus_files_id.*,notes.*,characteristics.*,documents.*,documents.file.*,town.*,user_created.*`, {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': authHeader,
             },

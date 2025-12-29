@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { Agency } from "@/lib/directus-api";
+import { Agency, GeoZone, fetchGeoZones } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import { deleteAgency } from "@/lib/directus-api";
 import AgencyFormModal from "./AgencyFormModal";
@@ -21,8 +21,20 @@ export default function AgenciesManager() {
     const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
     const [deletingAgency, setDeletingAgency] = useState<Agency | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [geoZones, setGeoZones] = useState<GeoZone[]>([]);
 
     useEffect(() => {
+        // Charger les zones géographiques
+        const loadGeoZones = async () => {
+            try {
+                const zones = await fetchGeoZones();
+                setGeoZones(zones);
+            } catch (error) {
+                console.error("[AGENCIES MANAGER] Error loading geo zones:", error);
+            }
+        };
+        loadGeoZones();
+
         // L'agence est maintenant directement dans user.account.agency
         setLoading(false);
     }, [user]);
@@ -43,7 +55,8 @@ export default function AgenciesManager() {
     }, [isEditModalOpen, showCreateModal, deletingAgency]);
 
     // Récupérer l'agence actuelle
-    const currentAgency = user?.account?.agency;
+    // Try root-level agency first, fallback to account.agency for backward compatibility
+    const currentAgency = user?.agency && typeof user.agency === "object" && "id" in user.agency ? (user.agency as Agency) : user?.account?.agency;
 
     const getStatusBadge = (status?: string) => {
         const normalizedStatus = status?.toLowerCase() || "published";
@@ -74,19 +87,50 @@ export default function AgenciesManager() {
     };
 
     const getAgencyLocation = (agency: Agency) => {
-        if (!agency.address) return "-";
-        const parts = [agency.address.street, agency.address.city, agency.address.state].filter(Boolean);
+        const parts: string[] = [];
+
+        // Obtenir l'ID de la town
+        const townId = typeof agency.town === "object" && agency.town?.id ? agency.town.id : typeof agency.town === "string" ? agency.town : null;
+
+        if (!townId) {
+            // Si pas de town, retourner juste la street si disponible
+            return agency.street || "-";
+        }
+
+        // Chercher la zone et la commune à partir de l'ID de la town
+        let zoneName: string | null = null;
+        let townName: string | null = null;
+
+        for (const geoZone of geoZones) {
+            const foundTown = geoZone.towns?.find((t) => t.id === townId);
+            if (foundTown) {
+                zoneName = geoZone.name;
+                townName = foundTown.name;
+                break;
+            }
+        }
+
+        // Si on n'a pas trouvé dans les GeoZones, essayer d'utiliser les données de l'objet town si disponible
+        if (!townName && typeof agency.town === "object" && agency.town?.name) {
+            townName = agency.town.name;
+        }
+
+        // Construire la chaîne au format "Zone, Commune, Street"
+        if (zoneName) parts.push(zoneName);
+        if (townName) parts.push(townName);
+        if (agency.street) parts.push(agency.street);
+
         return parts.length > 0 ? parts.join(", ") : "-";
     };
 
     const getAgencyContact = (agency: Agency, type: "email" | "phone") => {
-        if (!agency.address?.contacts) return null;
-        return agency.address.contacts.find((c) => c.type === type);
+        if (!agency.contacts) return null;
+        return agency.contacts.find((c) => c.type === type);
     };
 
     const getAllContacts = (agency: Agency) => {
-        if (!agency.address?.contacts) return [];
-        return agency.address.contacts;
+        if (!agency.contacts) return [];
+        return agency.contacts;
     };
 
     const handleAddAgency = () => {
@@ -138,7 +182,7 @@ export default function AgenciesManager() {
                 toast.success("Agence supprimée", {
                     description: "L'agence a été supprimée avec succès",
                 });
-                
+
                 // Rafraîchir le contexte utilisateur
                 if (refreshUser) {
                     await refreshUser();
@@ -157,7 +201,6 @@ export default function AgenciesManager() {
             setIsDeleting(false);
         }
     };
-
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
@@ -222,6 +265,16 @@ export default function AgenciesManager() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {/* Description */}
+                            {currentAgency.description && (
+                                <>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">{currentAgency.description}</p>
+                                    </div>
+                                    <Separator />
+                                </>
+                            )}
+
                             {/* Localisation */}
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
@@ -358,7 +411,6 @@ export default function AgenciesManager() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
         </motion.div>
     );
 }

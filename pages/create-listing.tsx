@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import PageNavbar from "@/components/layout/PageNavbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { uploadFile, createListing, CreateListingData, fetchGeoZones, GeoZone, zoneNameToSlug, findZoneBySlug } from "@/lib/directus-api";
+import { uploadFile, createListing, CreateListingData, fetchGeoZones, GeoZone, zoneNameToSlug, findZoneBySlug, Agency } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import Image from "next/image";
 
@@ -61,6 +61,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
     const [zone, setZone] = useState<string>("");
     const [areas, setAreas] = useState<string[]>([]);
     const [areasOpen, setAreasOpen] = useState(false);
+    const [associateWithAgency, setAssociateWithAgency] = useState(false);
 
     // Helper pour obtenir la zone complète à partir de la valeur simplifiée (slug)
     const getZoneByValue = (zoneValue: string): GeoZone | null => {
@@ -82,6 +83,39 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
         const town = selectedZone.towns.find((t) => t.id === id);
         return town?.name || "";
     };
+
+    // Obtenir l'ID de l'agence de l'utilisateur
+    const getUserAgencyId = (): string | null => {
+        if (!user) return null;
+        // user.agency peut être un objet Agency ou un string (UUID)
+        if (user.agency && typeof user.agency === "object" && "id" in user.agency) {
+            return user.agency.id;
+        } else if (typeof user.agency === "string") {
+            return user.agency;
+        }
+        // Fallback sur account.agency si disponible
+        if (user.account?.agency && typeof user.account.agency === "object" && "id" in user.account.agency) {
+            return user.account.agency.id;
+        }
+        return null;
+    };
+
+    const userAgencyId = getUserAgencyId();
+    const hasAgency = !!userAgencyId;
+
+    // Obtenir l'objet agence complet pour le titre
+    const getUserAgency = (): Agency | null => {
+        if (!user) return null;
+        if (user.agency && typeof user.agency === "object" && "id" in user.agency) {
+            return user.agency as Agency;
+        }
+        if (user.account?.agency && typeof user.account.agency === "object" && "id" in user.account.agency) {
+            return user.account.agency;
+        }
+        return null;
+    };
+
+    const userAgency = getUserAgency();
 
     const toggleArea = (id: string) => {
         // Sélection unique: remplace toujours par l'ID cliqué
@@ -302,7 +336,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                 floors: parseInt(formData.floors),
                 town: areas[0] || "", // ID de la commune/département sélectionné
                 location: formData.location.trim(), // Géolocalisation
-                ...(user?.agency && { agency: user.agency }), // Inclure agency uniquement si l'utilisateur en a une
+                ...(associateWithAgency && userAgencyId ? { agency: userAgencyId } : {}),
                 characteristics: characteristics.filter((char) => char.name.trim() && char.value.trim()),
                 type: formData.type,
                 images: uploadedImages.map((img) => ({ directus_files_id: img.fileId })),
@@ -380,6 +414,37 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                             <p className="text-muted-foreground mt-2">Remplissez les informations de votre bien immobilier</p>
                         </div>
 
+                        {/* Card d'association avec l'agence */}
+                        {hasAgency && (
+                            <Card
+                                className="mb-6 border-primary/20 bg-gradient-to-br from-primary/95 via-primary/90 to-primary/80 backdrop-blur-sm shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                                onClick={() => setAssociateWithAgency(!associateWithAgency)}
+                            >
+                                <CardContent className="p-4 md:p-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex items-center h-5 mt-0.5">
+                                            <Checkbox
+                                                id="associate-agency"
+                                                checked={associateWithAgency}
+                                                onCheckedChange={(checked) => setAssociateWithAgency(!!checked)}
+                                                className="border-primary-foreground/30 data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <Label htmlFor="associate-agency" className="text-base font-semibold text-primary-foreground cursor-pointer">
+                                                Associer cette annonce à mon agence
+                                            </Label>
+                                            <p className="text-sm text-primary-foreground/90">
+                                                Cette annonce sera associée à votre agence "{userAgency?.title || "votre agence"}". Les utilisateurs pourront voir que cette annonce
+                                                provient de votre agence.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Sélection de zone et commune/département */}
                         <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
                             <CardContent className="p-4 md:p-6">
@@ -414,12 +479,16 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
 
                                     {/* Communes / Départements */}
                                     <div className="md:col-span-8">
-                                        <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                        <Label className="text-xs text-muted-foreground">{selectedZone?.name === "Grand Abidjan" ? "Commune" : "Département"}</Label>
                                         <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
                                                     <span className="truncate min-w-0 flex-1 text-left">
-                                                        {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                        {areas.length === 1
+                                                            ? getAreaName(areas[0])
+                                                            : selectedZone?.name === "Grand Abidjan"
+                                                            ? "Choisir une commune"
+                                                            : "Choisir un département"}
                                                     </span>
                                                     <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                                                 </Button>

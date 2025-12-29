@@ -4,24 +4,21 @@ const DIRECTUS_API_URL = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || "https://ko
 
 interface CreateAgencyRequest {
     title: string;
-    address: {
-        country: string;
-        state: string;
-        city: string;
-        street: string;
-        geocoord?: {
-            type: "Point";
-            coordinates: [number, number];
-        };
+    description?: string;
         contacts?: Array<{
-            type: "email" | "phone";
+        type: "phone" | "email";
             value: string;
         }>;
         social_links?: Array<{
             service: string;
             url: string;
         }>;
+    geocoord?: {
+        type: "Point";
+        coordinates: [number, number];
     };
+    street?: string;
+    town?: string; // UUID de la ville
     docs?: any[];
 }
 
@@ -60,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 async function handleGetAgencies(req: NextApiRequest, res: NextApiResponse, token: string) {
     try {
-        const response = await fetch(`${DIRECTUS_API_URL}/items/estate_agencies?fields=*.*,docs.*`, {
+        const response = await fetch(`${DIRECTUS_API_URL}/items/estate_agencies?fields=*,docs.*,town.*,user_created.*`, {
             method: "GET",
             headers: {
                 Accept: "application/json",
@@ -100,39 +97,48 @@ async function handleCreateAgency(req: NextApiRequest, res: NextApiResponse, tok
         console.log("[CREATE AGENCY API] Body reçu:", JSON.stringify(body, null, 2));
 
         // Validation basique
-        if (!body.title || !body.address) {
-            console.error("[CREATE AGENCY API] Validation failed: title or address missing");
+        if (!body.title) {
+            console.error("[CREATE AGENCY API] Validation failed: title missing");
             return res.status(400).json({
                 success: false,
-                error: "Le titre et l'adresse sont requis",
+                error: "Le titre est requis",
             });
         }
 
-        if (!body.address.country || !body.address.state || !body.address.city || !body.address.street) {
-            console.error("[CREATE AGENCY API] Validation failed: address fields missing");
-            return res.status(400).json({
-                success: false,
-                error: "Tous les champs d'adresse sont requis (pays, région, ville, rue)",
-            });
-        }
-
-        // Préparer les données pour Directus
-        const agencyData = {
+        // Préparer les données pour Directus (structure plate selon la nouvelle API)
+        const agencyData: any = {
             title: body.title,
-            address: {
-                country: body.address.country,
-                state: body.address.state,
-                city: body.address.city,
-                street: body.address.street,
-                geocoord: body.address.geocoord || {
-                    type: "Point",
-                    coordinates: [0, 0],
-                },
-                contacts: body.address.contacts || [],
-                social_links: body.address.social_links || [],
-            },
-            docs: body.docs || [],
         };
+
+        if (body.description) {
+            agencyData.description = body.description;
+        }
+
+        if (body.contacts && body.contacts.length > 0) {
+            agencyData.contacts = body.contacts;
+        }
+
+        if (body.social_links && body.social_links.length > 0) {
+            agencyData.social_links = body.social_links;
+        }
+
+        if (body.geocoord) {
+            agencyData.geocoord = body.geocoord;
+        }
+
+        if (body.street) {
+            agencyData.street = body.street;
+        }
+
+        if (body.town) {
+            agencyData.town = body.town;
+        }
+
+        if (body.docs && body.docs.length > 0) {
+            agencyData.docs = body.docs;
+        } else {
+            agencyData.docs = [];
+        }
 
         console.log("[CREATE AGENCY API] Données préparées pour Directus:", JSON.stringify(agencyData, null, 2));
         console.log("[CREATE AGENCY API] URL:", `${DIRECTUS_API_URL}/items/estate_agencies?fields=*.*,docs.*`);

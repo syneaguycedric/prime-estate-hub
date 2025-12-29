@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, Loader2, MapPin, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/lib/toast-helpers";
 import { useApiWithRefresh } from "@/hooks/use-api-with-refresh";
-import { Agency } from "@/lib/directus-api";
+import { Agency, GeoZone, zoneNameToSlug, findZoneBySlug, fetchGeoZones } from "@/lib/directus-api";
 
 interface AgencyFormModalProps {
     open: boolean;
@@ -19,7 +20,7 @@ interface AgencyFormModalProps {
 }
 
 interface Contact {
-    type: "email" | "phone";
+    type: "phone" | "email";
     value: string;
 }
 
@@ -36,57 +37,126 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
 
     // Champs de base
     const [title, setTitle] = useState("");
-    const [country, setCountry] = useState("civ");
-    const [state, setState] = useState("");
-    const [city, setCity] = useState("");
+    const [description, setDescription] = useState("");
     const [street, setStreet] = useState("");
     const [latitude, setLatitude] = useState("");
     const [longitude, setLongitude] = useState("");
 
+    // Sélection zone et town
+    const [geoZones, setGeoZones] = useState<GeoZone[]>([]);
+    const [zone, setZone] = useState<string>("");
+    const [town, setTown] = useState<string>("");
+
     // Contacts
-    const [contacts, setContacts] = useState<Contact[]>([{ type: "email", value: "" }]);
+    const [contacts, setContacts] = useState<Contact[]>([{ type: "phone", value: "" }]);
 
     // Réseaux sociaux
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+
+    // Charger les geoZones
+    useEffect(() => {
+        if (open) {
+            const loadGeoZones = async () => {
+                try {
+                    const zones = await fetchGeoZones();
+                    setGeoZones(zones);
+                } catch (error) {
+                    console.error("[AGENCY FORM] Error loading geo zones:", error);
+                    toast.error("Erreur", {
+                        description: "Impossible de charger les zones géographiques",
+                    });
+                }
+            };
+            loadGeoZones();
+        }
+    }, [open]);
+
+    // Helper pour obtenir la zone complète à partir de la valeur simplifiée (slug)
+    const getZoneByValue = (zoneValue: string): GeoZone | null => {
+        return findZoneBySlug(zoneValue, geoZones);
+    };
+
+    // Obtenir la zone actuellement sélectionnée
+    const selectedZone = useMemo(() => {
+        if (!zone || geoZones.length === 0) return null;
+        return getZoneByValue(zone);
+    }, [zone, geoZones]);
+
+    // Obtenir les towns de la zone sélectionnée
+    const getTownsForSelectedZone = () => {
+        if (!selectedZone) return [];
+        return selectedZone.towns || [];
+    };
+
+    // Obtenir le nom d'une commune/département par son ID
+    const getAreaName = (id: string) => {
+        if (!selectedZone) return "";
+        const townObj = selectedZone.towns.find((t) => t.id === id);
+        return townObj?.name || "";
+    };
+
+    // Obtenir le label du placeholder selon la zone sélectionnée
+    const getTownPlaceholder = () => {
+        if (!selectedZone) return "Choisir une commune ou un département";
+        if (selectedZone.name === "Grand Abidjan") {
+            return "Choisir une commune";
+        }
+        return "Choisir un département";
+    };
 
     // Préremplir le formulaire en mode édition
     useEffect(() => {
         if (mode === "edit" && agency && open) {
             console.log("[EDIT AGENCY] Prefilling form with:", agency);
             setTitle(agency.title || "");
-            setCountry(agency.address?.country || "civ");
-            setState(agency.address?.state || "");
-            setCity(agency.address?.city || "");
-            setStreet(agency.address?.street || "");
+            setDescription(agency.description || "");
+            setStreet(agency.street || "");
 
             // Préremplir geocoord
-            if (agency.address?.geocoord?.coordinates) {
-                setLongitude(agency.address.geocoord.coordinates[0].toString());
-                setLatitude(agency.address.geocoord.coordinates[1].toString());
+            if (agency.geocoord?.coordinates) {
+                setLongitude(agency.geocoord.coordinates[0].toString());
+                setLatitude(agency.geocoord.coordinates[1].toString());
             }
 
             // Préremplir contacts
-            if (agency.address?.contacts && agency.address.contacts.length > 0) {
-                setContacts(agency.address.contacts);
+            if (agency.contacts && agency.contacts.length > 0) {
+                setContacts(agency.contacts as Contact[]);
             }
 
             // Préremplir social links
-            if (agency.address?.social_links && agency.address.social_links.length > 0) {
-                setSocialLinks(agency.address.social_links);
+            if (agency.social_links && agency.social_links.length > 0) {
+                setSocialLinks(agency.social_links);
             }
         } else if (mode === "create") {
             // Réinitialiser le formulaire en mode création
             setTitle("");
-            setCountry("civ");
-            setState("");
-            setCity("");
+            setDescription("");
             setStreet("");
             setLatitude("");
             setLongitude("");
-            setContacts([{ type: "email", value: "" }]);
+            setZone("");
+            setTown("");
+            setContacts([{ type: "phone", value: "" }]);
             setSocialLinks([]);
         }
     }, [mode, agency, open]);
+
+    // Préremplir town et zone après avoir chargé les geoZones (mode édition uniquement)
+    useEffect(() => {
+        if (mode === "edit" && agency && open && geoZones.length > 0 && agency.town && !zone) {
+            const townId = typeof agency.town === "string" ? agency.town : agency.town.id;
+            // Essayer de trouver la zone correspondante
+            for (const geoZone of geoZones) {
+                const foundTown = geoZone.towns.find((t) => t.id === townId);
+                if (foundTown) {
+                    const zoneValue = zoneNameToSlug(geoZone.name);
+                    setZone(zoneValue);
+                    setTown(townId);
+                    break;
+                }
+            }
+        }
+    }, [mode, agency, open, geoZones, zone]);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -95,16 +165,12 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
             newErrors.title = "Le nom de l'agence est requis";
         }
 
-        if (!state.trim()) {
-            newErrors.state = "La région est requise";
-        }
-
-        if (!city.trim()) {
-            newErrors.city = "La ville est requise";
-        }
-
         if (!street.trim()) {
             newErrors.street = "L'adresse est requise";
+        }
+
+        if (!town) {
+            newErrors.town = "La commune ou le département est requis";
         }
 
         // Valider au moins un contact
@@ -154,26 +220,48 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
         setIsSubmitting(true);
 
         try {
-            // Préparer les données
-            const agencyData = {
+            // Préparer les données selon la nouvelle structure (uniquement les champs autorisés)
+            const agencyData: any = {
                 title: title.trim(),
-                address: {
-                    country,
-                    state: state.trim(),
-                    city: city.trim(),
-                    street: street.trim(),
-                    geocoord:
-                        latitude && longitude
-                            ? {
-                                  type: "Point" as const,
-                                  coordinates: [parseFloat(longitude), parseFloat(latitude)],
-                              }
-                            : undefined,
-                    contacts: contacts.filter((c) => c.value.trim()).map((c) => ({ type: c.type, value: c.value.trim() })),
-                    social_links: socialLinks.filter((s) => s.url.trim()).map((s) => ({ service: s.service, url: s.url.trim() })),
-                },
-                docs: [],
             };
+
+            // Description (optionnel)
+            if (description.trim()) {
+                agencyData.description = description.trim();
+            }
+
+            // Street (optionnel)
+            if (street.trim()) {
+                agencyData.street = street.trim();
+            }
+
+            // Town (requis si zone sélectionnée)
+            if (town) {
+                agencyData.town = town;
+            }
+
+            // Geocoord (optionnel)
+            if (latitude && longitude) {
+                agencyData.geocoord = {
+                    type: "Point" as const,
+                    coordinates: [parseFloat(longitude), parseFloat(latitude)],
+                };
+            }
+
+            // Contacts (requis - au moins un)
+            const validContacts = contacts.filter((c) => c.value.trim());
+            if (validContacts.length > 0) {
+                agencyData.contacts = validContacts.map((c) => ({ type: c.type, value: c.value.trim() }));
+            }
+
+            // Social links (optionnel)
+            const validSocialLinks = socialLinks.filter((s) => s.url.trim());
+            if (validSocialLinks.length > 0) {
+                agencyData.social_links = validSocialLinks.map((s) => ({ service: s.service, url: s.url.trim() }));
+            }
+
+            // Docs (toujours présent, même si vide)
+            agencyData.docs = [];
 
             console.log(`[${mode.toUpperCase()} AGENCY] Sending request with token:`, authData.access_token ? "Token present" : "No token");
             console.log(`[${mode.toUpperCase()} AGENCY] Agency data:`, agencyData);
@@ -216,15 +304,12 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                     },
                     body: JSON.stringify({
                         agencyData,
-                        userId: user.id,
                     }),
                 });
 
                 result = await response.json();
 
                 if (result.success) {
-                    const wasSetAsCurrent = !user?.account?.agency;
-
                     // 1. Rafraîchir AVANT de fermer le modal
                     if (refreshUser) {
                         await refreshUser();
@@ -234,7 +319,7 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                     handleClose();
 
                     // 3. Appeler le callback avec les données
-                    onSuccess(result.data);
+                    onSuccess(result.agency);
                 } else {
                     setErrors({ submit: result.error || "Erreur lors de la création de l'agence" });
                 }
@@ -251,12 +336,13 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
         console.log("[AGENCY MODAL] handleClose called");
         // Reset form
         setTitle("");
-        setState("");
-        setCity("");
+        setDescription("");
         setStreet("");
         setLatitude("");
         setLongitude("");
-        setContacts([{ type: "email", value: "" }]);
+        setZone("");
+        setTown("");
+        setContacts([{ type: "phone", value: "" }]);
         setSocialLinks([]);
         setErrors({});
 
@@ -268,7 +354,7 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
     };
 
     const addContact = () => {
-        setContacts([...contacts, { type: "email", value: "" }]);
+        setContacts([...contacts, { type: "phone", value: "" }]);
     };
 
     const removeContact = (index: number) => {
@@ -335,70 +421,96 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                         {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
                     </div>
 
+                    {/* Description */}
+                    <div className="space-y-2">
+                        <Label htmlFor="description">
+                            Description <span className="text-xs text-muted-foreground">(optionnel)</span>
+                        </Label>
+                        <Textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Description de l'agence..."
+                            rows={4}
+                            className={errors.description ? "border-destructive" : ""}
+                        />
+                        {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                    </div>
+
                     {/* Adresse */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium">Adresse</h3>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="country">
-                                    Pays <span className="text-destructive">*</span>
-                                </Label>
-                                <Select value={country} onValueChange={setCountry}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="civ">Côte d'Ivoire</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="state">
-                                    Région <span className="text-destructive">*</span>
-                                </Label>
-                                <Input
-                                    id="state"
-                                    value={state}
-                                    onChange={(e) => setState(e.target.value)}
-                                    placeholder="Ex: Lagunes"
-                                    className={errors.state ? "border-destructive" : ""}
-                                />
-                                {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
-                            </div>
+                        {/* Zone géographique */}
+                        <div className="space-y-2">
+                            <Label>
+                                Zone géographique <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={zone}
+                                onValueChange={(value) => {
+                                    setZone(value);
+                                    setTown(""); // Réinitialiser town quand on change de zone
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Choisir une zone" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {geoZones.map((geoZone) => {
+                                        const zoneValue = zoneNameToSlug(geoZone.name);
+                                        return (
+                                            <SelectItem key={geoZone.id} value={zoneValue}>
+                                                {geoZone.name}
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="city">
-                                    Ville <span className="text-destructive">*</span>
-                                </Label>
-                                <Input
-                                    id="city"
-                                    value={city}
-                                    onChange={(e) => setCity(e.target.value)}
-                                    placeholder="Ex: Abidjan"
-                                    className={errors.city ? "border-destructive" : ""}
-                                />
-                                {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="street">
-                                    Adresse / Quartier <span className="text-destructive">*</span>
-                                </Label>
-                                <Input
-                                    id="street"
-                                    value={street}
-                                    onChange={(e) => setStreet(e.target.value)}
-                                    placeholder="Ex: Koumassi"
-                                    className={errors.street ? "border-destructive" : ""}
-                                />
-                                {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
-                            </div>
+                        {/* Commune / Département */}
+                        <div className="space-y-2">
+                            <Label>
+                                {selectedZone?.name === "Grand Abidjan" ? "Commune" : "Département"} <span className="text-destructive">*</span>
+                            </Label>
+                            <Select value={town} onValueChange={(value) => setTown(value)} disabled={!zone || !selectedZone}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={getTownPlaceholder()} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {getTownsForSelectedZone().length > 0 ? (
+                                        getTownsForSelectedZone().map((townObj) => (
+                                            <SelectItem key={townObj.id} value={townObj.id}>
+                                                {townObj.name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem value="__no_option__" disabled>
+                                            Aucune option disponible
+                                        </SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            {errors.town && <p className="text-sm text-destructive">{errors.town}</p>}
                         </div>
 
+                        {/* Adresse / Quartier */}
+                        <div className="space-y-2">
+                            <Label htmlFor="street">
+                                Adresse / Quartier <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="street"
+                                value={street}
+                                onChange={(e) => setStreet(e.target.value)}
+                                placeholder="Ex: Palmeraie"
+                                className={errors.street ? "border-destructive" : ""}
+                            />
+                            {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
+                        </div>
+
+                        {/* Coordonnées GPS */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="latitude">
@@ -410,7 +522,7 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                                     step="any"
                                     value={latitude}
                                     onChange={(e) => setLatitude(e.target.value)}
-                                    placeholder="Ex: 5.364750976280646"
+                                    placeholder="Ex: 5.353534841097627"
                                     className={errors.latitude ? "border-destructive" : ""}
                                 />
                                 {errors.latitude && <p className="text-sm text-destructive">{errors.latitude}</p>}
@@ -426,7 +538,7 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
                                     step="any"
                                     value={longitude}
                                     onChange={(e) => setLongitude(e.target.value)}
-                                    placeholder="Ex: -3.949819333761781"
+                                    placeholder="Ex: -3.976803018666061"
                                     className={errors.longitude ? "border-destructive" : ""}
                                 />
                                 {errors.longitude && <p className="text-sm text-destructive">{errors.longitude}</p>}
@@ -448,13 +560,13 @@ export default function AgencyFormModal({ open, onClose, onSuccess, agency, mode
 
                         {contacts.map((contact, index) => (
                             <div key={index} className="flex gap-2">
-                                <Select value={contact.type} onValueChange={(value) => updateContact(index, "type", value)}>
+                                <Select value={contact.type} onValueChange={(value) => updateContact(index, "type", value as "phone" | "email")}>
                                     <SelectTrigger className="w-32">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="email">Email</SelectItem>
                                         <SelectItem value="phone">Téléphone</SelectItem>
+                                        <SelectItem value="email">Email</SelectItem>
                                     </SelectContent>
                                 </Select>
 

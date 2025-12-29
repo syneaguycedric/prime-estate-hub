@@ -37,6 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const response = await fetch(directusUrl_full, {
                 method: 'GET',
                 headers: {
+                    'Accept': 'application/json',
                     'Authorization': authorizationHeader,
                 }
             });
@@ -69,9 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const updateData = req.body;
             console.log('[PROPERTY API] Update data:', JSON.stringify(updateData, null, 2));
 
-            const response = await fetch(`${directusUrl}/items/real_estates/${id}?fields=*.*`, {
+            const response = await fetch(`${directusUrl}/items/real_estates/${id}?fields=*,images.directus_files_id.*,notes.*,characteristics.*,documents.*,documents.file.*,town.*,user_created.*`, {
                 method: 'PATCH',
                 headers: {
+                    'Accept': 'application/json',
                     'Authorization': authorizationHeader,
                     'Content-Type': 'application/json',
                 },

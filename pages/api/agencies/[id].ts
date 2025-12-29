@@ -22,9 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // Mettre à jour une agence
             console.log('[AGENCY API] Updating agency:', id);
 
-            const response = await fetch(`${directusUrl}/items/estate_agencies/${id}?fields=*.*,docs.*,address.*`, {
+            const response = await fetch(`${directusUrl}/items/estate_agencies/${id}?fields=*,docs.*,town.*,user_created.*`, {
                 method: 'PATCH',
                 headers: {
+                    'Accept': 'application/json',
                     'Authorization': authHeader,
                     'Content-Type': 'application/json',
                 },
@@ -48,9 +49,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // Récupérer une agence par ID
             console.log('[AGENCY API] Fetching agency:', id);
 
-            const response = await fetch(`${directusUrl}/items/estate_agencies/${id}?fields=*.*,docs.*,address.*`, {
+            const response = await fetch(`${directusUrl}/items/estate_agencies/${id}?fields=*,docs.*,town.*,user_created.*`, {
                 method: 'GET',
                 headers: {
+                    'Accept': 'application/json',
                     'Authorization': authHeader,
                 }
             });

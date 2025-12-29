@@ -19,6 +19,11 @@ import { Search, Award, ChevronDown } from "lucide-react";
 import { fetchGeoZones, GeoZone, fetchSubscriptionPlans, SubscriptionPlan, fetchFeaturedPropertiesByZone, fetchVipProperties, zoneNameToSlug } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
 
+interface FeaturedPropertiesByZone {
+    zone: GeoZone;
+    properties: Property[];
+}
+
 interface HomePageProps {
     seoData: {
         title: string;
@@ -27,14 +32,13 @@ interface HomePageProps {
         canonicalUrl: string;
     };
     geoZones: GeoZone[];
-    featuredPropertiesGrandAbidjan: Property[];
-    featuredPropertiesHorsAbidjan: Property[];
+    featuredPropertiesByZone: FeaturedPropertiesByZone[];
     vipProperties: Property[];
 }
 
 type ContractType = "sale" | "rent";
 
-const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredPropertiesHorsAbidjan, vipProperties }: HomePageProps) => {
+const HomePage = ({ seoData, geoZones, featuredPropertiesByZone, vipProperties }: HomePageProps) => {
     const router = useRouter();
     const [selectedContract, setSelectedContract] = useState<ContractType>("rent");
     const [zone, setZone] = useState<string>("");
@@ -297,65 +301,46 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
                                     </Button>
                                 </div>
 
-                                {/* Section Grand Abidjan */}
-                                <div className="mb-8">
-                                    <div className="flex items-center justify-center mb-4">
-                                        <Separator className="flex-1" />
-                                        <h3 className="text-lg font-semibold text-foreground mx-4">Grand Abidjan</h3>
-                                        <Separator className="flex-1" />
-                                    </div>
-                                    {featuredPropertiesGrandAbidjan.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
-                                            {featuredPropertiesGrandAbidjan.map((property, index) => (
-                                                <div key={`featured-ga-${property.id}`} className="group relative h-full">
-                                                    {/* Badge Premium positionné collé au type de contrat à droite */}
-                                                    <span className="pointer-events-none absolute top-10 right-3 z-20 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
-                                                        Premium
-                                                    </span>
-
-                                                    {/* Carte premium */}
-                                                    <div className="h-full transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
-                                                        <PropertyCardAnimated {...property} index={index} />
-                                                    </div>
+                                {/* Sections dynamiques par zone */}
+                                {featuredPropertiesByZone.length > 0 ? (
+                                    featuredPropertiesByZone.map((zoneData, zoneIndex) => {
+                                        const isLastZone = zoneIndex === featuredPropertiesByZone.length - 1;
+                                        return (
+                                            <div key={`zone-${zoneData.zone.id}`} className={isLastZone ? '' : 'mb-8'}>
+                                                <div className="flex items-center justify-center mb-4">
+                                                    <Separator className="flex-1" />
+                                                    <h3 className="text-lg font-semibold text-foreground mx-4">{zoneData.zone.name}</h3>
+                                                    <Separator className="flex-1" />
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-8">
-                                            <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour Grand Abidjan.</p>
-                                        </div>
-                                    )}
-                                </div>
+                                                {zoneData.properties.length > 0 ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                                        {zoneData.properties.map((property, index) => (
+                                                            <div key={`featured-${zoneData.zone.id}-${property.id}`} className="group relative h-full">
+                                                                {/* Badge Premium positionné collé au type de contrat à droite */}
+                                                                <span className="pointer-events-none absolute top-10 right-3 z-20 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
+                                                                    Premium
+                                                                </span>
 
-                                {/* Section Hors d'Abidjan */}
-                                <div>
-                                    <div className="flex items-center justify-center mb-4">
-                                        <Separator className="flex-1" />
-                                        <h3 className="text-lg font-semibold text-foreground mx-4">Hors d'Abidjan</h3>
-                                        <Separator className="flex-1" />
-                                    </div>
-                                    {featuredPropertiesHorsAbidjan.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
-                                            {featuredPropertiesHorsAbidjan.map((property, index) => (
-                                                <div key={`featured-ha-${property.id}`} className="group relative h-full">
-                                                    {/* Badge Premium positionné collé au type de contrat à droite */}
-                                                    <span className="pointer-events-none absolute top-10 right-3 z-20 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-semibold px-2.5 py-0.5 shadow-sm tracking-wide">
-                                                        Premium
-                                                    </span>
-
-                                                    {/* Carte premium */}
-                                                    <div className="h-full transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
-                                                        <PropertyCardAnimated {...property} index={index} />
+                                                                {/* Carte premium */}
+                                                                <div className="h-full transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:-translate-y-1 rounded-xl overflow-hidden">
+                                                                    <PropertyCardAnimated {...property} index={index} />
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-8">
-                                            <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour Hors d'Abidjan.</p>
-                                        </div>
-                                    )}
-                                </div>
+                                                ) : (
+                                                    <div className="text-center py-8">
+                                                        <p className="text-sm text-muted-foreground">Aucune annonce en vedette pour {zoneData.zone.name}.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <p className="text-sm text-muted-foreground">Aucune zone disponible pour le moment.</p>
+                                    </div>
+                                )}
 
                                 {/* Footer avec séparateur et bouton */}
                                 <div className="mt-8 pt-6 border-t-2 border-primary/20">
@@ -441,6 +426,37 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesGrandAbidjan, featuredP
     );
 };
 
+/**
+ * Extrait l'ID de la zone depuis une propriété
+ * La zone peut être dans property.town.zone (string ou objet)
+ */
+function getPropertyZoneId(property: Property): string | null {
+    const town = (property as any).town;
+    if (!town) return null;
+    
+    if (typeof town === "string") {
+        // Si town est juste un ID, on ne peut pas déterminer la zone
+        return null;
+    }
+    
+    if (typeof town === "object") {
+        const zone = town.zone;
+        if (!zone) return null;
+        
+        // Si zone est un ID (string)
+        if (typeof zone === "string") {
+            return zone;
+        }
+        
+        // Si zone est un objet avec un ID
+        if (typeof zone === "object" && zone.id) {
+            return zone.id;
+        }
+    }
+    
+    return null;
+}
+
 // Fonction pour générer les données SEO
 function generateSeoData(baseUrl: string) {
     return {
@@ -466,16 +482,21 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         // Récupérer les zones géographiques depuis l'API
         const geoZones = await fetchGeoZones();
 
-        // Trouver les zones "Grand Abidjan" et "Hors Abidjan"
-        const grandAbidjanZone = geoZones.find((z) => z.name === "Grand Abidjan");
-        const horsAbidjanZone = geoZones.find((z) => z.name === "Hors Abidjan");
+        // Récupérer toutes les propriétés featured une seule fois (sans filtre)
+        const allFeaturedProperties = await fetchFeaturedPropertiesByZone(null, 999);
 
-        // Récupérer les annonces en vedette par zone et VIP (kylimmo)
-        const [featuredPropertiesGrandAbidjan, featuredPropertiesHorsAbidjan, vipProperties] = await Promise.all([
-            grandAbidjanZone ? fetchFeaturedPropertiesByZone(grandAbidjanZone.id, 6) : Promise.resolve([]),
-            horsAbidjanZone ? fetchFeaturedPropertiesByZone(horsAbidjanZone.id, 6) : Promise.resolve([]),
-            fetchVipProperties(9), // Limite à 9 éléments pour les annonces kylimmo
-        ]);
+        // Filtrer côté client pour chaque zone
+        const featuredPropertiesByZone = geoZones.map((zone) => {
+            const properties = allFeaturedProperties.filter((property) => {
+                const propertyZoneId = getPropertyZoneId(property);
+                return propertyZoneId === zone.id;
+            }).slice(0, 6); // Limiter à 6 par zone
+            
+            return { zone, properties };
+        });
+
+        // Récupérer les annonces VIP (kylimmo) en parallèle
+        const vipProperties = await fetchVipProperties(9); // Limite à 9 éléments pour les annonces kylimmo
 
         // Headers pour la mise en cache - longue durée pour la page d'accueil
         context.res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200");
@@ -484,8 +505,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
             props: {
                 seoData,
                 geoZones: geoZones || [],
-                featuredPropertiesGrandAbidjan: featuredPropertiesGrandAbidjan || [],
-                featuredPropertiesHorsAbidjan: featuredPropertiesHorsAbidjan || [],
+                featuredPropertiesByZone: featuredPropertiesByZone || [],
                 vipProperties: vipProperties || [],
             },
         };
@@ -500,8 +520,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
             props: {
                 seoData,
                 geoZones: [],
-                featuredPropertiesGrandAbidjan: [],
-                featuredPropertiesHorsAbidjan: [],
+                featuredPropertiesByZone: [],
                 vipProperties: [],
             },
         };

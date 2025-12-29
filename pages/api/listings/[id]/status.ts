@@ -13,8 +13,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(400).json({ error: 'Property ID is required' });
         }
 
-        if (!status || !['published', 'draft'].includes(status)) {
-            return res.status(400).json({ error: 'Valid status (published/draft) is required' });
+        if (!status || !['published', 'draft', 'expired', 'archived', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: 'Valid status (published/draft/expired/archived/rejected) is required' });
         }
 
         const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL;

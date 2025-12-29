@@ -73,6 +73,26 @@ export interface Property {
   type: "appartment" | "house" | "villa" | "land" | "commercial";
   documents: number[];
   images: PropertyImage[]; // Objets PropertyImage avec métadonnées complètes
+  activation_date?: string | null;
+  expiration_date?: string | null;
+  notes?: any[]; // Notes associées à l'annonce
+  promotions?: Array<{
+    promotions_id: {
+      id: string;
+      user_created: string;
+      date_created: string;
+      user_updated: string | null;
+      date_updated: string | null;
+      start_date: string | null;
+      end_date: string | null;
+      range: string;
+      status: string;
+      order: string;
+      title: string;
+      price: number;
+      estate_promotions: any[];
+    };
+  }>;
   // Champs calculés/dérivés pour compatibilité UI
   location?: string; // À construire depuis address
   isNew?: boolean; // À calculer depuis date_created

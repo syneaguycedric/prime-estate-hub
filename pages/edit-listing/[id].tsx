@@ -5,7 +5,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUserPropertyById, updateProperty, uploadFile, fetchGeoZones, GeoZone, zoneNameToSlug, findZoneBySlug } from "@/lib/directus-api";
+import { fetchUserPropertyById, updateProperty, uploadFile, fetchGeoZones, GeoZone, zoneNameToSlug, findZoneBySlug, Agency } from "@/lib/directus-api";
 import { buildImageUrl } from "@/lib/property-helpers";
 import { Property } from "@/data/properties";
 import { toast } from "@/lib/toast-helpers";
@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Loader2, Upload, X, Plus, ChevronDown } from "lucide-react";
+import { Save, Loader2, Upload, X, Plus, ChevronDown } from "lucide-react";
 
 interface UploadedImage {
     fileId: string;
@@ -47,6 +47,7 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
     const [zone, setZone] = useState<string>("");
     const [areas, setAreas] = useState<string[]>([]);
     const [areasOpen, setAreasOpen] = useState(false);
+    const [associateWithAgency, setAssociateWithAgency] = useState(false);
 
     // Helper pour obtenir la zone complète à partir de la valeur simplifiée (slug)
     const getZoneByValue = (zoneValue: string): GeoZone | null => {
@@ -68,6 +69,37 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
         const town = selectedZone.towns.find((t) => t.id === id);
         return town?.name || "";
     };
+
+    // Obtenir l'ID de l'agence de l'utilisateur
+    const getUserAgencyId = (): string | null => {
+        if (!user) return null;
+        if (user.agency && typeof user.agency === "object" && "id" in user.agency) {
+            return user.agency.id;
+        } else if (typeof user.agency === "string") {
+            return user.agency;
+        }
+        if (user.account?.agency && typeof user.account.agency === "object" && "id" in user.account.agency) {
+            return user.account.agency.id;
+        }
+        return null;
+    };
+
+    const userAgencyId = getUserAgencyId();
+    const hasAgency = !!userAgencyId;
+
+    // Obtenir l'objet agence complet pour le titre
+    const getUserAgency = (): Agency | null => {
+        if (!user) return null;
+        if (user.agency && typeof user.agency === "object" && "id" in user.agency) {
+            return user.agency as Agency;
+        }
+        if (user.account?.agency && typeof user.account.agency === "object" && "id" in user.account.agency) {
+            return user.account.agency;
+        }
+        return null;
+    };
+
+    const userAgency = getUserAgency();
 
     const toggleArea = (id: string) => {
         // Sélection unique: remplace toujours par l'ID cliqué
@@ -234,6 +266,17 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
                 // Préremplir les caractéristiques
                 if (prop.characteristics && prop.characteristics.length > 0) {
                     setCharacteristics(prop.characteristics);
+                }
+
+                // Initialiser le checkbox d'agence si la propriété a déjà une agence associée
+                const propertyAgencyId = (prop as any).agency;
+                if (propertyAgencyId) {
+                    const agencyId = typeof propertyAgencyId === "object" && "id" in propertyAgencyId ? propertyAgencyId.id : propertyAgencyId;
+                    // Vérifier si l'agence de la propriété correspond à l'agence de l'utilisateur
+                    const currentUserAgencyId = getUserAgencyId();
+                    if (currentUserAgencyId && agencyId === currentUserAgencyId) {
+                        setAssociateWithAgency(true);
+                    }
                 }
             } else {
                 toast.error("Erreur", {
@@ -434,22 +477,24 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
             // 2. Combiner avec images existantes
             const allImages = [...images.filter((img) => img.uploaded && !img.file), ...uploadedNewImages];
 
+            // Préparer les données selon la même structure que la création
             const updateData = {
-                title: formData.title,
-                description: formData.description,
-                price: formData.price || "",
+                title: formData.title.trim(),
+                description: formData.description.trim() || null,
+                price: parseFloat(formData.price),
+                contractType: formData.contractType as "leasing" | "sale" | "rent",
                 surfaceArea: formData.surfaceArea,
                 surfaceAreaUnit: formData.surfaceAreaUnit || "m2",
-                rooms: formData.rooms ? parseInt(formData.rooms) : undefined,
-                bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : undefined,
-                kitchens: formData.kitchens ? parseInt(formData.kitchens) : undefined,
-                floors: formData.floors ? parseInt(formData.floors) : undefined,
-                type: formData.propertyType as "appartment" | "house" | "villa" | "land" | "commercial",
-                contractType: formData.contractType as "leasing" | "sale" | "rent",
-                status: formData.status,
+                rooms: parseInt(formData.rooms),
+                bathrooms: parseInt(formData.bathrooms),
+                kitchens: parseInt(formData.kitchens),
+                floors: parseInt(formData.floors),
                 town: areas[0] || "", // ID de la commune/département sélectionné
                 location: formData.location.trim(), // Géolocalisation
+                // Envoyer agency: userAgencyId si coché, ou agency: null si décoché (pour détacher l'agence)
+                agency: associateWithAgency && userAgencyId ? userAgencyId : null,
                 characteristics: characteristics.filter((char) => char.name.trim() && char.value.trim()),
+                type: formData.propertyType as "appartment" | "house" | "villa" | "land" | "commercial",
                 images: allImages.map((img) => ({ directus_files_id: img.fileId })),
             };
 
@@ -491,14 +536,40 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
                 <div className="container mx-auto px-4 py-8 pt-24">
                     <div className="max-w-4xl mx-auto">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
-                            <h1 className="text-3xl font-bold flex items-center gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => router.back()} className="p-0 h-auto">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                </Button>
-                                Modifier l'annonce
-                            </h1>
+                            <h1 className="text-3xl font-bold">Modifier l'annonce</h1>
                             <p className="text-muted-foreground mt-2">Modifiez les informations de votre bien immobilier</p>
                         </motion.div>
+
+                        {/* Card d'association avec l'agence */}
+                        {hasAgency && (
+                            <Card
+                                className="mb-6 border-primary/20 bg-gradient-to-br from-primary/95 via-primary/90 to-primary/80 backdrop-blur-sm shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                                onClick={() => setAssociateWithAgency(!associateWithAgency)}
+                            >
+                                <CardContent className="p-4 md:p-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex items-center h-5 mt-0.5">
+                                            <Checkbox
+                                                id="associate-agency"
+                                                checked={associateWithAgency}
+                                                onCheckedChange={(checked) => setAssociateWithAgency(!!checked)}
+                                                className="border-primary-foreground/30 data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <Label htmlFor="associate-agency" className="text-base font-semibold text-primary-foreground cursor-pointer">
+                                                Associer cette annonce à mon agence
+                                            </Label>
+                                            <p className="text-sm text-primary-foreground/90">
+                                                Cette annonce sera associée à votre agence "{userAgency?.title || "votre agence"}". Les utilisateurs pourront voir que cette annonce
+                                                provient de votre agence.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Sélection de zone et commune/département */}
                         <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
@@ -534,12 +605,16 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
 
                                     {/* Communes / Départements */}
                                     <div className="md:col-span-8">
-                                        <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                        <Label className="text-xs text-muted-foreground">{selectedZone?.name === "Grand Abidjan" ? "Commune" : "Département"}</Label>
                                         <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
                                                     <span className="truncate min-w-0 flex-1 text-left">
-                                                        {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                        {areas.length === 1
+                                                            ? getAreaName(areas[0])
+                                                            : selectedZone?.name === "Grand Abidjan"
+                                                            ? "Choisir une commune"
+                                                            : "Choisir un département"}
                                                     </span>
                                                     <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                                                 </Button>
