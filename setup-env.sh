@@ -12,7 +12,7 @@ if [ ! -f .env.local ]; then
 NEXT_PUBLIC_SITE_URL=http://localhost:3100
 
 # API Directus Configuration
-NEXT_PUBLIC_DIRECTUS_API_URL=https://ki-backoffice.eyoboue.dev:8143
+NEXT_PUBLIC_DIRECTUS_API_URL=https://koffimm-backoffice.cotedev.com:8143
 NEXT_PUBLIC_USE_MOCK_DATA=false
 
 # Configuration d'authentification

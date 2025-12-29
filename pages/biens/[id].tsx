@@ -11,6 +11,7 @@ import { fetchPropertyById } from "@/lib/directus-api";
 import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, getAllImageUrls, formatCharacteristics } from "@/lib/property-helpers";
 import PageNavbar from "@/components/layout/PageNavbar";
 import ImageLightbox from "@/components/ui/image-lightbox";
+import { parseCookies } from "@/lib/cookie-helpers";
 // Import dynamique temporairement désactivé
 
 interface PropertyDetailPageProps {
@@ -31,31 +32,32 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
 
     // Fonction helper pour extraire les informations de l'utilisateur créateur
     const getUserInfo = (userCreated: UserCreated | string | undefined) => {
-        if (!userCreated || typeof userCreated === 'string') {
+        if (!userCreated || typeof userCreated === "string") {
             return null; // Pas de données disponibles
         }
+        // Utiliser phoneNumber directement avec fallback sur account.phoneNumber pour rétrocompatibilité
+        const phoneNumber = (userCreated as any).phoneNumber || userCreated.account?.phoneNumber || null;
         return {
             name: `${userCreated.first_name} ${userCreated.last_name}`,
             email: userCreated.email,
-            phone: userCreated.account?.phoneNumber || null,
+            phone: phoneNumber,
         };
     };
 
-    // Fonction helper pour extraire la zone et la commune/département
+    // Fonction helper pour extraire la commune/département
     const getTownInfo = (town: any) => {
         if (!town) return null;
-        
-        if (typeof town === 'string') {
+
+        if (typeof town === "string") {
             return null; // Pas de données disponibles si c'est juste un ID
         }
-        
-        if (typeof town === 'object') {
+
+        if (typeof town === "object") {
             return {
                 name: town.name || null,
-                zoneName: town.zone?.name || null,
             };
         }
-        
+
         return null;
     };
 
@@ -191,16 +193,10 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
                         >
-                            {townInfo && (townInfo.name || townInfo.zoneName) && (
-                                <p className="flex items-center">
-                                    <MapPin className="h-4 w-4 mr-2" />
-                                    {townInfo.name && townInfo.zoneName ? `${townInfo.name}, ${townInfo.zoneName}` : townInfo.name || townInfo.zoneName}
-                                </p>
-                            )}
-                            {property.location && (
+                            {(townInfo?.name || property.location) && (
                                 <p className="flex items-center text-sm">
                                     <MapPin className="h-4 w-4 mr-2" />
-                                    {property.location}
+                                    {[townInfo?.name, property.location].filter(Boolean).join(", ")}
                                 </p>
                             )}
                         </motion.div>
@@ -273,12 +269,8 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     <CardContent className="space-y-3">
                                         {/* Bouton Appeler - Mobile uniquement */}
                                         {userInfo?.phone && (
-                                            <Button 
-                                                className="w-full" 
-                                                size="lg"
-                                                asChild
-                                            >
-                                                <a href={`tel:${userInfo.phone.replace(/\s/g, '')}`}>
+                                            <Button className="w-full" size="lg" asChild>
+                                                <a href={`tel:${userInfo.phone.replace(/\s/g, "")}`}>
                                                     <Phone className="h-4 w-4 mr-2" />
                                                     Appeler
                                                 </a>
@@ -372,9 +364,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     <CardHeader>
                                         <CardTitle className="text-2xl text-primary">{formattedPrice}</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        {/* Pas de boutons d'action sur desktop */}
-                                    </CardContent>
+                                    <CardContent className="space-y-3">{/* Pas de boutons d'action sur desktop */}</CardContent>
                                 </Card>
 
                                 <Card className="mt-4">
@@ -429,23 +419,12 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                     <div className="lg:hidden">
                                         <h3 className="text-lg font-semibold mb-3 pt-6 border-t border-border">Emplacement</h3>
                                         <div className="space-y-3">
-                                            {townInfo && (townInfo.name || townInfo.zoneName) && (
+                                            {townInfo?.name || property.location ? (
                                                 <div className="flex items-start text-muted-foreground">
                                                     <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
-                                                    <div className="text-sm leading-relaxed">
-                                                        {townInfo.zoneName && <span className="font-medium">Zone: {townInfo.zoneName}</span>}
-                                                        {townInfo.zoneName && townInfo.name && <span className="mx-2">•</span>}
-                                                        {townInfo.name && <span>Commune: {townInfo.name}</span>}
-                                                    </div>
+                                                    <p className="text-sm leading-relaxed">{[townInfo?.name, property.location].filter(Boolean).join(", ")}</p>
                                                 </div>
-                                            )}
-                                            {property.location && (
-                                                <div className="flex items-start text-muted-foreground">
-                                                    <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
-                                                    <p className="text-sm leading-relaxed">{property.location}</p>
-                                                </div>
-                                            )}
-                                            {!townInfo && !property.location && (
+                                            ) : (
                                                 <p className="text-muted-foreground text-sm">Localisation non disponible</p>
                                             )}
                                         </div>
@@ -454,9 +433,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                             <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
                                                 <div className="text-center">
                                                     <p className="text-muted-foreground">Carte temporairement indisponible</p>
-                                                    {property.location && (
-                                                        <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
-                                                    )}
+                                                    {property.location && <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>}
                                                 </div>
                                             </div>
                                         </div>
@@ -493,23 +470,12 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                         {/* Emplacement */}
                                         <div>
                                             <div className="space-y-3">
-                                                {townInfo && (townInfo.name || townInfo.zoneName) && (
+                                                {townInfo?.name || property.location ? (
                                                     <div className="flex items-start text-muted-foreground">
                                                         <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
-                                                        <div className="text-sm leading-relaxed">
-                                                            {townInfo.zoneName && <span className="font-medium">Zone: {townInfo.zoneName}</span>}
-                                                            {townInfo.zoneName && townInfo.name && <span className="mx-2">•</span>}
-                                                            {townInfo.name && <span>Commune: {townInfo.name}</span>}
-                                                        </div>
+                                                        <p className="text-sm leading-relaxed">{[townInfo?.name, property.location].filter(Boolean).join(", ")}</p>
                                                     </div>
-                                                )}
-                                                {property.location && (
-                                                    <div className="flex items-start text-muted-foreground">
-                                                        <MapPin className="h-4 w-4 mr-2 text-primary mt-0.5 flex-shrink-0" />
-                                                        <p className="text-sm leading-relaxed">{property.location}</p>
-                                                    </div>
-                                                )}
-                                                {!townInfo && !property.location && (
+                                                ) : (
                                                     <p className="text-muted-foreground text-sm">Localisation non disponible</p>
                                                 )}
                                             </div>
@@ -520,9 +486,7 @@ const PropertyDetailPage = ({ property, seoData }: PropertyDetailPageProps) => {
                                             <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
                                                 <div className="text-center">
                                                     <p className="text-muted-foreground">Carte temporairement indisponible</p>
-                                                    {property.location && (
-                                                        <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>
-                                                    )}
+                                                    {property.location && <p className="text-sm text-muted-foreground mt-1">Localisation : {property.location}</p>}
                                                 </div>
                                             </div>
                                         </div>
@@ -565,9 +529,14 @@ export const getServerSideProps: GetServerSideProps<PropertyDetailPageProps> = a
         const host = context.req.headers["x-forwarded-host"] || context.req.headers.host;
         const baseUrl = `${protocol}://${host}`;
 
+        // Récupérer le token depuis les cookies
+        const cookies = parseCookies(context.req.headers.cookie);
+        const userToken = cookies["kylimmo_access_token"] || null;
+
         // Récupérer le bien immobilier depuis l'API Directus
         // Forcer le refresh pour éviter les données en cache lors des modifications
-        const property = await fetchPropertyById(id as string, true);
+        // Si l'utilisateur est connecté, utiliser son token, sinon l'API route utilisera le token par défaut
+        const property = await fetchPropertyById(id as string, true, userToken);
 
         if (!property) {
             // Retourner 404 si le bien n'existe pas

@@ -9,29 +9,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
         const authHeader = req.headers.authorization;
-        if (!authHeader) {
-            return res.status(401).json({ error: 'No authorization header' });
-        }
-
         const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL;
         if (!directusUrl) {
             return res.status(500).json({ error: 'Directus URL not configured' });
         }
 
+        // Utiliser le token utilisateur si fourni, sinon le token par défaut
+        let authorizationHeader: string;
+        if (authHeader) {
+            authorizationHeader = authHeader;
+        } else {
+            // Utiliser le token par défaut si aucun token utilisateur n'est fourni
+            const defaultToken = process.env.NEXT_PUBLIC_DEFAULT_TOKEN;
+            if (!defaultToken) {
+                return res.status(401).json({ error: 'No authorization token available' });
+            }
+            authorizationHeader = `Bearer ${defaultToken}`;
+        }
+
         if (req.method === 'GET') {
             // Récupérer une propriété par ID
+            const directusUrl_full = `${directusUrl}/items/real_estates/${id}?fields=*,images.directus_files_id.*,notes.*,characteristics.*,documents.*,documents.file.*,town.*,user_created.*`;
             console.log('[PROPERTY API] Fetching property:', id);
+            console.log('[PROPERTY API] Directus URL:', directusUrl_full);
+            console.log('[PROPERTY API] Authorization header:', authorizationHeader ? `${authorizationHeader.substring(0, 20)}...` : 'none');
 
-            const response = await fetch(`${directusUrl}/items/real_estates/${id}?fields=*.*,images.directus_files_id.*,address.*,user_created.*,user_created.account.*,town.*.*`, {
+            const response = await fetch(directusUrl_full, {
                 method: 'GET',
                 headers: {
-                    'Authorization': authHeader,
+                    'Authorization': authorizationHeader,
                 }
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('[PROPERTY API] Error fetching property:', errorData);
+                console.error('[PROPERTY API] Error fetching property:', JSON.stringify(errorData, null, 2));
+                if (errorData.errors && Array.isArray(errorData.errors)) {
+                    errorData.errors.forEach((err: any, index: number) => {
+                        console.error(`[PROPERTY API] Error ${index + 1}:`, {
+                            message: err.message,
+                            extensions: err.extensions ? JSON.stringify(err.extensions, null, 2) : 'no extensions'
+                        });
+                    });
+                }
                 return res.status(response.status).json({
                     error: errorData.error || `Erreur ${response.status}: Impossible de récupérer l'annonce`,
                 });
@@ -52,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const response = await fetch(`${directusUrl}/items/real_estates/${id}?fields=*.*`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': authHeader,
+                    'Authorization': authorizationHeader,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(updateData),
@@ -78,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const response = await fetch(`${directusUrl}/items/real_estates/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': authHeader,
+                    'Authorization': authorizationHeader,
                 }
             });
 

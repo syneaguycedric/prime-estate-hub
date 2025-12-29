@@ -14,7 +14,7 @@ export default async function handler(
         return res.status(400).json({ error: 'Refresh token required' });
     }
 
-    const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://ki-backoffice.eyoboue.dev:8143';
+    const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://koffimm-backoffice.cotedev.com:8143';
 
     try {
         console.log('[REFRESH API] Refreshing token...');

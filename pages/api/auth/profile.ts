@@ -15,7 +15,7 @@ export default async function handler(
     }
 
     const token = authHeader.substring(7); // Retirer "Bearer "
-    const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://ki-backoffice.eyoboue.dev:8143';
+    const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://koffimm-backoffice.cotedev.com:8143';
 
     try {
         // GET - Récupérer le profil utilisateur
@@ -55,8 +55,9 @@ export default async function handler(
             const response = await fetch(`${directusUrl}/users/me`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(req.body),
             });

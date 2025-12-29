@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-const DIRECTUS_API_URL = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || "https://ki-backoffice.eyoboue.dev:8143";
+const DIRECTUS_API_URL = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || "https://koffimm-backoffice.cotedev.com:8143";
 
 interface CreateAgencyRequest {
     title: string;

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import PageNavbar from "@/components/layout/PageNavbar";
@@ -17,7 +18,7 @@ import { toast } from "@/lib/toast-helpers";
 
 const ProfilePage = () => {
     const router = useRouter();
-    const { isAuthenticated, isLoading: authLoading, authData, user: contextUser, refreshUser } = useAuth();
+    const { isAuthenticated, isLoading: authLoading, authData, user: contextUser, refreshUser, isRefreshing } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -34,12 +35,18 @@ const ProfilePage = () => {
     // Validation errors
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Redirection si non authentifié
+    // Redirection si non authentifié (seulement si pas de refresh en cours)
     useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
+        // Ne rien faire pendant le chargement ou le refresh
+        if (authLoading || isRefreshing) {
+            return;
+        }
+
+        // Vérifier seulement si pas de refresh en cours
+        if (!isAuthenticated) {
             router.push("/login");
         }
-    }, [isAuthenticated, authLoading, router]);
+    }, [isAuthenticated, authLoading, router, isRefreshing]);
 
     // Utiliser les données du contexte au lieu de charger séparément
     useEffect(() => {
@@ -50,7 +57,7 @@ const ProfilePage = () => {
             setLocation(contextUser.location || "");
             setTitle(contextUser.title || "");
             setDescription(contextUser.description || "");
-            setPhoneNumber(contextUser.account?.phoneNumber || "");
+            setPhoneNumber(contextUser.phoneNumber || contextUser.account?.phoneNumber || "");
             setIsLoadingProfile(false);
         }
     }, [contextUser]);
@@ -92,22 +99,8 @@ const ProfilePage = () => {
             location: location.trim() || undefined,
             title: title.trim() || undefined,
             description: description.trim() || undefined,
-        };
-
-        // Mettre à jour le phoneNumber dans account
-        // Directus nécessite l'ID de l'account pour mettre à jour une relation
-        if (profile?.account?.id) {
-            updates.account = {
-                id: profile.account.id,
-                phoneNumber: phoneNumber.trim() || null,
+            phoneNumber: phoneNumber.trim() || undefined,
             };
-        } else if (phoneNumber.trim()) {
-            // Si pas d'account existant mais qu'on veut créer un phoneNumber
-            // Note: Normalement account devrait toujours exister, mais on gère le cas
-            updates.account = {
-                phoneNumber: phoneNumber.trim(),
-            };
-        }
 
         const result = await updateUserProfile(authData.access_token, updates);
 
@@ -138,7 +131,7 @@ const ProfilePage = () => {
             setLocation(profile.location || "");
             setTitle(profile.title || "");
             setDescription(profile.description || "");
-            setPhoneNumber(profile.account?.phoneNumber || "");
+            setPhoneNumber(profile.phoneNumber || profile.account?.phoneNumber || "");
         }
         setErrors({});
         setIsEditing(false);
@@ -204,10 +197,10 @@ const ProfilePage = () => {
                                                     <Mail className="h-4 w-4 text-muted-foreground" />
                                                     <span className="text-sm text-muted-foreground">{profile?.email}</span>
                                                 </div>
-                                                {profile?.account?.phoneNumber && (
+                                                {(profile?.phoneNumber || profile?.account?.phoneNumber) && (
                                                     <div className="flex items-center gap-2">
                                                         <Phone className="h-4 w-4 text-muted-foreground" />
-                                                        <span className="text-sm text-muted-foreground">{profile.account.phoneNumber}</span>
+                                                        <span className="text-sm text-muted-foreground">{profile.phoneNumber || profile.account?.phoneNumber}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -294,16 +287,19 @@ const ProfilePage = () => {
                                             </div>
                                         </div>
 
-                                        {/* Titre/Fonction */}
+                                        {/* Titre */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="title">Titre / Fonction</Label>
-                                            <Input
-                                                id="title"
-                                                value={title}
-                                                onChange={(e) => setTitle(e.target.value)}
-                                                disabled={!isEditing}
-                                                placeholder="Ex: Développeur, Agent immobilier..."
-                                            />
+                                            <Label htmlFor="title">Titre</Label>
+                                            <Select value={title} onValueChange={(value) => setTitle(value)} disabled={!isEditing}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Sélectionnez un titre" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Monsieur">Monsieur</SelectItem>
+                                                    <SelectItem value="Madame">Madame</SelectItem>
+                                                    <SelectItem value="Mademoiselle">Mademoiselle</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
 
                                         {/* Localisation */}

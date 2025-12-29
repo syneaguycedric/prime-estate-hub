@@ -40,7 +40,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(response.status).json(data);
         }
 
-        console.log('[CREATE LISTING API] Listing created successfully:', data.data[0].id);
+        // Vérifier que la réponse contient bien les données attendues et logger le succès si possible
+        if (data && data.data) {
+            if (Array.isArray(data.data) && data.data.length > 0 && data.data[0] && data.data[0].id) {
+                console.log('[CREATE LISTING API] Listing created successfully:', data.data[0].id);
+            } else if (data.data.id) {
+                // Cas où data.data est un objet unique (au lieu d'un tableau)
+                console.log('[CREATE LISTING API] Listing created successfully:', data.data.id);
+            } else {
+                console.warn('[CREATE LISTING API] Response structure unexpected, but returning data anyway:', JSON.stringify(data, null, 2));
+            }
+        }
 
         return res.status(200).json(data);
     } catch (error: any) {

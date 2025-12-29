@@ -5,8 +5,8 @@ const ALLOWED_DOMAINS = [
     'api.openweathermap.org',
     'nominatim.openstreetmap.org',
     'jsonplaceholder.typicode.com',
-    'ki-backoffice.eyoboue.dev', // API Directus
-    'ki-backoffice.eyoboue.dev:8143', // API Directus avec port
+    'koffimm-backoffice.cotedev.com', // API Directus
+    'koffimm-backoffice.cotedev.com:8143', // API Directus avec port
     // Ajouter d'autres domaines selon les besoins
 ];
 
@@ -75,7 +75,7 @@ export default async function handler(
         // Gérer le port pour le domaine Directus
         // Si le domaine contient déjà le port, ne pas l'ajouter
         const hasPort = targetDomain.includes(':');
-        const port = !hasPort && targetDomain === 'ki-backoffice.eyoboue.dev' ? ':8143' : '';
+        const port = !hasPort && targetDomain === 'koffimm-backoffice.cotedev.com' ? ':8143' : '';
         const targetUrl = `${protocol}://${targetDomain}${port}/${targetPath}${queryString.toString() ? `?${queryString.toString()}` : ''
             }`;
 
@@ -109,7 +109,7 @@ export default async function handler(
         let authorizationHeader: string | undefined;
         if (req.headers.authorization) {
             authorizationHeader = req.headers.authorization as string;
-        } else if (targetDomain === 'ki-backoffice.eyoboue.dev' || targetDomain === 'ki-backoffice.eyoboue.dev:8143') {
+        } else if (targetDomain === 'koffimm-backoffice.cotedev.com' || targetDomain === 'koffimm-backoffice.cotedev.com:8143') {
             // Utiliser le token par défaut uniquement pour Directus quand on n'est pas connecté
             const defaultToken = process.env.NEXT_PUBLIC_DEFAULT_TOKEN;
             if (defaultToken) {
@@ -164,7 +164,7 @@ export default async function handler(
 
                 // Gestion spéciale des erreurs 401 (Unauthorized)
                 // Indiquer qu'il faut rediriger vers login et utiliser le token par défaut
-                if (response.status === 401 && (targetDomain === 'ki-backoffice.eyoboue.dev' || targetDomain === 'ki-backoffice.eyoboue.dev:8143')) {
+                if (response.status === 401 && (targetDomain === 'koffimm-backoffice.cotedev.com' || targetDomain === 'koffimm-backoffice.cotedev.com:8143')) {
                     return res.status(401).json({
                         ...errorData,
                         requiresLogin: true,

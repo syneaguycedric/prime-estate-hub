@@ -81,7 +81,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
             onClose();
         } else {
             // Vérifier si l'utilisateur est un annonceur
-            if (user?.role?.name !== "Advertiser") {
+            if (user?.role?.code !== "ADVERTISER") {
                 // Rediriger vers la page "Devenir annonceur"
                 navigateWithTransition("/advertiser");
                 onClose();
@@ -99,7 +99,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
         if (!isAuthenticated) {
             return "Devenir annonceur";
         }
-        if (user?.role?.name !== "Advertiser") {
+        if (user?.role?.code !== "ADVERTISER") {
             return "Devenir annonceur";
         }
         return "Faire une annonce";
@@ -167,7 +167,7 @@ const MobileMenu = ({ isOpen, onClose, onOpenFilters, onSearch, view, onViewChan
                     <div className="space-y-3">
                         <h3 className="text-sm font-medium text-muted-foreground">Navigation</h3>
                         <div className="space-y-2">
-                            {user?.role?.name === "Advertiser" && (
+                            {user?.role?.code === "ADVERTISER" && (
                                 <Button
                                     variant="ghost"
                                     className="w-full justify-start h-12"

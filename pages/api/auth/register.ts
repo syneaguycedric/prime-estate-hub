@@ -17,24 +17,22 @@ interface DirectusUserResponse {
         last_name: string;
         email: string;
         title: string;
-        description: null;
-        tags: null;
+        description: string | null;
+        tags: string | null;
         id: string;
-        account: {
-            id: string;
-            user_created: string;
-            date_created: string;
-            user_updated: null;
-            date_updated: null;
-            agency: null;
-            phoneNumber: string | null;
-            account_type: string;
-            agencies: any[];
-        };
-        avatar: null;
+        phoneNumber?: string;
+        status?: string;
+        last_access?: string | null;
+        plan?: string | null;
+        agency?: string | null;
+        location?: string;
+        avatar: string | null;
         role: {
-            name: string;
             id: string;
+            code?: string;
+            name: string;
+            icon?: string;
+            description?: string | null;
         };
     };
 }
@@ -100,9 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             title: title || undefined,
             location: location || undefined,
             email_notifications,
-            account: phoneNumber ? {
-                phoneNumber
-            } : undefined
+            phoneNumber: phoneNumber || undefined
         };
 
         // Appel à l'API Directus
@@ -116,9 +112,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
         }
 
-        const response = await fetch(`${directusUrl}/users`, {
+        const response = await fetch(`${directusUrl}/users?fields=*.*`, {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${defaultToken}`
             },

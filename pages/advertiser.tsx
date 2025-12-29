@@ -18,7 +18,7 @@ export default function AdvertiserPage() {
         }
 
         // Rediriger vers Mon espace si déjà annonceur
-        if (user?.role?.name === "Advertiser") {
+        if (user?.role?.code === "ADVERTISER") {
             toast.info("Accès annonceur", {
                 description: "Vous êtes déjà annonceur ! Accédez à votre espace pour publier des annonces.",
                 duration: 5000,
@@ -33,7 +33,7 @@ export default function AdvertiserPage() {
     }
 
     // Ne pas afficher si déjà annonceur (en cours de redirection)
-    if (user?.role?.name === "Advertiser") {
+    if (user?.role?.code === "ADVERTISER") {
         return null;
     }
 

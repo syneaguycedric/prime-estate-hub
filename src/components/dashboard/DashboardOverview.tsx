@@ -138,7 +138,7 @@ export default function DashboardOverview() {
 
     const handleCreateListing = () => {
         // Vérifier si l'utilisateur est un annonceur
-        if (user?.role?.name !== "Advertiser") {
+        if (user?.role?.code !== "ADVERTISER") {
             router.push("/advertiser");
             toast.info("Devenez annonceur", {
                 description: "Vous devez être annonceur pour publier des annonces.",
@@ -160,7 +160,7 @@ export default function DashboardOverview() {
     // Récupérer les 3 dernières annonces publiées (réduit pour éviter le scroll)
     const recentPublishedProperties = useMemo(() => {
         if (!properties || properties.length === 0) return [];
-        
+
         return properties
             .filter((p) => p.status === "published")
             .sort((a, b) => {
@@ -246,11 +246,23 @@ export default function DashboardOverview() {
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Annonces actives</span>
-                                {loadingStats ? <Skeleton className="h-4 w-6" /> : <Badge variant="secondary" className="text-xs">{stats.activeListings}</Badge>}
+                                {loadingStats ? (
+                                    <Skeleton className="h-4 w-6" />
+                                ) : (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {stats.activeListings}
+                                    </Badge>
+                                )}
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">En brouillon</span>
-                                {loadingStats ? <Skeleton className="h-4 w-6" /> : <Badge variant="outline" className="text-xs">{stats.draftListings}</Badge>}
+                                {loadingStats ? (
+                                    <Skeleton className="h-4 w-6" />
+                                ) : (
+                                    <Badge variant="outline" className="text-xs">
+                                        {stats.draftListings}
+                                    </Badge>
+                                )}
                             </div>
                             <Button onClick={handleViewListings} variant="outline" className="w-full h-8 text-xs">
                                 Voir toutes mes annonces
@@ -271,7 +283,13 @@ export default function DashboardOverview() {
                         <div className="space-y-2 md:space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Mes agences</span>
-                                {loadingStats ? <Skeleton className="h-4 w-6" /> : <Badge variant="secondary" className="text-xs">{stats.totalAgencies}</Badge>}
+                                {loadingStats ? (
+                                    <Skeleton className="h-4 w-6" />
+                                ) : (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {stats.totalAgencies}
+                                    </Badge>
+                                )}
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Agence actuelle</span>
@@ -282,7 +300,9 @@ export default function DashboardOverview() {
                                         Définie
                                     </Badge>
                                 ) : (
-                                    <Badge variant="outline" className="text-xs">Non définie</Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                        Non définie
+                                    </Badge>
                                 )}
                             </div>
                             <Button onClick={handleViewAgencies} variant="outline" className="w-full h-8 text-xs">
@@ -340,20 +360,14 @@ export default function DashboardOverview() {
                                 >
                                     {/* Image */}
                                     <div className="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
-                                        <ImageWithLoading
-                                            src={getFirstImageUrlForCard(property)}
-                                            alt={property.title}
-                                            className="object-cover w-full h-full"
-                                        />
+                                        <ImageWithLoading src={getFirstImageUrlForCard(property)} alt={property.title} className="object-cover w-full h-full" />
                                     </div>
 
                                     {/* Informations */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="font-medium text-xs truncate group-hover:text-primary transition-colors">
-                                                    {property.title}
-                                                </h4>
+                                                <h4 className="font-medium text-xs truncate group-hover:text-primary transition-colors">{property.title}</h4>
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     <Badge variant="outline" className="text-[10px] px-1 py-0">
                                                         {getPropertyTypeLabel(property.type)}

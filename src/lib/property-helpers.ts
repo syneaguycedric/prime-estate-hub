@@ -111,7 +111,7 @@ export function buildImageUrl(fileId: string, transformations?: {
     fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
 }): string {
     // URL de base pour les assets Directus
-    const baseUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://ki-backoffice.eyoboue.dev:8143';
+    const baseUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://koffimm-backoffice.cotedev.com:8143';
     const assetsUrl = `${baseUrl}/assets`;
 
     if (!transformations) {

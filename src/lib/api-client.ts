@@ -10,7 +10,8 @@ function getAuthToken(): string | null {
     // Vérifier si on est côté serveur
     if (typeof window === 'undefined') {
         // Côté serveur, utiliser le token par défaut
-        return process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
+        const token = process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
+        return token;
     }
 
     // Côté client : essayer de récupérer l'access_token du localStorage
@@ -21,7 +22,8 @@ function getAuthToken(): string | null {
             const parsed = JSON.parse(authData);
             if (parsed.access_token) {
                 // Utilisateur connecté : utiliser son token
-                return parsed.access_token;
+                const token = parsed.access_token;
+                return token;
             }
         }
     } catch (error) {
@@ -29,7 +31,8 @@ function getAuthToken(): string | null {
     }
 
     // Utilisateur non connecté : utiliser le token par défaut
-    return process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
+    const defaultToken = process.env.NEXT_PUBLIC_DEFAULT_TOKEN || null;
+    return defaultToken;
 }
 
 interface ProxyRequestOptions {

@@ -47,7 +47,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
             return;
         }
 
-        if (user?.role?.name !== "Advertiser") {
+        if (user?.role?.code !== "ADVERTISER") {
             router.push("/advertiser");
             toast.info("Devenez annonceur", {
                 description: "Vous devez être annonceur pour publier des annonces.",
@@ -290,7 +290,6 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
 
             // 2. Créer l'annonce
             const listingData: CreateListingData = {
-                status,
                 title: formData.title.trim(),
                 description: formData.description.trim() || null,
                 price: parseFloat(formData.price),
@@ -303,7 +302,7 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
                 floors: parseInt(formData.floors),
                 town: areas[0] || "", // ID de la commune/département sélectionné
                 location: formData.location.trim(), // Géolocalisation
-                agency: "ca1ab408-69e9-41f6-86ec-18ba0e41147f", // Agence par défaut Kylimmo
+                ...(user?.agency && { agency: user.agency }), // Inclure agency uniquement si l'utilisateur en a une
                 characteristics: characteristics.filter((char) => char.name.trim() && char.value.trim()),
                 type: formData.type,
                 images: uploadedImages.map((img) => ({ directus_files_id: img.fileId })),

@@ -42,7 +42,7 @@ export default async function handler(
         }
 
         // URL de l'API Directus
-        const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://ki-backoffice.eyoboue.dev:8143';
+        const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://koffimm-backoffice.cotedev.com:8143';
 
         console.log('[AUTH API] Attempting login to:', `${directusUrl}/auth/login`);
 

@@ -37,7 +37,7 @@ interface EditListingPageProps {
 export default function EditListingPage({ geoZones }: EditListingPageProps) {
     const router = useRouter();
     const { id } = router.query;
-    const { isAuthenticated, user, authData, isLoading: authLoading } = useAuth();
+    const { isAuthenticated, user, authData, isLoading: authLoading, isRefreshing } = useAuth();
 
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
@@ -106,7 +106,12 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
             return;
         }
 
-        if (!authLoading && user && user.role?.name !== "Advertiser") {
+        // Ne rien faire pendant le refresh
+        if (isRefreshing) {
+            return;
+        }
+
+        if (!authLoading && user && user.role?.code !== "ADVERTISER") {
             toast.info("Accès restreint", {
                 description: "Cette page est réservée aux annonceurs.",
                 duration: 5000,
@@ -118,7 +123,7 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
         if (id && typeof id === "string" && geoZones.length > 0) {
             loadProperty(id);
         }
-    }, [id, isAuthenticated, user, authLoading, router, geoZones]);
+    }, [id, isAuthenticated, user, authLoading, router, geoZones, isRefreshing]);
 
     const loadProperty = async (propertyId: string) => {
         setLoading(true);

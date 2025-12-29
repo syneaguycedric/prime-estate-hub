@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { loginUser, getCurrentUser, logoutUser as apiLogoutUser, registerUser, User, RegisterData, isUserAdvertiser } from "@/lib/directus-api";
 import { toast } from "@/lib/toast-helpers";
 import { handleUnauthorized } from "@/lib/auth-helpers";
+import { refreshTokenIfNeeded, isRefreshingToken, getCurrentRefreshPromise } from "@/lib/refresh-token-service";
+import { setCookie, deleteCookie } from "@/lib/cookie-helpers";
 
 // Interface pour les données d'authentification
 interface AuthData {
@@ -122,15 +124,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                             await refreshAuth();
                         }
                     } else {
-                        // Token expiré, nettoyer le localStorage
-                        clearAuthData();
+                        // Token expiré, tenter le refresh token avant de nettoyer (transparent pour l'utilisateur)
+                        if (authData.refresh_token) {
+                            console.log("[AUTH CONTEXT] Token expired, attempting silent refresh via service...");
+
+                            // Utiliser le service centralisé de refresh token
+                            const refreshSuccess = await refreshTokenIfNeeded();
+
+                            if (refreshSuccess) {
+                                console.log("[AUTH CONTEXT] Token refreshed successfully on startup (transparent)");
+
+                                // Récupérer les nouvelles données depuis localStorage
+                                const newAuthDataStr = localStorage.getItem(AUTH_STORAGE_KEY);
+                                if (newAuthDataStr) {
+                                    const newAuthData: AuthData = JSON.parse(newAuthDataStr);
+
+                                    // Récupérer les données utilisateur avec le nouveau token
+                                    const freshUser = await getCurrentUser(newAuthData.access_token);
+
+                                    if (freshUser) {
+                                        console.log("[AUTH CONTEXT] User data retrieved with refreshed token");
+
+                                        // Mettre à jour l'état avec les nouvelles données
+                                        setAuthState({
+                                            isAuthenticated: true,
+                                            user: freshUser,
+                                            authData: newAuthData,
+                                            isLoading: false,
+                                        });
+
+                                        // Sauvegarder les nouvelles données
+                                        saveAuthData(newAuthData, freshUser);
+                                        // Refresh réussi, pas besoin de clearAuthData()
+                                    } else {
+                                        // Échec silencieux : nettoyer sans redirection explicite
+                                        // Les pages protégées géreront leur propre redirection si nécessaire
+                                        console.log("[AUTH CONTEXT] Failed to retrieve user with refreshed token, cleaning up silently");
+                                        clearAuthData();
+                                    }
+                                } else {
+                                    console.log("[AUTH CONTEXT] New auth data not found after refresh, cleaning up silently");
+                                    clearAuthData();
+                                }
+                            } else {
+                                // Refresh échoué : nettoyer silencieusement sans redirection explicite
+                                // On n'appelle pas handleUnauthorized ici pour éviter les redirections visibles
+                                // Les pages protégées géreront leur propre redirection si nécessaire
+                                console.log("[AUTH CONTEXT] Refresh failed, cleaning up silently (transparent)");
+                                clearAuthData();
+                            }
+                        } else {
+                            // Pas de refresh_token disponible : nettoyer silencieusement
+                            console.log("[AUTH CONTEXT] Token expired and no refresh_token, cleaning up silently");
+                            clearAuthData();
+                        }
                     }
                 }
             } catch (error) {
                 console.error("Erreur lors du chargement des données d'authentification:", error);
                 clearAuthData();
             } finally {
-                setAuthState((prev) => ({ ...prev, isLoading: false }));
+                setAuthState((prev) => ({ ...prev, isLoading: false, isRefreshing: isRefreshingToken() }));
             }
         };
 
@@ -143,6 +197,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+
+        // Stocker le token dans un cookie pour l'accès côté serveur
+        setCookie("kylimmo_access_token", authData.access_token, 30);
     };
 
     // Fonction pour nettoyer les données d'authentification
@@ -151,6 +208,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         localStorage.removeItem(AUTH_STORAGE_KEY);
         localStorage.removeItem(USER_STORAGE_KEY);
+
+        // Supprimer le cookie du token
+        deleteCookie("kylimmo_access_token");
 
         setAuthState({
             isAuthenticated: false,
@@ -163,7 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Fonction de connexion
     const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
         try {
-            setAuthState((prev) => ({ ...prev, isLoading: true }));
+            setAuthState((prev) => ({ ...prev, isLoading: true, isRefreshing: isRefreshingToken() }));
 
             const result = await loginUser(email, password);
 
@@ -217,7 +277,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     throw new Error("Impossible de récupérer les informations utilisateur");
                 }
             } else {
-                setAuthState((prev) => ({ ...prev, isLoading: false }));
+                setAuthState((prev) => ({ ...prev, isLoading: false, isRefreshing: isRefreshingToken() }));
 
                 // Afficher un toast d'erreur
                 toast.error("Échec de la connexion", {
@@ -229,7 +289,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         } catch (error: any) {
             console.error("Erreur lors de la connexion:", error);
-            setAuthState((prev) => ({ ...prev, isLoading: false }));
+            setAuthState((prev) => ({ ...prev, isLoading: false, isRefreshing: isRefreshingToken() }));
 
             // Afficher un toast d'erreur
             toast.error("Erreur de connexion", {
@@ -244,7 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Fonction d'inscription
     const register = async (registerData: RegisterData): Promise<{ success: boolean; error?: string }> => {
         try {
-            setAuthState((prev) => ({ ...prev, isLoading: true }));
+            setAuthState((prev) => ({ ...prev, isLoading: true, isRefreshing: isRefreshingToken() }));
 
             const result = await registerUser(registerData);
 
@@ -269,7 +329,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     return { success: true };
                 }
             } else {
-                setAuthState((prev) => ({ ...prev, isLoading: false }));
+                setAuthState((prev) => ({ ...prev, isLoading: false, isRefreshing: isRefreshingToken() }));
 
                 // Afficher un toast d'erreur
                 toast.error("Échec de l'inscription", {
@@ -281,7 +341,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
         } catch (error: any) {
             console.error("Erreur lors de l'inscription:", error);
-            setAuthState((prev) => ({ ...prev, isLoading: false }));
+            setAuthState((prev) => ({ ...prev, isLoading: false, isRefreshing: isRefreshingToken() }));
 
             // Afficher un toast d'erreur
             toast.error("Erreur d'inscription", {
@@ -315,54 +375,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 return false;
             }
 
-            console.log("[AUTH CONTEXT] Refreshing authentication token...");
+            console.log("[AUTH CONTEXT] Refreshing authentication token via service...");
 
-            // Appeler la route API Next.js pour le refresh token
-            const response = await fetch("/api/auth/refresh", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    refresh_token: authState.authData.refresh_token,
-                }),
-            });
+            // Utiliser le service centralisé de refresh token
+            const refreshSuccess = await refreshTokenIfNeeded();
 
-            if (!response.ok) {
-                console.error("[AUTH CONTEXT] Failed to refresh token:", response.status);
-                return false;
-            }
+            if (refreshSuccess) {
+                console.log("[AUTH CONTEXT] Token refreshed successfully");
 
-            const data = await response.json();
-            console.log("[AUTH CONTEXT] Token refreshed successfully");
+                // Récupérer les nouvelles données depuis localStorage
+                const newAuthDataStr = localStorage.getItem(AUTH_STORAGE_KEY);
+                if (!newAuthDataStr) {
+                    console.error("[AUTH CONTEXT] New auth data not found after refresh");
+                    return false;
+                }
 
-            // Créer le nouvel objet AuthData
-            const newAuthData: AuthData = {
-                access_token: data.data.access_token,
-                refresh_token: data.data.refresh_token,
-                expires: data.data.expires,
-                expiresAt: Date.now() + data.data.expires,
-            };
+                const newAuthData: AuthData = JSON.parse(newAuthDataStr);
 
-            // Récupérer les données utilisateur avec le nouveau token (pas encore dans localStorage)
-            const user = await getCurrentUser(newAuthData.access_token);
+                // Récupérer les données utilisateur avec le nouveau token
+                const user = await getCurrentUser(newAuthData.access_token);
 
-            if (user) {
-                console.log("[AUTH CONTEXT] User data retrieved with new token");
+                if (user) {
+                    console.log("[AUTH CONTEXT] User data retrieved with new token");
 
-                // Mettre à jour l'état
-                setAuthState({
-                    isAuthenticated: true,
-                    user,
-                    authData: newAuthData,
-                    isLoading: false,
-                });
+                    // Mettre à jour l'état
+                    setAuthState({
+                        isAuthenticated: true,
+                        user,
+                        authData: newAuthData,
+                        isLoading: false,
+                    });
 
-                // Sauvegarder les nouvelles données
-                saveAuthData(newAuthData, user);
-                return true;
+                    // Sauvegarder les nouvelles données
+                    saveAuthData(newAuthData, user);
+                    return true;
+                } else {
+                    console.error("[AUTH CONTEXT] Failed to retrieve user with new token");
+                    return false;
+                }
             } else {
-                console.error("[AUTH CONTEXT] Failed to retrieve user with new token");
+                console.error("[AUTH CONTEXT] Failed to refresh token");
                 return false;
             }
         } catch (error) {
@@ -373,11 +425,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Fonction pour tenter le refresh et gérer l'échec
     const refreshAuthIfNeeded = async (): Promise<boolean> => {
+        // Vérifier si un refresh est déjà en cours
+        if (isRefreshingToken()) {
+            console.log("[AUTH CONTEXT] Refresh already in progress, waiting...");
+            const currentRefresh = getCurrentRefreshPromise();
+            if (currentRefresh) {
+                const refreshSuccess = await currentRefresh;
+                if (refreshSuccess) {
+                    // Mettre à jour l'état avec les nouvelles données
+                    const newAuthDataStr = localStorage.getItem(AUTH_STORAGE_KEY);
+                    if (newAuthDataStr) {
+                        const newAuthData: AuthData = JSON.parse(newAuthDataStr);
+                        const user = await getCurrentUser(newAuthData.access_token);
+                        if (user) {
+                            setAuthState((prev) => ({
+                                ...prev,
+                                isAuthenticated: true,
+                                user,
+                                authData: newAuthData,
+                            }));
+                            saveAuthData(newAuthData, user);
+                            return true;
+                        }
+                    }
+                }
+                // Si le refresh a échoué, continuer avec la déconnexion
+                if (!refreshSuccess) {
+                    console.log("[AUTH CONTEXT] Refresh token expired or invalid, redirecting to login");
+                    await handleUnauthorized({ reason: "refresh_failed" });
+                }
+                return refreshSuccess;
+            }
+        }
+
+        // Lancer le refresh
         const success = await refreshAuth();
         if (!success) {
             console.log("[AUTH CONTEXT] Refresh token expired or invalid, redirecting to login");
             // Utiliser handleUnauthorized() qui nettoie le localStorage, affiche un toast et redirige vers /login
-            handleUnauthorized({ reason: 'refresh_failed' });
+            await handleUnauthorized({ reason: "refresh_failed" });
         }
         return success;
     };

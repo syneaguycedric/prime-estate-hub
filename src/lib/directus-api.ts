@@ -43,10 +43,16 @@ export interface User {
     description?: string;
     language?: string;
     theme?: string;
+    phoneNumber?: string; // Nouveau : phoneNumber directement dans l'objet user
+    status?: string;
+    last_access?: string | null;
+    plan?: SubscriptionPlan | null;
+    agency?: string | null;
+    tags?: string | null;
     account?: {
         id: string;
         account_type: string;
-        phoneNumber?: string;
+        phoneNumber?: string; // Conservé pour rétrocompatibilité
         agency?: Agency | null; // Agence actuelle (objet complet)
         agencies?: Array<{
             estate_agencies_id: Agency;
@@ -55,6 +61,9 @@ export interface User {
     role?: {
         id: string;
         name: string;
+        code?: string;
+        icon?: string;
+        description?: string | null;
     };
 }
 
@@ -199,12 +208,53 @@ export interface SubscriptionPlan {
     sort?: number | null;
     user_created?: string;
     date_created?: string;
-    user_updated?: string;
-    date_updated?: string;
+    user_updated?: string | null;
+    date_updated?: string | null;
     title: string;
     description?: string | null;
     code: string;
-    agencies?: string[];
+    characteristics?: Array<{
+        code: string;
+        title: string;
+        value: string;
+    }>;
+    agencies?: any[];
+}
+
+// Interface pour les fichiers Directus
+export interface DirectusFile {
+    id: string;
+    storage?: string;
+    filename_disk?: string;
+    filename_download?: string;
+    title?: string | null;
+    type?: string;
+    folder?: string | null;
+    uploaded_by?: string | null;
+    created_on?: string;
+    modified_by?: string | null;
+    modified_on?: string | null;
+    charset?: string | null;
+    filesize?: string;
+    width?: number | null;
+    height?: number | null;
+    duration?: number | null;
+    embed?: string | null;
+    description?: string | null;
+    location?: string | null;
+    tags?: string | null;
+    metadata?: Record<string, any>;
+    focal_point_x?: number | null;
+    focal_point_y?: number | null;
+    tus_id?: string | null;
+    tus_data?: any;
+    uploaded_on?: string;
+}
+
+// Interface pour les liens sociaux
+export interface SocialLink {
+    service: string;
+    url: string;
 }
 
 // Interface pour les données globales
@@ -216,38 +266,32 @@ export interface Globals {
     url?: string;
     short_description?: string | null;
     description?: string | null;
-    social_links?: any;
+    social_links?: SocialLink[];
+    estate_per_user?: number;
+    image_per_estate?: number;
+    document_per_estate?: number;
+    document_per_agency?: number;
+    estate_ttl?: number;
+    estate_after_expired_ttl?: number;
+    estate_before_expire_notif_days?: number;
+    no_paid_order_ttl?: number;
+    exclusive_plan_code?: string;
     user_created?: string | null;
     user_updated?: string | null;
-    logo?: {
-        id: string;
-        title?: string;
-        filename_download?: string;
-        [key: string]: any;
-    };
-    logo_dark_mode?: {
-        id: string;
-        title?: string;
-        filename_download?: string;
-        [key: string]: any;
-    };
-    favicon?: {
-        id: string;
-        title?: string;
-        filename_download?: string;
-        [key: string]: any;
-    };
+    logo?: DirectusFile | null;
+    logo_dark_mode?: DirectusFile | null;
+    favicon?: DirectusFile | null;
 }
 
 /**
  * Vérifie si un utilisateur a le rôle "Advertiser"
  */
 export function isUserAdvertiser(user: User | null | undefined): boolean {
-    return user?.role?.name === "Advertiser";
+    return user?.role?.code === "ADVERTISER";
 }
 
 // Configuration
-const DIRECTUS_DOMAIN = 'ki-backoffice.eyoboue.dev:8143';
+const DIRECTUS_DOMAIN = 'koffimm-backoffice.cotedev.com:8143';
 const USE_MOCK_DATA = false; // Forcer l'utilisation de l'API uniquement
 
 /**
@@ -779,7 +823,7 @@ export async function fetchVipProperties(limit: number = 6): Promise<Property[]>
 /**
  * Récupère un bien immobilier par son ID depuis l'API Directus
  */
-export async function fetchPropertyById(id: string, forceRefresh: boolean = false): Promise<Property | null> {
+export async function fetchPropertyById(id: string, forceRefresh: boolean = false, token?: string | null): Promise<Property | null> {
     // Si on utilise les données mockées, chercher dans les données locales
     if (USE_MOCK_DATA) {
         console.log(`[DIRECTUS API] Using mock data for property ${id}`);
@@ -790,28 +834,81 @@ export async function fetchPropertyById(id: string, forceRefresh: boolean = fals
     try {
         console.log(`[DIRECTUS API] Fetching property ${id} from API`);
 
-        // Appel direct à l'API pour récupérer les détails d'une propriété spécifique
-        const response = await apiClient.get<DirectusResponse<Property>>(
-            DIRECTUS_DOMAIN,
-            `items/real_estates/${id}?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*`,
-            {
-                cacheKey: forceRefresh ? `real-estate-${id}-${Date.now()}` : `real-estate-${id}`,
-                cacheTtl: forceRefresh ? 0 : 300000, // Pas de cache si forceRefresh
-            }
-        );
+        // Déterminer l'URL de base selon l'environnement
+        let baseUrl: string;
+        if (typeof window !== 'undefined') {
+            // Côté client : utiliser l'URL actuelle
+            baseUrl = window.location.origin;
+        } else {
+            // Côté serveur : utiliser la variable d'environnement ou localhost
+            baseUrl = process.env.NODE_ENV === 'production'
+                ? process.env.NEXT_PUBLIC_SITE_URL || ''
+                : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
+        }
 
-        const formattedProperty = formatProperty(response.data);
+        // Récupérer le token d'authentification
+        let authToken: string | null = token || null;
+
+        // Si aucun token n'est fourni en paramètre, essayer de le récupérer
+        if (!authToken && typeof window !== 'undefined') {
+            // Côté client : essayer de récupérer le token utilisateur depuis localStorage
+            try {
+                const authData = localStorage.getItem('kylimmo_auth_data');
+                if (authData) {
+                    const parsed = JSON.parse(authData);
+                    if (parsed.access_token) {
+                        authToken = parsed.access_token;
+                    }
+                }
+            } catch (error) {
+                console.warn('[DIRECTUS API] Error reading auth token:', error);
+            }
+        }
+
+        // Construire les headers
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+
+        // Appeler l'API route Next.js qui gère l'authentification
+        const apiResponse = await fetch(`${baseUrl}/api/properties/${id}`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!apiResponse.ok) {
+            const errorData = await apiResponse.json().catch(() => ({}));
+            console.error(`[DIRECTUS API] Error fetching property ${id}:`, errorData);
+
+            // Afficher un toast d'erreur seulement côté client
+            if (typeof window !== 'undefined') {
+                toast.error('Erreur de connexion', {
+                    description: 'Impossible de charger les détails du bien. Veuillez réessayer.',
+                    duration: 5000,
+                });
+            }
+
+            return null;
+        }
+
+        const apiData = await apiResponse.json() as DirectusResponse<Property>;
+        const formattedProperty = formatProperty(apiData.data);
         console.log(`[DIRECTUS API] Fetched property: ${formattedProperty.title}`);
         return formattedProperty;
 
     } catch (error) {
         console.error(`[DIRECTUS API] Error fetching property ${id}:`, error);
 
-        // Afficher un toast d'erreur
-        toast.error('Erreur de connexion', {
-            description: 'Impossible de charger les détails du bien. Veuillez réessayer.',
-            duration: 5000,
-        });
+        // Afficher un toast d'erreur seulement côté client
+        if (typeof window !== 'undefined') {
+            toast.error('Erreur de connexion', {
+                description: 'Impossible de charger les détails du bien. Veuillez réessayer.',
+                duration: 5000,
+            });
+        }
 
         // Retourner null au lieu de mock data
         return null;
@@ -853,7 +950,7 @@ export function buildDirectusImageUrl(fileId: string, transformations?: {
     format?: 'webp' | 'jpeg' | 'png';
 }): string {
     // URL de base pour les assets Directus
-    const baseUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://ki-backoffice.eyoboue.dev:8143';
+    const baseUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL || 'https://koffimm-backoffice.cotedev.com:8143';
     const assetsUrl = `${baseUrl}/assets`;
 
     if (!transformations) {
@@ -1334,7 +1431,6 @@ export async function registerUser(registerData: RegisterData): Promise<Register
  * Interface pour la création d'une annonce
  */
 export interface CreateListingData {
-    status: 'draft' | 'published';
     title: string;
     description?: string | null;
     price: number;
@@ -1347,7 +1443,7 @@ export interface CreateListingData {
     floors: number;
     town: string; // ID de la commune/département sélectionné
     location: string; // Géolocalisation ex: "place de la pigale avenu 12"
-    agency: string;
+    agency?: string; // Optionnel : ID de l'agence de l'utilisateur
     characteristics: Array<{ name: string; value: string }>;
     type: 'appartment' | 'villa' | 'land';
     images: Array<{ directus_files_id: string }>;
@@ -1414,9 +1510,15 @@ export async function createListing(accessToken: string, listingData: CreateList
         }
 
         const data = await response.json() as any;
-        console.log('[DIRECTUS API] Listing created successfully:', data.data[0].id);
 
-        return { success: true, listing: data.data[0] };
+        // Vérifier que la réponse contient bien les données attendues
+        if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
+            console.log('[DIRECTUS API] Listing created successfully:', data.data[0].id);
+            return { success: true, listing: data.data[0] };
+        } else {
+            console.error('[DIRECTUS API] Unexpected response structure:', data);
+            return { success: false, error: 'Structure de réponse inattendue de l\'API' };
+        }
 
     } catch (error: any) {
         console.error('[DIRECTUS API] Error creating listing:', error);
@@ -1571,21 +1673,18 @@ export async function fetchUserProperties(accessToken: string, userId: string): 
 }
 
 /**
- * Devenir annonceur
+ * Devenir annonceur (changement de rôle via switch-role)
  */
 export async function becomeAdvertiser(
-    accessToken: string,
-    userId: string,
-    accountId: string
+    accessToken: string
 ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-        console.log('[DIRECTUS API] Becoming advertiser for user:', userId);
+        console.log('[DIRECTUS API] Switching user role to advertiser...');
 
         const response = await createAuthenticatedFetch('/api/user/become-advertiser', {
             method: 'PATCH',
             body: JSON.stringify({
-                userId,
-                accountId
+                accessToken
             })
         });
 
@@ -1596,7 +1695,7 @@ export async function becomeAdvertiser(
         }
 
         const data = await response.json() as any;
-        console.log('[DIRECTUS API] User upgraded to advertiser successfully');
+        console.log('[DIRECTUS API] User role switched to advertiser successfully');
 
         return { success: true, user: data.data };
 

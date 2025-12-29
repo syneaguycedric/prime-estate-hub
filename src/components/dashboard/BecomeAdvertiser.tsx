@@ -17,6 +17,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/lib/toast-helpers";
+import { createAuthenticatedFetch, getAuthToken } from "@/lib/auth-helpers";
 
 export default function BecomeAdvertiser() {
     const router = useRouter();
@@ -26,7 +27,7 @@ export default function BecomeAdvertiser() {
 
     // Utiliser useMemo pour recalculer quand user change
     const isAlreadyAdvertiser = React.useMemo(() => {
-        return user?.role?.name === "Advertiser";
+        return user?.role?.code === "ADVERTISER";
     }, [user]);
 
     const hasAgency = React.useMemo(() => {
@@ -52,36 +53,13 @@ export default function BecomeAdvertiser() {
         setIsLoading(true);
 
         try {
-            // Récupérer l'access_token depuis localStorage (stocké dans kylimmo_auth_data)
-            const authDataStr = localStorage.getItem("kylimmo_auth_data");
-
-            if (!authDataStr) {
-                throw new Error("Non authentifié. Veuillez vous reconnecter.");
-            }
-
-            let accessToken: string;
-            try {
-                const authData = JSON.parse(authDataStr);
-                accessToken = authData.access_token;
-
-                if (!accessToken) {
-                    throw new Error("Token d'accès manquant");
-                }
-
-                console.log("[BECOME ADVERTISER] Access token retrieved successfully");
-            } catch (parseError) {
-                console.error("[BECOME ADVERTISER] Error parsing auth data:", parseError);
-                throw new Error("Erreur lors de la récupération du token");
-            }
-
-            const response = await fetch("/api/user/become-advertiser", {
+            // Utiliser createAuthenticatedFetch qui gère automatiquement le refresh token
+            // L'API route utilise maintenant le token des headers (qui sera automatiquement mis à jour après refresh)
+            const response = await createAuthenticatedFetch("/api/user/become-advertiser", {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    accessToken: accessToken,
-                }),
             });
 
             const data = await response.json();

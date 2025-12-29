@@ -6,7 +6,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const { accessToken } = req.body;
+        // Utiliser le token des headers (qui sera mis à jour après refresh)
+        // avec fallback sur le body pour rétrocompatibilité
+        const authHeader = req.headers.authorization;
+        let accessToken: string | null = null;
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            accessToken = authHeader.substring(7);
+        } else {
+            // Fallback sur le body pour rétrocompatibilité
+            const { accessToken: bodyToken } = req.body;
+            accessToken = bodyToken;
+        }
 
         if (!accessToken) {
             return res.status(400).json({ error: 'Access token is required' });
@@ -19,95 +30,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(500).json({ error: 'Server configuration error' });
         }
 
-        console.log('[BECOME ADVERTISER API] Upgrading user with token');
+        console.log('[BECOME ADVERTISER API] Switching user role to advertiser...');
         console.log('[BECOME ADVERTISER API] Using access token:', accessToken.substring(0, 20) + '...');
 
-        // Étape 1 : Récupérer l'utilisateur pour obtenir son ID
-        console.log('[BECOME ADVERTISER API] Step 1: Fetching user data from Directus...');
-        const getUserResponse = await fetch(`${directusUrl}/users/me?fields=id`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-            },
-        });
-
-        console.log('[BECOME ADVERTISER API] GET user response status:', getUserResponse.status);
-
-        if (!getUserResponse.ok) {
-            const errorData = await getUserResponse.json();
-            console.error('[BECOME ADVERTISER API] Error fetching user:', errorData);
-            return res.status(getUserResponse.status).json({ error: 'Failed to fetch user data' });
-        }
-
-        const userData = await getUserResponse.json();
-        const actualUserId = userData.data?.id; // Récupérer l'ID réel de l'utilisateur
-
-        if (!actualUserId) {
-            return res.status(400).json({
-                error: 'No user ID found. Please contact support.'
-            });
-        }
-
-        console.log('[BECOME ADVERTISER API] Found user ID:', actualUserId);
-
-        // Étape 2 : Récupérer tous les rôles pour trouver "Advertiser"
-        console.log('[BECOME ADVERTISER API] Step 2: Fetching all roles...');
-        const getRoleResponse = await fetch(`${directusUrl}/roles?fields=id,name`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-            },
-        });
-
-        if (!getRoleResponse.ok) {
-            const errorData = await getRoleResponse.json();
-            console.error('[BECOME ADVERTISER API] Error fetching roles:', errorData);
-            return res.status(getRoleResponse.status).json({ error: 'Failed to fetch roles' });
-        }
-
-        const roleData = await getRoleResponse.json();
-        const roles = roleData.data || [];
-        
-        // Trouver le rôle "Advertiser" dans la liste
-        const advertiserRole = roles.find((role: { name: string; id: string }) => role.name === "Advertiser");
-
-        if (!advertiserRole || !advertiserRole.id) {
-            console.error('[BECOME ADVERTISER API] Advertiser role not found in roles list');
-            return res.status(404).json({ error: 'Advertiser role not found' });
-        }
-
-        console.log('[BECOME ADVERTISER API] Found Advertiser role ID:', advertiserRole.id);
-
-        // Étape 3 : Mettre à jour l'utilisateur avec uniquement le rôle annonceur
-        const payload = {
-            role: advertiserRole.id
-        };
-
-        console.log('[BECOME ADVERTISER API] Payload to send to Directus:', JSON.stringify(payload, null, 2));
-        console.log('[BECOME ADVERTISER API] Directus URL:', `${directusUrl}/users/${actualUserId}?fields=*,account.*,role.*`);
-        console.log('[BECOME ADVERTISER API] Role ID:', advertiserRole.id);
-        console.log('[BECOME ADVERTISER API] Actual User ID:', actualUserId);
-
-        const response = await fetch(`${directusUrl}/users/${actualUserId}?fields=*,account.*,account.agencies.estate_agencies_id.*,account.agencies.estate_agencies_id.address.*,account.agency.*,account.agency.address.*,role.*`, {
+        // Appeler directement la nouvelle API switch-role
+        const response = await fetch(`${directusUrl}/extended-services-api/auth/switch-role?fields=*.*`, {
             method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'Authorization': `Bearer ${accessToken}`,
             },
-            body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
-
-        console.log('[BECOME ADVERTISER API] Directus response status:', response.status);
-        console.log('[BECOME ADVERTISER API] Directus response data:', JSON.stringify(data, null, 2));
-
         if (!response.ok) {
-            console.error('[BECOME ADVERTISER API] Error response:', data);
-            return res.status(response.status).json(data);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[BECOME ADVERTISER API] Error response:', response.status, errorData);
+            return res.status(response.status).json(errorData);
         }
 
-        console.log('[BECOME ADVERTISER API] User upgraded successfully');
+        const data = await response.json();
+        console.log('[BECOME ADVERTISER API] Role switched successfully');
+        console.log('[BECOME ADVERTISER API] Response data:', JSON.stringify(data, null, 2));
+
         return res.status(200).json(data);
 
     } catch (error: any) {

@@ -39,7 +39,7 @@ const HomeHeader = () => {
             });
             navigateWithTransition("/login");
         } else {
-            if (user?.role?.name !== "Advertiser") {
+            if (user?.role?.code !== "ADVERTISER") {
                 navigateWithTransition("/advertiser");
                 return;
             }
@@ -101,7 +101,7 @@ const HomeHeader = () => {
                                     <User className="mr-2 h-4 w-4" />
                                     Mon profil
                                 </DropdownMenuItem>
-                                {user?.role?.name === "Advertiser" && (
+                                {user?.role?.code === "ADVERTISER" && (
                                     <DropdownMenuItem onClick={() => navigateWithTransition("/my-listings")}>
                                         <Building2 className="mr-2 h-4 w-4" />
                                         Mon espace
@@ -170,7 +170,7 @@ const HomeHeader = () => {
 
                                 {isAuthenticated ? (
                                     <>
-                                        {user?.role?.name === "Advertiser" && (
+                                        {user?.role?.code === "ADVERTISER" && (
                                             <Button
                                                 variant="ghost"
                                                 className="w-full justify-start h-12"
