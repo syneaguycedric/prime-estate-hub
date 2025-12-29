@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import { TrendingUp, Eye, Plus, Building2, Users, Calendar, Banknote, MapPin, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUserProperties } from "@/lib/directus-api";
+import { fetchUserProperties, Agency } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,9 @@ export default function DashboardOverview() {
         revenue: null as number | null,
         activeListings: null as number | null,
         draftListings: null as number | null,
-        totalAgencies: null as number | null,
+        rejectedListings: null as number | null,
+        boostedListings: null as number | null,
+        expiringSoonListings: null as number | null,
     });
 
     useEffect(() => {
@@ -89,12 +91,19 @@ export default function DashboardOverview() {
                 const totalListings = properties.length;
                 const activeListings = properties.filter((p) => p.status === "published").length;
                 const draftListings = properties.filter((p) => p.status === "draft").length;
+                const rejectedListings = properties.filter((p) => p.status === "rejected").length;
+
+                // Annonces boostées (promotions avec status "in_progress")
+                const boostedListings = properties.filter((p) => {
+                    if (!p.promotions || p.promotions.length === 0) return false;
+                    return p.promotions.some((promo) => promo.promotions_id?.status === "in_progress");
+                }).length;
+
+                // Annonces qui expirent bientôt (statut "expired")
+                const expiringSoonListings = properties.filter((p) => p.status === "expired").length;
 
                 // TODO: Les vues viendraient d'une API de statistiques Directus
                 const totalViews = 0; // properties.reduce((sum, p) => sum + (p.views || 0), 0);
-
-                // Nombre d'agences
-                const totalAgencies = user?.account?.agencies?.length || 0;
 
                 setStats({
                     totalListings,
@@ -102,7 +111,9 @@ export default function DashboardOverview() {
                     revenue: 0, // TODO: API revenus
                     activeListings,
                     draftListings,
-                    totalAgencies,
+                    rejectedListings,
+                    boostedListings,
+                    expiringSoonListings,
                 });
 
                 setProperties(properties);
@@ -114,7 +125,9 @@ export default function DashboardOverview() {
                     revenue: 0,
                     activeListings: 0,
                     draftListings: 0,
-                    totalAgencies: user?.account?.agencies?.length || 0,
+                    rejectedListings: 0,
+                    boostedListings: 0,
+                    expiringSoonListings: 0,
                 });
             }
         } catch (error) {
@@ -129,7 +142,7 @@ export default function DashboardOverview() {
                 revenue: 0,
                 activeListings: 0,
                 draftListings: 0,
-                totalAgencies: user?.account?.agencies?.length || 0,
+                rejectedListings: 0,
             });
         } finally {
             setLoadingStats(false);
@@ -187,6 +200,10 @@ export default function DashboardOverview() {
         });
     };
 
+    // Récupérer l'agence actuelle
+    // Try root-level agency first, fallback to account.agency for backward compatibility
+    const currentAgency = user?.agency && typeof user.agency === "object" && "id" in user.agency ? (user.agency as Agency) : user?.account?.agency;
+
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-3 md:space-y-4">
             {/* Header */}
@@ -201,8 +218,8 @@ export default function DashboardOverview() {
                 </Button>
             </div>
 
-            {/* Statistiques - 3 cards seulement (sans Favoris) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {/* Statistiques - 3 cards seulement (sans Favoris) - Masqué temporairement */}
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 <StatCard
                     title="Total annonces"
                     value={stats.totalListings}
@@ -230,11 +247,11 @@ export default function DashboardOverview() {
                     iconBgColor="bg-yellow-100"
                     suffix=" FCFA"
                 />
-            </div>
+            </div> */}
 
             {/* Actions rapides */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
-                <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 items-stretch">
+                <Card className="flex flex-col h-full">
                     <CardHeader className="p-3 md:p-4">
                         <CardTitle className="flex items-center space-x-2 text-sm md:text-base">
                             <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -242,8 +259,8 @@ export default function DashboardOverview() {
                         </CardTitle>
                         <CardDescription className="text-xs">Gérez toutes vos annonces immobilières</CardDescription>
                     </CardHeader>
-                    <CardContent className="p-3 md:p-4 pt-0">
-                        <div className="space-y-2 md:space-y-3">
+                    <CardContent className="p-3 md:p-4 pt-0 flex-1 flex flex-col">
+                        <div className="flex flex-col space-y-2 md:space-y-3 flex-1">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Annonces actives</span>
                                 {loadingStats ? (
@@ -264,14 +281,46 @@ export default function DashboardOverview() {
                                     </Badge>
                                 )}
                             </div>
-                            <Button onClick={handleViewListings} variant="outline" className="w-full h-8 text-xs">
-                                Voir toutes mes annonces
-                            </Button>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Annonces rejetées</span>
+                                {loadingStats ? (
+                                    <Skeleton className="h-4 w-6" />
+                                ) : (
+                                    <Badge variant="outline" className="text-xs bg-red-100 text-red-800 border-red-200">
+                                        {stats.rejectedListings}
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Annonces boostées</span>
+                                {loadingStats ? (
+                                    <Skeleton className="h-4 w-6" />
+                                ) : (
+                                    <Badge variant="outline" className="text-xs bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-800 border-orange-200">
+                                        {stats.boostedListings}
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Annonces expirées</span>
+                                {loadingStats ? (
+                                    <Skeleton className="h-4 w-6" />
+                                ) : (
+                                    <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
+                                        {stats.expiringSoonListings}
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="mt-auto pt-2">
+                                <Button onClick={handleViewListings} variant="outline" className="w-full h-8 text-xs">
+                                    Voir toutes mes annonces
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="flex flex-col h-full">
                     <CardHeader className="p-3 md:p-4">
                         <CardTitle className="flex items-center space-x-2 text-sm md:text-base">
                             <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -279,23 +328,13 @@ export default function DashboardOverview() {
                         </CardTitle>
                         <CardDescription className="text-xs">Gérez vos agences et partenaires</CardDescription>
                     </CardHeader>
-                    <CardContent className="p-3 md:p-4 pt-0">
-                        <div className="space-y-2 md:space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs text-muted-foreground">Mes agences</span>
-                                {loadingStats ? (
-                                    <Skeleton className="h-4 w-6" />
-                                ) : (
-                                    <Badge variant="secondary" className="text-xs">
-                                        {stats.totalAgencies}
-                                    </Badge>
-                                )}
-                            </div>
+                    <CardContent className="p-3 md:p-4 pt-0 flex-1 flex flex-col">
+                        <div className="flex flex-col space-y-2 md:space-y-3 flex-1">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Agence actuelle</span>
                                 {loadingStats ? (
                                     <Skeleton className="h-4 w-16" />
-                                ) : user?.account?.agency ? (
+                                ) : currentAgency ? (
                                     <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 text-xs">
                                         Définie
                                     </Badge>
@@ -305,9 +344,11 @@ export default function DashboardOverview() {
                                     </Badge>
                                 )}
                             </div>
-                            <Button onClick={handleViewAgencies} variant="outline" className="w-full h-8 text-xs">
-                                Gérer les agences
-                            </Button>
+                            <div className="mt-auto pt-2">
+                                <Button onClick={handleViewAgencies} variant="outline" className="w-full h-8 text-xs">
+                                    Gérer les agences
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

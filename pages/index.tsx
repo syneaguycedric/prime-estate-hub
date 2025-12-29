@@ -228,12 +228,24 @@ const HomePage = ({ seoData, geoZones, featuredPropertiesByZone, vipProperties }
 
                                 {/* Communes / Départements */}
                                 <div className="md:col-span-6">
-                                    <Label className="text-xs text-muted-foreground">Commune ou département</Label>
+                                    <Label className="text-xs text-muted-foreground">
+                                        {!selectedZone
+                                            ? "Commune ou département"
+                                            : selectedZone.name === "Grand Abidjan"
+                                            ? "Commune"
+                                            : "Département"}
+                                    </Label>
                                     <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
                                                 <span className="truncate min-w-0 flex-1 text-left">
-                                                    {areas.length === 1 ? getAreaName(areas[0]) : "Choisir une commune ou un département"}
+                                                    {areas.length === 1
+                                                        ? getAreaName(areas[0])
+                                                        : !selectedZone
+                                                        ? "Choisir une commune ou un département"
+                                                        : selectedZone.name === "Grand Abidjan"
+                                                        ? "Choisir une commune"
+                                                        : "Choisir un département"}
                                                 </span>
                                                 <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                                             </Button>

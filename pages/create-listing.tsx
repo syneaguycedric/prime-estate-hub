@@ -479,14 +479,22 @@ const CreateListingPage = ({ geoZones }: CreateListingPageProps) => {
 
                                     {/* Communes / Départements */}
                                     <div className="md:col-span-8">
-                                        <Label className="text-xs text-muted-foreground">{selectedZone?.name === "Grand Abidjan" ? "Commune" : "Département"}</Label>
+                                        <Label className="text-xs text-muted-foreground">
+                                            {!selectedZone
+                                                ? "Commune ou département"
+                                                : selectedZone.name === "Grand Abidjan"
+                                                ? "Commune"
+                                                : "Département"}
+                                        </Label>
                                         <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" className="w-full justify-between mt-1" disabled={!zone}>
                                                     <span className="truncate min-w-0 flex-1 text-left">
                                                         {areas.length === 1
                                                             ? getAreaName(areas[0])
-                                                            : selectedZone?.name === "Grand Abidjan"
+                                                            : !selectedZone
+                                                            ? "Choisir une commune ou un département"
+                                                            : selectedZone.name === "Grand Abidjan"
                                                             ? "Choisir une commune"
                                                             : "Choisir un département"}
                                                     </span>
