@@ -37,7 +37,7 @@ interface EditListingPageProps {
 export default function EditListingPage({ geoZones }: EditListingPageProps) {
     const router = useRouter();
     const { id } = router.query;
-    const { isAuthenticated, user, authData, isLoading: authLoading, isRefreshing } = useAuth();
+    const { isAuthenticated, user, authData, isLoading: authLoading } = useAuth();
 
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
@@ -138,11 +138,6 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
             return;
         }
 
-        // Ne rien faire pendant le refresh
-        if (isRefreshing) {
-            return;
-        }
-
         if (!authLoading && user && user.role?.code !== "ADVERTISER") {
             toast.info("Accès restreint", {
                 description: "Cette page est réservée aux annonceurs.",
@@ -155,7 +150,7 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
         if (id && typeof id === "string" && geoZones.length > 0) {
             loadProperty(id);
         }
-    }, [id, isAuthenticated, user, authLoading, router, geoZones, isRefreshing]);
+    }, [id, isAuthenticated, user, authLoading, router, geoZones]);
 
     const loadProperty = async (propertyId: string) => {
         setLoading(true);
@@ -606,11 +601,7 @@ export default function EditListingPage({ geoZones }: EditListingPageProps) {
                                     {/* Communes / Départements */}
                                     <div className="md:col-span-8">
                                         <Label className="text-xs text-muted-foreground">
-                                            {!selectedZone
-                                                ? "Commune ou département"
-                                                : selectedZone.name === "Grand Abidjan"
-                                                ? "Commune"
-                                                : "Département"}
+                                            {!selectedZone ? "Commune ou département" : selectedZone.name === "Grand Abidjan" ? "Commune" : "Département"}
                                         </Label>
                                         <Popover open={areasOpen} onOpenChange={setAreasOpen}>
                                             <PopoverTrigger asChild>
