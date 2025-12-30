@@ -297,3 +297,40 @@ export function searchProperties(properties: Property[], searchTerm: string): Pr
         getPropertyTypeLabel(property.type).toLowerCase().includes(term)
     );
 }
+
+/**
+ * Extrait le nom de la commune/département depuis une propriété
+ */
+export function getTownName(property: Property): string | null {
+    const town = (property as any).town;
+    if (!town) return null;
+    
+    if (typeof town === "string") {
+        // Si town est juste un ID, on ne peut pas déterminer le nom
+        return null;
+    }
+    
+    if (typeof town === "object" && town.name) {
+        return town.name;
+    }
+    
+    return null;
+}
+
+/**
+ * Formate la localisation complète : "town, location" ou juste "location" si pas de town
+ */
+export function formatLocation(property: Property): string {
+    const townName = getTownName(property);
+    const location = property.location || '';
+    
+    if (townName && location) {
+        return `${townName}, ${location}`;
+    } else if (townName) {
+        return townName;
+    } else if (location) {
+        return location;
+    }
+    
+    return 'Localisation non disponible';
+}

@@ -5,27 +5,29 @@ import { Bed, Bath, Square, MapPin } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import ImageWithLoading from "@/components/ui/image-with-loading";
 import { Property } from "@/data/properties";
-import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl } from "@/lib/property-helpers";
+import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, formatLocation } from "@/lib/property-helpers";
 
 interface PropertyListCardAnimatedProps extends Property {
     index: number;
 }
 
-const PropertyListCardAnimated = ({
-    id,
-    title,
-    price,
-    billingCycle,
-    contractType,
-    location,
-    type,
-    surfaceArea,
-    surfaceAreaUnit,
-    rooms,
-    bathrooms,
-    images,
-    index,
-}: PropertyListCardAnimatedProps) => {
+const PropertyListCardAnimated = (props: PropertyListCardAnimatedProps) => {
+    const {
+        id,
+        title,
+        price,
+        billingCycle,
+        contractType,
+        location,
+        type,
+        surfaceArea,
+        surfaceAreaUnit,
+        rooms,
+        bathrooms,
+        images,
+        index,
+    } = props;
+    
     const { navigateWithTransition } = useNavigationTransition();
 
     const handleCardClick = () => {
@@ -38,6 +40,7 @@ const PropertyListCardAnimated = ({
     const propertyTypeLabel = getPropertyTypeLabel(type);
     const contractTypeLabel = getContractTypeLabel(contractType);
     const imageUrl = getFirstImageUrl({ images } as Property);
+    const formattedLocation = formatLocation(props as Property);
 
     return (
         <motion.div
@@ -64,7 +67,7 @@ const PropertyListCardAnimated = ({
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
                                 >
-                                    <ImageWithLoading src={imageUrl} alt={`${title} - ${location}`} loading={index < 6 ? "eager" : "lazy"} className="w-full h-full rounded-md" />
+                                    <ImageWithLoading src={imageUrl} alt={`${title} - ${formattedLocation}`} loading={index < 6 ? "eager" : "lazy"} className="w-full h-full rounded-md" />
                                 </motion.div>
 
                                 {/* Contenu avec animations échelonnées */}
@@ -102,7 +105,7 @@ const PropertyListCardAnimated = ({
                                             transition={{ delay: 0.25 + index * 0.05, duration: 0.3 }}
                                         >
                                             <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
-                                            <span className="line-clamp-1">{location}</span>
+                                            <span className="line-clamp-1">{formattedLocation}</span>
                                         </motion.p>
 
                                         <motion.div

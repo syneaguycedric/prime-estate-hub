@@ -6,28 +6,30 @@ import { MapPin, Bed, Bath, Square, Eye } from "lucide-react";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import ImageWithLoading from "@/components/ui/image-with-loading";
 import { Property } from "@/data/properties";
-import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl } from "@/lib/property-helpers";
+import { formatPriceOnly, formatSurface, getPropertyTypeLabel, getContractTypeLabel, getFirstImageUrl, formatLocation } from "@/lib/property-helpers";
 
 interface PropertyCardAnimatedProps extends Property {
     index?: number;
 }
 
-const PropertyCardAnimated = ({
-    id,
-    title,
-    price,
-    billingCycle,
-    contractType,
-    location,
-    type,
-    surfaceArea,
-    surfaceAreaUnit,
-    rooms,
-    bathrooms,
-    images,
-    isNew,
-    index = 0,
-}: PropertyCardAnimatedProps) => {
+const PropertyCardAnimated = (props: PropertyCardAnimatedProps) => {
+    const {
+        id,
+        title,
+        price,
+        billingCycle,
+        contractType,
+        location,
+        type,
+        surfaceArea,
+        surfaceAreaUnit,
+        rooms,
+        bathrooms,
+        images,
+        isNew,
+        index = 0,
+    } = props;
+    
     const { navigateWithTransition } = useNavigationTransition();
 
     const handleCardClick = () => {
@@ -40,6 +42,7 @@ const PropertyCardAnimated = ({
     const propertyTypeLabel = getPropertyTypeLabel(type);
     const contractTypeLabel = getContractTypeLabel(contractType);
     const imageUrl = getFirstImageUrl({ images } as Property);
+    const formattedLocation = formatLocation(props as Property);
 
     return (
         <motion.div
@@ -54,7 +57,7 @@ const PropertyCardAnimated = ({
                     <div className="relative overflow-hidden rounded-t-lg">
                         <ImageWithLoading
                             src={imageUrl}
-                            alt={`${title} - ${location}`}
+                            alt={`${title} - ${formattedLocation}`}
                             className="w-full h-40 group-hover:scale-110 transition-transform duration-300"
                             loading={index < 4 ? "eager" : "lazy"}
                         />
@@ -83,7 +86,7 @@ const PropertyCardAnimated = ({
 
                             <div className="flex items-center text-muted-foreground text-sm min-w-0">
                                 <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-                                <span className="truncate">{location}</span>
+                                <span className="truncate">{formattedLocation}</span>
                             </div>
 
                             <motion.div
