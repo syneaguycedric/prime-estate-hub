@@ -4,7 +4,7 @@ import Image from "next/image";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Search, Filter, Eye, Pencil, Trash2, MoreHorizontal, Plus, Calendar, MapPin, RefreshCw, Zap, Sparkles, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Property } from "@/data/properties";
-import { getFirstImageUrl, formatPriceOnly, getFirstImageUrlForCard, getPropertyTypeLabel, getContractTypeLabel } from "@/lib/property-helpers";
+import { getFirstImageUrl, formatPriceOnly, getFirstImageUrlForCard, getPropertyTypeLabel, getContractTypeLabel, formatLocation } from "@/lib/property-helpers";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ImageWithLoading from "@/components/ui/image-with-loading";
 import { Button } from "@/components/ui/button";
@@ -721,12 +721,10 @@ export default function ListingsDataTable({ properties, loading, onRefresh, curr
                                         </div>
                                         <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground flex-wrap">
                                             <span className="font-semibold text-foreground">{formatPriceOnly(property.price)}</span>
-                                            {property.location && (
-                                                <span className="flex items-center gap-0.5 truncate">
-                                                    <MapPin className="h-2.5 w-2.5" />
-                                                    <span className="truncate">{property.location}</span>
-                                                </span>
-                                            )}
+                                            <span className="flex items-center gap-0.5 truncate">
+                                                <MapPin className="h-2.5 w-2.5" />
+                                                <span className="truncate">{formatLocation(property)}</span>
+                                            </span>
                                             <span className="flex items-center gap-0.5">
                                                 <Calendar className="h-2.5 w-2.5" />
                                                 <span>{formatDate(property.date_created)}</span>
@@ -900,7 +898,7 @@ export default function ListingsDataTable({ properties, loading, onRefresh, curr
                                                     <TableCell className={property.status === "expired" || property.status === "rejected" ? "border-b-0" : ""}>
                                                         <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                                                             <MapPin className="h-3 w-3" />
-                                                            <span>{property.location || "Non spécifié"}</span>
+                                                            <span>{formatLocation(property)}</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className={property.status === "expired" || property.status === "rejected" ? "border-b-0" : ""}>

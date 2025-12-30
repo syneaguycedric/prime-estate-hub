@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Construire l'URL avec les paramètres
         const params = new URLSearchParams({
-            fields: '*,images.directus_files_id.*,characteristics.*,notes.*,promotions.promotions_id.*',
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,characteristics.*,notes.*,promotions.promotions_id.*',
             sort: '-date_created',
             limit: limitNum.toString(),
             offset: offset.toString(),
