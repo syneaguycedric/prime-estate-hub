@@ -44,13 +44,16 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
     // Charger les données si édition
     useEffect(() => {
         if (agency && open) {
-            setTitle(agency.title);
-            setCountry(agency.address.country);
-            setState(agency.address.state);
-            setCity(agency.address.city);
-            setStreet(agency.address.street);
-            setContacts(agency.address.contacts || [{ type: "email", value: "" }]);
-            setSocialLinks(agency.address.social_links || []);
+            setTitle(agency.title || "");
+            // Le type Agency n'a pas de propriété address imbriquée
+            // Les champs country, state, city ne sont pas dans l'API actuelle
+            // On les laisse vides ou on utilise des valeurs par défaut
+            setCountry("civ");
+            setState("");
+            setCity("");
+            setStreet(agency.street || "");
+            setContacts(agency.contacts || [{ type: "email", value: "" }]);
+            setSocialLinks(agency.social_links || []);
         } else if (open) {
             // Réinitialiser le formulaire
             setTitle("");
@@ -159,14 +162,9 @@ export default function AgencyFormDialog({ open, onClose, onSuccess, agency }: A
 
             const data: CreateAgencyData = {
                 title: title.trim(),
-                address: {
-                    country,
-                    state: state.trim(),
-                    city: city.trim(),
-                    street: street.trim(),
-                    contacts: validContacts,
-                    social_links: validSocialLinks.length > 0 ? validSocialLinks : undefined,
-                },
+                street: street.trim(),
+                contacts: validContacts.length > 0 ? validContacts : undefined,
+                social_links: validSocialLinks.length > 0 ? validSocialLinks : undefined,
                 docs: [],
             };
 
