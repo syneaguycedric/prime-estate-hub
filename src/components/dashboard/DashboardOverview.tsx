@@ -143,6 +143,8 @@ export default function DashboardOverview() {
                 activeListings: 0,
                 draftListings: 0,
                 rejectedListings: 0,
+                boostedListings: 0,
+                expiringSoonListings: 0,
             });
         } finally {
             setLoadingStats(false);

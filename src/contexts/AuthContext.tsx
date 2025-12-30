@@ -19,6 +19,7 @@ interface AuthState {
     user: User | null;
     authData: AuthData | null;
     isLoading: boolean;
+    isRefreshing: boolean;
 }
 
 // Interface pour les actions d'authentification
@@ -52,6 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user: null,
         authData: null,
         isLoading: true,
+        isRefreshing: false,
     });
 
     // Charger les données d'authentification depuis le localStorage au démarrage
@@ -93,6 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                     user: freshUser,
                                     authData,
                                     isLoading: false,
+                                    isRefreshing: isRefreshingToken(),
                                 });
 
                                 // Sauvegarder les données fraîches
@@ -104,6 +107,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                     user,
                                     authData,
                                     isLoading: false,
+                                    isRefreshing: isRefreshingToken(),
                                 });
                             }
                         } catch (error) {
@@ -114,6 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                 user,
                                 authData,
                                 isLoading: false,
+                                isRefreshing: isRefreshingToken(),
                             });
                         }
 
@@ -151,6 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                             user: freshUser,
                                             authData: newAuthData,
                                             isLoading: false,
+                                            isRefreshing: isRefreshingToken(),
                                         });
 
                                         // Sauvegarder les nouvelles données
@@ -217,6 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             user: null,
             authData: null,
             isLoading: false,
+            isRefreshing: false,
         });
     };
 
@@ -256,6 +263,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         user,
                         authData,
                         isLoading: false,
+                        isRefreshing: isRefreshingToken(),
                     });
 
                     toast.success("Connexion réussie", {
@@ -404,6 +412,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         user,
                         authData: newAuthData,
                         isLoading: false,
+                        isRefreshing: isRefreshingToken(),
                     });
 
                     // Sauvegarder les nouvelles données
@@ -443,6 +452,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                 isAuthenticated: true,
                                 user,
                                 authData: newAuthData,
+                                isRefreshing: isRefreshingToken(),
                             }));
                             saveAuthData(newAuthData, user);
                             return true;
@@ -488,6 +498,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setAuthState((prev) => ({
                     ...prev,
                     user,
+                    isRefreshing: isRefreshingToken(),
                 }));
 
                 // Mettre à jour le localStorage
