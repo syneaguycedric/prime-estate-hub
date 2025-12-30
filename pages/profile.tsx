@@ -18,7 +18,7 @@ import { toast } from "@/lib/toast-helpers";
 
 const ProfilePage = () => {
     const router = useRouter();
-    const { isAuthenticated, isLoading: authLoading, authData, user: contextUser, refreshUser, isRefreshing } = useAuth();
+    const { isAuthenticated, isLoading: authLoading, authData, user: contextUser, refreshUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -35,18 +35,18 @@ const ProfilePage = () => {
     // Validation errors
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Redirection si non authentifié (seulement si pas de refresh en cours)
+    // Redirection si non authentifié
     useEffect(() => {
-        // Ne rien faire pendant le chargement ou le refresh
-        if (authLoading || isRefreshing) {
+        // Ne rien faire pendant le chargement
+        if (authLoading) {
             return;
         }
 
-        // Vérifier seulement si pas de refresh en cours
+        // Vérifier seulement si le chargement est terminé
         if (!isAuthenticated) {
             router.push("/login");
         }
-    }, [isAuthenticated, authLoading, router, isRefreshing]);
+    }, [isAuthenticated, authLoading, router]);
 
     // Utiliser les données du contexte au lieu de charger séparément
     useEffect(() => {
