@@ -507,9 +507,9 @@ export async function fetchPropertiesWithFilters(
         let searchOrFilter: any = null;
         if (cleanSearch && cleanSearch.length > 0) {
             searchOrFilter = [
-                { title: { _contains: cleanSearch } },
-                { description: { _contains: cleanSearch } }
-                // Retiré: { location: { _contains: cleanSearch } } - champ inexistant dans Directus
+                { title: { _icontains: cleanSearch } },
+                { description: { _icontains: cleanSearch } }
+                // Retiré: { location: { _icontains: cleanSearch } } - champ inexistant dans Directus
             ];
         }
 
@@ -1676,32 +1676,74 @@ export async function deleteProperty(
     }
 }
 
-export async function fetchUserProperties(accessToken: string, userId: string): Promise<{ success: boolean; properties?: Property[]; error?: string }> {
-    try {
-        console.log('[DIRECTUS API] Fetching properties for user:', userId);
+export interface UserPropertiesFilters {
+    search?: string;
+    status?: string; // "all" | "active" | "draft" | "expired" | "archived" | "rejected"
+    type?: string; // "all" | "appartment" | "villa" | "land" | etc.
+}
 
-        const response = await createAuthenticatedFetch(`/api/user/properties?userId=${userId}`, {
+export async function fetchUserProperties(
+    accessToken: string,
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters: UserPropertiesFilters = {}
+): Promise<PaginatedResponse> {
+    try {
+        console.log('[DIRECTUS API] Fetching properties for user:', userId, `page: ${page}, limit: ${limit}`, filters);
+
+        const params = new URLSearchParams({
+            userId: userId,
+            page: page.toString(),
+            limit: limit.toString()
+        });
+
+        if (filters.search) {
+            params.append('search', filters.search);
+        }
+        if (filters.status && filters.status !== 'all') {
+            params.append('status', filters.status);
+        }
+        if (filters.type && filters.type !== 'all') {
+            params.append('type', filters.type);
+        }
+
+        const response = await createAuthenticatedFetch(`/api/user/properties?${params.toString()}`, {
             method: 'GET',
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('[DIRECTUS API] Error fetching user properties:', errorData);
-            return { success: false, error: 'Impossible de récupérer vos annonces' };
+            return {
+                properties: [],
+                total: 0,
+                page: 1,
+                totalPages: 0
+            };
         }
 
         const data = await response.json() as any;
-        const properties = data.data || [];
+        const properties = (data.data || []).map(formatProperty);
+        const total = data.meta?.filter_count || properties.length;
+        const totalPages = Math.ceil(total / limit);
 
-        console.log('[DIRECTUS API] Found', properties.length, 'properties');
+        console.log(`[DIRECTUS API] Fetched ${properties.length} properties (total: ${total}, page: ${page}/${totalPages})`);
 
-        return { success: true, properties };
+        return {
+            properties,
+            total,
+            page,
+            totalPages
+        };
 
     } catch (error: any) {
         console.error('[DIRECTUS API] Error:', error);
         return {
-            success: false,
-            error: 'Une erreur est survenue',
+            properties: [],
+            total: 0,
+            page: 1,
+            totalPages: 0
         };
     }
 }

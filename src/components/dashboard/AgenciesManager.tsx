@@ -8,7 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { Agency, GeoZone, fetchGeoZones } from "@/lib/directus-api";
+import { Agency, GeoZone, fetchGeoZones, fetchUserProperties } from "@/lib/directus-api";
+import { Property } from "@/data/properties";
 import { toast } from "@/lib/toast-helpers";
 import { deleteAgency } from "@/lib/directus-api";
 import AgencyFormModal from "./AgencyFormModal";
@@ -22,6 +23,12 @@ export default function AgenciesManager() {
     const [deletingAgency, setDeletingAgency] = useState<Agency | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [geoZones, setGeoZones] = useState<GeoZone[]>([]);
+    const [agencyPropertiesCount, setAgencyPropertiesCount] = useState<number | null>(null);
+    const [loadingProperties, setLoadingProperties] = useState(false);
+
+    // Récupérer l'agence actuelle
+    // Try root-level agency first, fallback to account.agency for backward compatibility
+    const currentAgency = user?.agency && typeof user.agency === "object" && "id" in user.agency ? (user.agency as Agency) : user?.account?.agency;
 
     useEffect(() => {
         // Charger les zones géographiques
@@ -39,6 +46,41 @@ export default function AgenciesManager() {
         setLoading(false);
     }, [user]);
 
+    // Charger les annonces liées à l'agence
+    useEffect(() => {
+        const loadAgencyProperties = async () => {
+            if (!currentAgency || !authData?.access_token || !user?.id) {
+                setAgencyPropertiesCount(0);
+                return;
+            }
+
+            setLoadingProperties(true);
+            try {
+                // Charger toutes les propriétés pour compter celles de l'agence (limit élevé)
+                const result = await fetchUserProperties(authData.access_token, user.id, 1, 1000);
+                
+                if (result.properties && result.properties.length > 0) {
+                    const agencyId = typeof currentAgency === "object" ? currentAgency.id : currentAgency;
+                    // Filtrer les annonces liées à cette agence
+                    const agencyProperties = result.properties.filter((property: Property) => {
+                        const propertyAgencyId = typeof property.agency === "string" ? property.agency : null;
+                        return propertyAgencyId === agencyId;
+                    });
+                    setAgencyPropertiesCount(agencyProperties.length);
+                } else {
+                    setAgencyPropertiesCount(0);
+                }
+            } catch (error) {
+                console.error("[AGENCIES MANAGER] Error loading agency properties:", error);
+                setAgencyPropertiesCount(0);
+            } finally {
+                setLoadingProperties(false);
+            }
+        };
+
+        loadAgencyProperties();
+    }, [currentAgency, authData?.access_token, user?.id]);
+
     // Nettoyage global du pointer-events
     useEffect(() => {
         const cleanupPointerEvents = () => {
@@ -53,10 +95,6 @@ export default function AgenciesManager() {
 
         return cleanupPointerEvents;
     }, [isEditModalOpen, showCreateModal, deletingAgency]);
-
-    // Récupérer l'agence actuelle
-    // Try root-level agency first, fallback to account.agency for backward compatibility
-    const currentAgency = user?.agency && typeof user.agency === "object" && "id" in user.agency ? (user.agency as Agency) : user?.account?.agency;
 
     const getStatusBadge = (status?: string) => {
         const normalizedStatus = status?.toLowerCase() || "published";
@@ -335,7 +373,11 @@ export default function AgenciesManager() {
                                     <Building2 className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-sm font-medium">Annonces</span>
                                 </div>
-                                <span className="text-lg font-bold">-</span>
+                                {loadingProperties ? (
+                                    <Skeleton className="h-5 w-8" />
+                                ) : (
+                                    <span className="text-lg font-bold">{agencyPropertiesCount ?? 0}</span>
+                                )}
                             </div>
                             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                                 <div className="flex items-center gap-2">

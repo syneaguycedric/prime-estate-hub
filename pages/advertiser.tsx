@@ -8,9 +8,14 @@ import { toast } from "@/lib/toast-helpers";
 
 export default function AdvertiserPage() {
     const router = useRouter();
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, user, isLoading } = useAuth();
 
     useEffect(() => {
+        // Attendre que le chargement soit terminé avant de vérifier l'authentification
+        if (isLoading) {
+            return;
+        }
+
         // Rediriger vers login si non authentifié
         if (!isAuthenticated) {
             router.push("/login");
@@ -25,7 +30,12 @@ export default function AdvertiserPage() {
             });
             router.push("/my-listings");
         }
-    }, [isAuthenticated, user, router]);
+    }, [isAuthenticated, user, isLoading, router]);
+
+    // Afficher un skeleton ou rien pendant le chargement
+    if (isLoading) {
+        return null;
+    }
 
     // Ne pas afficher le contenu pendant la vérification
     if (!isAuthenticated) {

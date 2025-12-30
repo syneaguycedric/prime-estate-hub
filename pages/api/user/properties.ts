@@ -11,42 +11,72 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(401).json({ error: 'No authorization header' });
         }
 
-        const { userId } = req.query;
+        const { userId, page = '1', limit = '10', search, status, type } = req.query;
         if (!userId) {
             return res.status(400).json({ error: 'User ID required' });
         }
 
         const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_API_URL;
+        const pageNum = parseInt(page as string, 10);
+        const limitNum = parseInt(limit as string, 10);
+        const offset = (pageNum - 1) * limitNum;
 
-        console.log('[USER PROPERTIES API] Fetching properties for user:', userId);
+        console.log('[USER PROPERTIES API] Fetching properties for user:', userId, `page: ${pageNum}, limit: ${limitNum}`, `search: ${search}, status: ${status}, type: ${type}`);
 
-        // D'abord, récupérer toutes les annonces pour voir la structure
-        console.log('[USER PROPERTIES API] Step 1: Fetching all properties to check structure...');
-        const allPropertiesUrl = `${directusUrl}/items/real_estates?fields=*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*&sort=-date_created&limit=5`;
-        console.log('[USER PROPERTIES API] All properties URL:', allPropertiesUrl);
+        // Construire les filtres Directus
+        const filters: any[] = [];
+        
+        // Filtre utilisateur (toujours présent)
+        filters.push({ user_created: { _eq: userId } });
 
-        const allResponse = await fetch(allPropertiesUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': authHeader,
-            }
-        });
-
-        if (allResponse.ok) {
-            const allData = await allResponse.json() as any;
-            console.log('[USER PROPERTIES API] All properties sample:', JSON.stringify(allData.data?.slice(0, 2), null, 2));
-
-            // Vérifier la structure des user_created
-            if (allData.data && allData.data.length > 0) {
-                console.log('[USER PROPERTIES API] Sample user_created field:', allData.data[0].user_created);
-                console.log('[USER PROPERTIES API] User ID we are looking for:', userId);
-            }
+        // Filtre de recherche (titre et description) - insensible à la casse
+        if (search && typeof search === 'string' && search.trim().length > 0) {
+            const cleanSearch = search.trim();
+            filters.push({
+                _or: [
+                    { title: { _icontains: cleanSearch } },
+                    { description: { _icontains: cleanSearch } }
+                ]
+            });
         }
 
-        // Maintenant essayer le filtre
-        console.log('[USER PROPERTIES API] Step 2: Trying filter...');
-        const apiUrl = `${directusUrl}/items/real_estates?meta=*&filter[user_created][_eq]=${userId}&fields=*,images.directus_files_id.*,characteristics.*,notes.*,promotions.promotions_id.*&sort=-date_created`;
-        console.log('[USER PROPERTIES API] Filter URL:', apiUrl);
+        // Filtre par statut
+        if (status && typeof status === 'string' && status !== 'all') {
+            let statusValue = status;
+            // Mapper "active" vers "published"
+            if (status === 'active') {
+                statusValue = 'published';
+            }
+            filters.push({ status: { _eq: statusValue } });
+        }
+
+        // Filtre par type
+        if (type && typeof type === 'string' && type !== 'all') {
+            filters.push({ type: { _eq: type } });
+        }
+
+        // Construire le filtre final avec _and pour combiner tous les filtres
+        // Si on a plusieurs filtres, utiliser _and, sinon utiliser le seul filtre
+        let filterObj: any;
+        if (filters.length === 0) {
+            filterObj = { user_created: { _eq: userId } };
+        } else if (filters.length === 1) {
+            filterObj = filters[0];
+        } else {
+            filterObj = { _and: filters };
+        }
+
+        // Construire l'URL avec les paramètres
+        const params = new URLSearchParams({
+            fields: '*,images.directus_files_id.*,characteristics.*,notes.*,promotions.promotions_id.*',
+            sort: '-date_created',
+            limit: limitNum.toString(),
+            offset: offset.toString(),
+            meta: 'filter_count',
+            filter: JSON.stringify(filterObj)
+        });
+
+        const apiUrl = `${directusUrl}/items/real_estates?${params.toString()}`;
 
         const response = await fetch(apiUrl, {
             method: 'GET',
@@ -57,15 +87,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         console.log('[USER PROPERTIES API] Response status:', response.status);
 
-        const data = await response.json() as any;
-        console.log('[USER PROPERTIES API] Response data:', JSON.stringify(data, null, 2));
-
         if (!response.ok) {
-            console.error('[USER PROPERTIES API] Error response:', data);
-            return res.status(response.status).json(data);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[USER PROPERTIES API] Error response:', errorData);
+            return res.status(response.status).json(errorData);
         }
 
-        console.log('[USER PROPERTIES API] Found', data.data?.length || 0, 'properties for user', userId);
+        const data = await response.json() as any;
+        console.log('[USER PROPERTIES API] Found', data.data?.length || 0, 'properties (total:', data.meta?.filter_count || 0, ')');
 
         return res.status(200).json(data);
     } catch (error: any) {

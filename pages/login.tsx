@@ -21,16 +21,25 @@ const LoginPage = () => {
         password?: string;
     }>({});
 
-    // Rediriger si déjà connecté
+    // Rediriger si déjà connecté (seulement après le chargement initial)
     useEffect(() => {
-        if (isAuthenticated) {
-            // Attendre un peu pour que les données utilisateur soient complètement chargées
-            setTimeout(() => {
-                console.log("[LOGIN PAGE] Redirecting after successful login");
-                router.push("/");
-            }, 500);
+        // Attendre que le chargement soit terminé avant de vérifier l'authentification
+        if (isLoading) {
+            return;
         }
-    }, [isAuthenticated, router]);
+
+        if (isAuthenticated) {
+            // Vérifier s'il y a une redirection stockée
+            const redirectUrl = sessionStorage.getItem("redirect_after_login");
+            if (redirectUrl) {
+                sessionStorage.removeItem("redirect_after_login");
+                router.push(redirectUrl);
+            } else {
+                // Redirection vers la page d'accueil
+                router.push("/");
+            }
+        }
+    }, [isAuthenticated, isLoading, router]);
 
     // Validation du formulaire
     const validateForm = (): boolean => {

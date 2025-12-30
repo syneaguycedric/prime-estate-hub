@@ -81,10 +81,10 @@ export default function DashboardOverview() {
 
         setLoadingStats(true);
         try {
-            // Charger les annonces de l'utilisateur
-            const result = await fetchUserProperties(authData.access_token, user.id);
+            // Charger toutes les annonces de l'utilisateur pour les stats (limit élevé)
+            const result = await fetchUserProperties(authData.access_token, user.id, 1, 1000);
 
-            if (result.success && result.properties) {
+            if (result.properties && result.properties.length > 0) {
                 const properties = result.properties;
 
                 // Calculer les statistiques
@@ -118,7 +118,7 @@ export default function DashboardOverview() {
 
                 setProperties(properties);
             } else {
-                // En cas d'erreur, définir les stats à 0
+                // En cas d'erreur ou aucune propriété, définir les stats à 0
                 setStats({
                     totalListings: 0,
                     totalViews: 0,

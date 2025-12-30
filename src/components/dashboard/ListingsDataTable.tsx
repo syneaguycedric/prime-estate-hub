@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { Search, Filter, Eye, Pencil, Trash2, MoreHorizontal, Plus, Calendar, MapPin, RefreshCw, Zap, Sparkles } from "lucide-react";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { Search, Filter, Eye, Pencil, Trash2, MoreHorizontal, Plus, Calendar, MapPin, RefreshCw, Zap, Sparkles, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Property } from "@/data/properties";
 import { getFirstImageUrl, formatPriceOnly, getFirstImageUrlForCard, getPropertyTypeLabel, getContractTypeLabel } from "@/lib/property-helpers";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -29,20 +29,54 @@ import { toast } from "@/lib/toast-helpers";
 import { deleteProperty, reloadProperty, resubmitProperty, fetchPromotionRanges, PromotionRange } from "@/lib/directus-api";
 import { useAuth } from "@/contexts/AuthContext";
 import BoostModal from "@/components/dashboard/BoostModal";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+} from "@/components/ui/pagination";
+
+export interface ListingsFilters {
+    search?: string;
+    status?: string;
+    type?: string;
+}
 
 interface ListingsDataTableProps {
     properties: Property[];
     loading: boolean;
     onRefresh: () => void;
+    currentPage: number;
+    totalPages: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    filters: ListingsFilters;
+    onFiltersChange: (filters: ListingsFilters) => void;
 }
 
-export default function ListingsDataTable({ properties, loading, onRefresh }: ListingsDataTableProps) {
+export default function ListingsDataTable({ properties, loading, onRefresh, currentPage, totalPages, total, onPageChange, filters, onFiltersChange }: ListingsDataTableProps) {
     const router = useRouter();
     const { authData, refreshUser } = useAuth();
     const isMobile = useIsMobile();
     const [searchQuery, setSearchQuery] = useState("");
+    const [showClearButton, setShowClearButton] = useState(false);
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
+
+    // Synchroniser les états locaux avec les props filters seulement au montage
+    useEffect(() => {
+        if (filters.search !== undefined) {
+            setSearchQuery(filters.search);
+            setShowClearButton(!!filters.search.trim());
+        }
+        if (filters.status !== undefined) setStatusFilter(filters.status);
+        if (filters.type !== undefined) setTypeFilter(filters.type);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Mettre à jour showClearButton quand searchQuery change
+    useEffect(() => {
+        setShowClearButton(!!searchQuery.trim());
+    }, [searchQuery]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -98,24 +132,84 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
         }
     }, [deleteDialogOpen]);
 
-    // Filtrage des propriétés
-    const filteredProperties = useMemo(() => {
-        return properties.filter((property) => {
-            const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase());
+    // Les propriétés sont déjà filtrées côté backend, donc on les utilise directement
 
-            const matchesStatus =
-                statusFilter === "all" ||
-                (statusFilter === "active" && property.status === "published") ||
-                (statusFilter === "draft" && property.status === "draft") ||
-                (statusFilter === "expired" && property.status === "expired") ||
-                (statusFilter === "archived" && property.status === "archived") ||
-                (statusFilter === "rejected" && property.status === "rejected");
+    // Référence pour éviter les changements de filtres inutiles et tracker le montage initial
+    const prevFiltersRef = useRef<string>("");
+    const isInitialMount = useRef(true);
 
-            const matchesType = typeFilter === "all" || property.type === typeFilter;
+    // Fonction pour appliquer les filtres
+    const applyFilters = () => {
+        const newFilters: ListingsFilters = {
+            search: searchQuery || undefined,
+            status: statusFilter !== "all" ? statusFilter : undefined,
+            type: typeFilter !== "all" ? typeFilter : undefined
+        };
+        
+        // Comparer avec les filtres précédents pour éviter les appels inutiles
+        const filtersKey = JSON.stringify(newFilters);
+        if (prevFiltersRef.current === filtersKey) {
+            return; // Pas de changement, ne pas déclencher
+        }
+        prevFiltersRef.current = filtersKey;
 
-            return matchesSearch && matchesStatus && matchesType;
-        });
-    }, [properties, searchQuery, statusFilter, typeFilter]);
+        onFiltersChange(newFilters);
+        // Réinitialiser à la page 1 quand les filtres changent
+        if (currentPage !== 1) {
+            onPageChange(1);
+        }
+    };
+
+    // Gérer les changements de filtres (status et type) - immédiat, pas de recherche
+    useEffect(() => {
+        // Ne rien faire au montage initial
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            // Initialiser la référence avec les valeurs actuelles
+            const initialFilters: ListingsFilters = {
+                search: searchQuery || undefined,
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                type: typeFilter !== "all" ? typeFilter : undefined
+            };
+            prevFiltersRef.current = JSON.stringify(initialFilters);
+            return;
+        }
+
+        // Appliquer immédiatement pour status et type (pas pour searchQuery)
+        applyFilters();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusFilter, typeFilter]);
+
+    // Gérer la recherche au clic sur le bouton ou Entrée
+    const handleSearch = () => {
+        applyFilters();
+    };
+
+    const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && searchQuery.trim()) {
+            handleSearch();
+        }
+    };
+
+    // Réinitialiser la recherche
+    const handleClearSearch = () => {
+        // D'abord masquer le bouton pour permettre l'animation de sortie
+        setShowClearButton(false);
+        // Puis mettre à jour le state après un court délai
+        setTimeout(() => {
+            setSearchQuery("");
+            // Appliquer les filtres avec recherche vide
+            const newFilters: ListingsFilters = {
+                search: undefined,
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                type: typeFilter !== "all" ? typeFilter : undefined
+            };
+            onFiltersChange(newFilters);
+            if (currentPage !== 1) {
+                onPageChange(1);
+            }
+        }, 200); // Délai correspondant à la durée de l'animation
+    };
 
     const handleView = (property: Property) => {
         router.push(`/biens/${property.id}`);
@@ -419,10 +513,10 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold">Mes annonces</h2>
-                    <p className="text-muted-foreground">
-                        {filteredProperties.length} annonce{filteredProperties.length > 1 ? "s" : ""}
-                        {searchQuery || statusFilter !== "all" || typeFilter !== "all" ? " trouvée(s)" : ""}
-                    </p>
+                            <p className="text-muted-foreground">
+                                {total} annonce{total > 1 ? "s" : ""}
+                                {filters.search || filters.status || filters.type ? " trouvée(s)" : ""}
+                            </p>
                 </div>
                 <Button onClick={handleCreateListing} variant="hero">
                     <Plus className="h-4 w-4 mr-2" />
@@ -435,15 +529,59 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                 <CardContent className="p-6">
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="Rechercher par titre..." 
-                                    value={searchQuery} 
-                                    onChange={(e) => setSearchQuery(e.target.value)} 
-                                    className="pl-10" 
-                                />
-                            </div>
+                            <LayoutGroup>
+                                <div className="relative flex items-center gap-2">
+                                    <motion.div 
+                                        className="relative flex-1"
+                                        layout
+                                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                    >
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                        <Input 
+                                            placeholder="Rechercher par titre..." 
+                                            value={searchQuery} 
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onKeyDown={handleSearchKeyPress}
+                                            className="pl-10 pr-12" 
+                                        />
+                                        <Button
+                                            variant={searchQuery.trim() ? "default" : "outline"}
+                                            size="sm"
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 shadow-sm transition-all duration-200 hover:scale-110 hover:-translate-y-1/2 active:scale-95 active:-translate-y-1/2"
+                                            onClick={handleSearch}
+                                            disabled={!searchQuery.trim()}
+                                            title="Rechercher"
+                                        >
+                                            <Search className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </motion.div>
+                                    <AnimatePresence>
+                                        {showClearButton && (
+                                            <motion.div
+                                                key="clear-button"
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.9 }}
+                                                transition={{ 
+                                                    duration: 0.2,
+                                                    ease: [0.4, 0, 0.2, 1]
+                                                }}
+                                            >
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleClearSearch}
+                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200 shrink-0"
+                                                    title="Effacer la recherche"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </LayoutGroup>
                         </div>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full sm:w-40">
@@ -474,7 +612,7 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
             </Card>
 
             {/* Tableau des annonces */}
-            {filteredProperties.length === 0 ? (
+            {properties.length === 0 ? (
                 <Card>
                     <CardContent className="p-12 text-center">
                         <div className="max-w-md mx-auto">
@@ -482,10 +620,10 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                                 <Search className="h-8 w-8 text-muted-foreground" />
                             </div>
                             <h3 className="text-xl font-semibold mb-2">
-                                {searchQuery || statusFilter !== "all" || typeFilter !== "all" ? "Aucune annonce trouvée" : "Aucune annonce"}
+                                {filters.search || filters.status || filters.type ? "Aucune annonce trouvée" : "Aucune annonce"}
                             </h3>
                             <p className="text-muted-foreground mb-6">
-                                {searchQuery || statusFilter !== "all" || typeFilter !== "all"
+                                {filters.search || filters.status || filters.type
                                     ? "Essayez de modifier vos critères de recherche."
                                     : "Commencez par créer votre première annonce."}
                             </p>
@@ -501,7 +639,7 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                 <Card>
                     <CardContent className="p-3 md:p-4">
                         <div className="space-y-2">
-                            {filteredProperties.map((property) => (
+                            {properties.map((property) => (
                                 <motion.div
                                     key={property.id}
                                     initial={{ opacity: 0, y: 10 }}
@@ -639,6 +777,61 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                                 </motion.div>
                             ))}
                         </div>
+                        {/* Pagination mobile */}
+                        {totalPages > 1 && (
+                            <div className="mt-4 pt-4 border-t">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <button
+                                                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                                                disabled={currentPage === 1}
+                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-1 pl-2.5"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                                <span>Précédent</span>
+                                            </button>
+                                        </PaginationItem>
+                                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                            let page: number;
+                                            if (totalPages <= 7) {
+                                                page = i + 1;
+                                            } else if (currentPage <= 4) {
+                                                page = i + 1;
+                                            } else if (currentPage >= totalPages - 3) {
+                                                page = totalPages - 6 + i;
+                                            } else {
+                                                page = currentPage - 3 + i;
+                                            }
+                                            return (
+                                                <PaginationItem key={page}>
+                                                    <button
+                                                        onClick={() => onPageChange(page)}
+                                                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 ${
+                                                            currentPage === page
+                                                                ? "border border-input bg-background shadow-sm"
+                                                                : "hover:bg-accent hover:text-accent-foreground"
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                </PaginationItem>
+                                            );
+                                        })}
+                                        <PaginationItem>
+                                            <button
+                                                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-1 pr-2.5"
+                                            >
+                                                <span>Suivant</span>
+                                                <ChevronRight className="h-4 w-4" />
+                                            </button>
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             ) : (
@@ -659,7 +852,7 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredProperties.map((property) => (
+                                    {properties.map((property) => (
                                         <>
                                             <>
                                                 <TableRow
@@ -821,6 +1014,61 @@ export default function ListingsDataTable({ properties, loading, onRefresh }: Li
                                 </TableBody>
                             </Table>
                         </div>
+                        {/* Pagination desktop */}
+                        {totalPages > 1 && (
+                            <div className="border-t p-4">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <button
+                                                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                                                disabled={currentPage === 1}
+                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-1 pl-2.5"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                                <span>Précédent</span>
+                                            </button>
+                                        </PaginationItem>
+                                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                            let page: number;
+                                            if (totalPages <= 7) {
+                                                page = i + 1;
+                                            } else if (currentPage <= 4) {
+                                                page = i + 1;
+                                            } else if (currentPage >= totalPages - 3) {
+                                                page = totalPages - 6 + i;
+                                            } else {
+                                                page = currentPage - 3 + i;
+                                            }
+                                            return (
+                                                <PaginationItem key={page}>
+                                                    <button
+                                                        onClick={() => onPageChange(page)}
+                                                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 ${
+                                                            currentPage === page
+                                                                ? "border border-input bg-background shadow-sm"
+                                                                : "hover:bg-accent hover:text-accent-foreground"
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                </PaginationItem>
+                                            );
+                                        })}
+                                        <PaginationItem>
+                                            <button
+                                                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 gap-1 pr-2.5"
+                                            >
+                                                <span>Suivant</span>
+                                                <ChevronRight className="h-4 w-4" />
+                                            </button>
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}

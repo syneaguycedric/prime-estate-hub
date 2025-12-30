@@ -5,8 +5,9 @@ import DetailSkeleton from '@/components/ui/detail-skeleton';
 import LoginSkeleton from '@/components/ui/login-skeleton';
 import HomeSkeleton from '@/components/ui/home-skeleton';
 import ListingFormSkeleton from '@/components/ui/listing-form-skeleton';
+import BecomeAdvertiserSkeleton from '@/components/ui/become-advertiser-skeleton';
 
-export type SkeletonType = 'list' | 'detail' | 'profile' | 'login' | 'none';
+export type SkeletonType = 'list' | 'detail' | 'profile' | 'login' | 'advertiser' | 'none';
 
 export interface SkeletonConfig {
     type: SkeletonType;
@@ -40,6 +41,10 @@ export const SKELETON_ROUTES: Record<string, SkeletonConfig> = {
     '/my-listings': {
         type: 'list',
         component: PropertySkeleton,
+    },
+    '/advertiser': {
+        type: 'advertiser',
+        component: BecomeAdvertiserSkeleton,
     },
     '/404': {
         type: 'none', // Pas de skeleton pour la page 404

@@ -1,6 +1,7 @@
 import type { AppProps } from "next/app";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,6 +35,7 @@ function createQueryClient() {
 }
 
 export default function App({ Component, pageProps }: AppProps) {
+    const router = useRouter();
     // QueryClient stable pour éviter les problèmes d'hydratation
     const [queryClient] = useState(() => createQueryClient());
 
@@ -43,6 +45,10 @@ export default function App({ Component, pageProps }: AppProps) {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Pages qui utilisent DashboardLayout (le Footer est intégré dans le layout)
+    const dashboardPages = ["/my-listings", "/profile"];
+    const shouldShowFooter = !dashboardPages.includes(router.pathname);
 
     return (
         <>
@@ -110,7 +116,7 @@ export default function App({ Component, pageProps }: AppProps) {
                             {mounted && (
                                 <>
                                     <Component {...pageProps} />
-                                    <Footer />
+                                    {shouldShowFooter && <Footer />}
                                     <Toaster />
                                     <Sonner />
                                 </>

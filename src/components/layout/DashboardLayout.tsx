@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Menu, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardSidebar from "./DashboardSidebar";
+import Footer from "./Footer";
 import { useNavigationTransition } from "@/hooks/use-navigation-transition";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -66,6 +67,16 @@ export default function DashboardLayout({ children, activeTab }: DashboardLayout
 
     const sidebarWidth = isCollapsed ? 80 : 280;
 
+    // Empêcher le scroll du body quand le dashboard est monté
+    useEffect(() => {
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, []);
+
     return (
         <div className="h-screen bg-background flex flex-col overflow-hidden">
             {/* Header avec bouton retour */}
@@ -106,11 +117,13 @@ export default function DashboardLayout({ children, activeTab }: DashboardLayout
                 />
 
                 {/* Main content */}
-                <div className="flex-1 transition-all duration-300 overflow-y-auto">
+                <div className="flex-1 transition-all duration-300 overflow-y-auto flex flex-col">
                     {/* Content */}
-                    <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="container mx-auto px-3 md:px-4 py-3 md:py-4">
+                    <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="container mx-auto px-3 md:px-4 py-3 md:py-4 flex-1">
                         {children}
                     </motion.main>
+                    {/* Footer */}
+                    <Footer />
                 </div>
             </div>
         </div>

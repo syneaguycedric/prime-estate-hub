@@ -1,22 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUserProperties } from "@/lib/directus-api";
+import { fetchUserProperties, PaginatedResponse, UserPropertiesFilters } from "@/lib/directus-api";
 import { Property } from "@/data/properties";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
-import ListingsDataTable from "@/components/dashboard/ListingsDataTable";
+import ListingsDataTable, { ListingsFilters } from "@/components/dashboard/ListingsDataTable";
 import AgenciesManager from "@/components/dashboard/AgenciesManager";
 import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
 import { toast } from "@/lib/toast-helpers";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function MyListingsPage() {
     const router = useRouter();
     const { isAuthenticated, authData, user, isLoading } = useAuth();
     const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("dashboard");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [paginationData, setPaginationData] = useState<Pick<PaginatedResponse, 'total' | 'totalPages'>>({ total: 0, totalPages: 0 });
+    const [filters, setFilters] = useState<ListingsFilters>({});
+    const prevFiltersRef = useRef<string>("");
+
+    // Déterminer l'onglet actif depuis l'URL
+    const activeTab = useMemo(() => {
+        const { tab } = router.query;
+        return tab && typeof tab === "string" ? tab : "dashboard";
+    }, [router.query.tab]);
 
     useEffect(() => {
         // Ne rien faire pendant le chargement initial de l'auth
@@ -38,29 +49,46 @@ export default function MyListingsPage() {
             return;
         }
 
-        // Déterminer l'onglet actif depuis l'URL
-        const { tab } = router.query;
-        if (tab && typeof tab === "string") {
-            setActiveTab(tab);
+        // Charger les propriétés seulement au montage initial ou quand on change d'onglet vers listings
+        if (authData?.access_token && user?.id && activeTab === "listings") {
+            loadUserProperties(1, {});
         }
+    }, [authData, user, isAuthenticated, isLoading, activeTab]);
 
-        if (authData?.access_token && user?.id) {
-            loadUserProperties();
+    // Recharger quand les filtres changent
+    useEffect(() => {
+        if (authData?.access_token && user?.id && activeTab === "listings") {
+            const filtersKey = JSON.stringify(filters);
+            // Comparer avec les filtres précédents pour éviter les rechargements inutiles
+            if (prevFiltersRef.current === filtersKey) {
+                return; // Pas de changement, ne pas recharger
+            }
+            prevFiltersRef.current = filtersKey;
+            loadUserProperties(1, filters);
         }
-    }, [authData, user, isAuthenticated, isLoading, router.query]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters]);
 
-    const loadUserProperties = async () => {
+    const loadUserProperties = async (page: number, filtersToApply: ListingsFilters = filters) => {
         if (!authData?.access_token || !user?.id) return;
 
         setLoading(true);
         try {
-            const result = await fetchUserProperties(authData.access_token, user.id);
+            const apiFilters: UserPropertiesFilters = {
+                search: filtersToApply.search,
+                status: filtersToApply.status,
+                type: filtersToApply.type
+            };
 
-            if (result.success && result.properties) {
+            const result = await fetchUserProperties(authData.access_token, user.id, page, ITEMS_PER_PAGE, apiFilters);
+
+            if (result.properties) {
                 setProperties(result.properties);
+                setPaginationData({ total: result.total, totalPages: result.totalPages });
+                setCurrentPage(page);
             } else {
                 toast.error("Erreur", {
-                    description: result.error || "Impossible de charger vos annonces",
+                    description: "Impossible de charger vos annonces",
                 });
             }
         } catch (error) {
@@ -74,8 +102,16 @@ export default function MyListingsPage() {
     };
 
     const handleRefresh = () => {
-        loadUserProperties();
+        loadUserProperties(currentPage, filters);
     };
+
+    const handlePageChange = (page: number) => {
+        loadUserProperties(page, filters);
+    };
+
+    const handleFiltersChange = useCallback((newFilters: ListingsFilters) => {
+        setFilters(newFilters);
+    }, []);
 
     const renderContent = () => {
         // Afficher un loader pendant le chargement de l'authentification
@@ -94,16 +130,28 @@ export default function MyListingsPage() {
             return <DashboardSkeleton />;
         }
 
-        switch (activeTab) {
-            case "dashboard":
-                return <DashboardOverview />;
-            case "listings":
-                return <ListingsDataTable properties={properties} loading={loading} onRefresh={handleRefresh} />;
-            case "agencies":
-                return <AgenciesManager />;
-            default:
-                return <DashboardOverview />;
-        }
+                switch (activeTab) {
+                    case "dashboard":
+                        return <DashboardOverview />;
+                    case "listings":
+                        return (
+                            <ListingsDataTable
+                                properties={properties}
+                                loading={loading}
+                                onRefresh={handleRefresh}
+                                currentPage={currentPage}
+                                totalPages={paginationData.totalPages}
+                                total={paginationData.total}
+                                onPageChange={handlePageChange}
+                                filters={filters}
+                                onFiltersChange={handleFiltersChange}
+                            />
+                        );
+                    case "agencies":
+                        return <AgenciesManager />;
+                    default:
+                        return <DashboardOverview />;
+                }
     };
 
     return (
