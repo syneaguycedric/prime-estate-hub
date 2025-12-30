@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { Property, PropertyImage } from '@/data/properties';
 import { properties } from '@/data/properties';
-import { formatProperty } from '@/lib/property-helpers';
+import { formatProperty, searchProperties, filterByContractType, filterByPropertyType, filterByPriceRange, filterByRooms } from '@/lib/property-helpers';
 import { toast } from '@/lib/toast-helpers';
 import { createAuthenticatedFetch } from '@/lib/auth-helpers';
 
@@ -490,10 +490,18 @@ export async function fetchPropertiesWithFilters(
             rooms,
             bathrooms,
             page = 1,
-            limit = 12
+            limit = 12,
+            planCode,
+            town,
+            zone
         } = filters;
 
         console.log('[DIRECTUS API] Fetching properties with filters:', filters);
+
+        // Si planCode est "premium" ou "kylimmo", utiliser les nouvelles APIs
+        if (planCode === 'premium' || planCode === 'kylimmo') {
+            return await fetchPropertiesWithPlanCode(filters, planCode, page, limit);
+        }
 
         // Construire les filtres Directus
         const directusFilters: Record<string, any> = {};
@@ -688,6 +696,154 @@ export async function fetchPropertiesWithFilters(
             totalPages: 0
         };
     }
+}
+
+/**
+ * Récupère les propriétés avec planCode (premium ou kylimmo) en utilisant les nouvelles APIs
+ * Applique les filtres côté client après récupération
+ */
+async function fetchPropertiesWithPlanCode(
+    filters: PropertyFilters,
+    planCode: string,
+    page: number,
+    limit: number
+): Promise<PaginatedResponse> {
+    try {
+        // Déterminer quelle API utiliser
+        const apiPath = planCode === 'premium'
+            ? 'extended-services-api/real-estate/list/featured'
+            : 'extended-services-api/real-estate/list/exclusive-plan-estates';
+
+        // Construire les query params avec fields uniquement
+        const params: Record<string, string> = {
+            fields: '*,images.directus_files_id.*,user_created.*,user_created.account.*,town.*.*,notes.*',
+        };
+
+        const queryString = new URLSearchParams(params).toString();
+        const fullUrl = `https://${DIRECTUS_DOMAIN}/${apiPath}?${queryString}`;
+
+        // Log de la requête
+        console.log(`\n[REQUEST] GET ${fullUrl}`);
+        console.log(`[PLAN CODE] ${planCode}`);
+
+        // Récupérer toutes les propriétés depuis l'API
+        const response = await apiClient.get<DirectusResponse<Property[]>>(
+            DIRECTUS_DOMAIN,
+            `${apiPath}?${queryString}`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                },
+            }
+        );
+
+        let allProperties = response.data.map(formatProperty);
+
+        // Appliquer les filtres côté client
+        allProperties = applyClientSideFilters(allProperties, filters);
+
+        // Gérer la pagination côté client
+        const total = allProperties.length;
+        const totalPages = Math.ceil(total / limit);
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedProperties = allProperties.slice(startIndex, endIndex);
+
+        console.log(`[RESPONSE] ${paginatedProperties.length} properties returned (total: ${total}, page: ${page}/${totalPages})\n`);
+
+        return {
+            properties: paginatedProperties,
+            total,
+            page,
+            totalPages
+        };
+
+    } catch (error) {
+        console.error(`[DIRECTUS API] Error fetching properties with planCode ${planCode}:`, error);
+        toast.error('Erreur de connexion', {
+            description: 'Impossible de charger les biens immobiliers. Veuillez réessayer.',
+            duration: 5000,
+        });
+
+        return {
+            properties: [],
+            total: 0,
+            page: 1,
+            totalPages: 0
+        };
+    }
+}
+
+/**
+ * Applique les filtres côté client sur les propriétés
+ */
+function applyClientSideFilters(properties: Property[], filters: PropertyFilters): Property[] {
+    let filtered = [...properties];
+
+    // Filtre de recherche
+    if (filters.search) {
+        filtered = searchProperties(filtered, filters.search);
+    }
+
+    // Filtre par type de contrat
+    if (filters.contractType) {
+        filtered = filterByContractType(filtered, filters.contractType);
+    }
+
+    // Filtre par type de bien
+    if (filters.propertyType) {
+        filtered = filterByPropertyType(filtered, filters.propertyType);
+    }
+
+    // Filtre par prix
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+        filtered = filterByPriceRange(filtered, filters.minPrice, filters.maxPrice);
+    }
+
+    // Filtre par surface
+    if (filters.minSurface !== undefined || filters.maxSurface !== undefined) {
+        filtered = filtered.filter(property => {
+            const surface = parseFloat(property.surfaceArea);
+            if (isNaN(surface)) return false;
+            if (filters.minSurface !== undefined && surface < filters.minSurface) return false;
+            if (filters.maxSurface !== undefined && surface > filters.maxSurface) return false;
+            return true;
+        });
+    }
+
+    // Filtre par nombre de pièces
+    if (filters.rooms !== undefined) {
+        filtered = filterByRooms(filtered, filters.rooms, filters.rooms);
+    }
+
+    // Filtre par nombre de salles d'eau
+    if (filters.bathrooms !== undefined) {
+        filtered = filtered.filter(property => property.bathrooms === filters.bathrooms);
+    }
+
+    // Filtre par town (commune/département)
+    if (filters.town) {
+        filtered = filtered.filter(property => {
+            const town = (property as any).town;
+            if (!town) return false;
+            const townId = typeof town === 'string' ? town : town.id;
+            return townId === filters.town;
+        });
+    }
+
+    // Filtre par zone
+    if (filters.zone) {
+        filtered = filtered.filter(property => {
+            const town = (property as any).town;
+            if (!town || typeof town === 'string') return false;
+            const zone = town.zone;
+            if (!zone) return false;
+            const zoneId = typeof zone === 'string' ? zone : zone.id;
+            return zoneId === filters.zone;
+        });
+    }
+
+    return filtered;
 }
 
 /**
